@@ -13,8 +13,9 @@
 
     <?php include 'includes/navigation/header.php'; ?>
 
-   <div class="not-logged-in">
-    <p>Not logged in? <a href="signin.php">Sign in</a> to view your bookings.</p>
+    <div>
+
+
     </div>
 
 

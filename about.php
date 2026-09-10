@@ -15,6 +15,7 @@
 
     <div>
         <h2>About Us</h2>
+        <p>We are the skibidi sigma rizzlers that mades the system for this</p>
 
 
     </div>
