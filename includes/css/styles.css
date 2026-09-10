@@ -27,6 +27,7 @@ a { color: inherit; }
 .nav-links a:hover, .nav-links .active { color: var(--ink); }
 .nav-links .active { border-bottom: 2px solid var(--green); }
 .nav-links .nav-signin { padding: 11px 17px; border: 1px solid var(--ink); color: var(--ink); border-radius: 3px; }
+.nav-user { color: var(--ink); font-size: 12px; font-weight: 700; }
 .nav-signin span, .button span { margin-left: 12px; font-size: 17px; }
 
 .hero { max-width: 1240px; min-height: 560px; margin: auto; padding: 72px 32px 92px; display: grid; grid-template-columns: 1fr 1fr; gap: 55px; align-items: center; }
@@ -82,6 +83,18 @@ form button { margin-top: 15px; width: 75px; padding: 5px; border-radius: 5px; b
 form label { margin-top: 15px; }
 form h2 { margin-bottom: 20px; }
 input { width: 100%; padding: 15px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
+.login-success-overlay { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: rgba(13,49,87,.28); animation: success-fade-in .25s ease-out; }
+.login-success-card { width: min(360px, calc(100% - 40px)); padding: 34px 28px 30px; border-top: 5px solid var(--green); border-radius: 6px; background: var(--cream); color: var(--navy); text-align: center; box-shadow: 0 20px 45px rgba(13,49,87,.25); animation: success-card-in .35s ease-out; }
+.login-success-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 18px; border-radius: 50%; background: var(--green); color: var(--navy); font-size: 28px; font-weight: 800; animation: success-pop .45s .1s both; }
+.login-success-card strong, .login-success-card small { display: block; }
+.login-success-card strong { font-family: Georgia, "Times New Roman", serif; font-size: 25px; font-weight: 400; }
+.login-success-card small { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.login-success-loader { display: block; width: 42px; height: 3px; margin: 22px auto 0; overflow: hidden; background: var(--line); }
+.login-success-loader::after { content: ""; display: block; width: 100%; height: 100%; background: var(--teal); transform-origin: left; animation: success-progress var(--login-redirect-delay, 1800ms) linear forwards; }
+@keyframes success-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes success-card-in { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes success-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes success-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 50px; }
 .grid-container, #grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; justify-items: center; align-items: center; }
 .item { padding: 2em; background: var(--main-color-1); text-align: center; border-radius: 5px; font-size: 1rem; }
@@ -89,6 +102,15 @@ input { width: 100%; padding: 15px; margin: 8px 0; border-radius: 5px; border: 1
 .modal-container { background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; opacity: 0; pointer-events: none; overflow: auto; }
 .modal-container.show { opacity: 1; pointer-events: auto; }
 .modal { background: white; border-radius: 5px; padding: 30px 50px; width: 600px; max-width: 100%; }
+.otp-form { width: 100%; max-width: 520px; margin: 0; padding: 0; border-radius: 0; box-shadow: none; }
+.otp-form h2 { margin-bottom: 12px; font-size: 32px; }
+.otp-instructions { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.inputs { display: flex; flex-wrap: nowrap; justify-content: center; gap: 10px; margin: 24px 0 18px; }
+.inputs .input { width: 48px; height: 56px; margin: 0; padding: 8px; border: 2px solid var(--line); border-radius: 4px; color: var(--ink); font-size: 24px; font-weight: 700; text-align: center; }
+.inputs .input:focus { outline: 2px solid var(--teal); border-color: var(--teal); }
+.otp-form > button { width: 100%; margin-top: 4px; padding: 12px; background: var(--green); color: var(--navy); font-weight: 700; cursor: pointer; }
+.otp-form > button:disabled { cursor: wait; opacity: .65; }
+.otp-form > p { margin-top: 16px; font-size: 12px; }
 .table-container { border-collapse: collapse; width: 100%; display: grid; place-items: center; margin: 50px auto; }
 tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 
@@ -104,4 +126,7 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .benefit-card h3 { margin-top: 18px; }
   .callout { display: block; margin: 0 20px 55px; padding: 35px 26px; }
   .callout .button { margin-top: 25px; }
+  .inputs { gap: 6px; }
+  .inputs .input { width: 42px; height: 50px; }
+  .nav-user { width: 100%; }
 }

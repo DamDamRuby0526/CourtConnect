@@ -63,18 +63,16 @@ document
     }
   });
 
-// OTP one by one digit submission (small boces)
+// Move through the six OTP fields as the user types.
 
 const inputs = document.getElementById("inputs");
+const otpInputs = Array.from(inputs.querySelectorAll('input[name="otp"]'));
 
 inputs.addEventListener("input", function (e) {
   const target = e.target;
-  const val = target.value;
+  const val = target.value.replace(/\D/g, "").slice(-1);
 
-  if (isNaN(val)) {
-    target.value = "";
-    return;
-  }
+  target.value = val;
 
   if (val != "") {
     const next = target.nextElementSibling;
@@ -105,10 +103,11 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
 
   const otpForm = e.target;
   const userId = otpForm.dataset.userId;
-  const otp = document.getElementById("otpInput").value.trim();
+  const otp = otpInputs.map((input) => input.value).join("");
+  const btn = document.getElementById("submitOtpButton");
 
-  if (!otp) {
-    alert("Please enter the code sent to your email.");
+  if (otp.length !== 6) {
+    alert("Please enter all 6 digits of the code sent to your email.");
     return;
   }
 
@@ -135,8 +134,8 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
       window.location.href = "signin.php";
     }
   } catch (error) {
-    // enable resubmission?
     alert("Network error. Please try again.");
-    resetButton();
+    btn.disabled = false;
+    btn.innerText = "Submit Code";
   }
 });

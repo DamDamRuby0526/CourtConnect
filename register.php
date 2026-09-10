@@ -1,3 +1,8 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+?>
 <!doctype html>
 <html lang="en">
 
@@ -44,22 +49,22 @@
 
   <div class="modal-container" id="modal_container">
     <div class="modal">
-      <div id="otpForm">
+      <form id="otpForm" class="otp-form">
+        <h2>Verify your account</h2>
+        <p class="otp-instructions">The 6-digit code has been sent to your email.</p>
+        <p class="otp-instructions">This code will expire in 5 minutes.</p>
         <div id="inputs" class="inputs">
-          <h2>Verify your account</h2>
-          <h3>The 6-digit code has been sent to your email.</h3>
-          <h3>This code will expire in 5 minutes.</h3>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
-          <input class="input" type="text" name="otp" inputmode="numeric" pattern="\d{6}" maxlength="1" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 1" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 2" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 3" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 4" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 5" required>
+          <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 6" required>
         </div>
 
-        <button type="submit" class="btn">Submit Code</button>
+        <button type="submit" id="submitOtpButton" class="btn">Submit Code</button>
         <p>Didn't receive the code? <a href="#" id="resendOtpLink">Request to resend OTP code</a></p>
-      </div>
+      </form>
     </div>
   </div>
 
