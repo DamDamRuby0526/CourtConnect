@@ -1,0 +1,351 @@
+/* global variables - colors etc */
+:root {
+  --main-color-1: #7bb63e;
+  --main-color-2: #092c53;
+}
+
+* {
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+   min-height: 100vh;
+}
+
+button {
+  padding: 5px;
+  background: var(--main-color-1);
+  color: white;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: var(--main-color-2);
+}
+
+
+/* hero section */
+.hero{
+    text-align: center;
+    padding: 300px 20px;
+    background-color: var(--main-color-2);
+    color: white;
+}
+ 
+.hero h1{
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+ 
+.hero p{
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+}
+ 
+.hero-btn{
+    display: inline-block;
+    padding: 15px 35px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+
+/* login options section */
+.login-options{
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.login-options h2{
+    margin-bottom: 10px;
+}
+
+.login-options p{
+    color: #555;
+    margin-bottom: 25px;
+}
+
+.login-options-buttons{
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.login-option-btn{
+    border: none;
+    padding: 15px 30px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-option-admin{
+    background-color: var(--main-color-2);
+}
+
+/* facilities preview section */
+.facilities-preview{
+    text-align: center;
+    padding: 60px 20px;
+    background-color: #f4f6f5;
+}
+
+.facilities-preview h2{
+    margin-bottom: 10px;
+}
+
+.facilities-preview p{
+    color: #555;
+    margin-bottom: 30px;
+}
+
+.facilities-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.facility-card-placeholder{
+    background-color: white;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px 20px;
+    color: #888;
+}
+
+/* My bookings */
+.not-logged-in{
+    text-align: center;
+    padding: 40px 20px;
+    color: #555;
+    height:auto;
+}
+
+.not-logged-in a{
+    color: var(--main-color-2);
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+/* top navigation bar */
+header {
+  z-index: 999;
+}
+
+nav ul {
+  list-style-type: none;
+  text-decoration: none;
+  overflow: hidden;
+  background-color: var(--main-color-1);
+}
+
+nav p {
+  float: left;
+}
+
+nav li {
+  float: right;
+}
+
+nav a {
+  color: var(--main-color-2);
+  text-decoration: none;
+  padding: 15px;
+  display: block;
+  text-align: center;
+}
+
+nav a:hover {
+  color: white;
+}
+
+/* container grid format for court/facility */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 50px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 1em;
+
+  justify-items: center;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+}
+
+#grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 1em;
+
+  justify-items: center;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+}
+
+
+.item {
+  height: auto;
+  width: auto;
+  padding: 2em;
+  background-color: var(--main-color-1);
+  text-align: center;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* modal containers (popup form dialog windows) */
+.modal-container {
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  max-height: 100%;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  overflow: auto;
+}
+
+.modal-container.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 5px;
+  padding: 30px 50px;
+  width: 600px;
+  max-width: 100%;
+}
+
+/* form style */
+form {
+  background: #fff;
+  width: 400px;
+  padding: 75px;
+  margin: 50px auto;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+form button {
+  margin-top: 15px;
+  width: 75px;
+  padding: 5px;
+  border-radius: 5px;
+  border: none;
+}
+
+form label {
+  margin-top: 15px;
+}
+
+form h2 {
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  margin: 8px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* otp input form */
+.otpForm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.input {
+  width: 40px;
+  border: none;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+  margin: 0 10px;
+  text-align: center;
+  font-size: 36px;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.input:focus {
+  border-bottom: 3px solid var(--main-color-1);
+  outline: none;
+}
+
+.input:nth-of-type(1) {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+/* table */
+.table-container {
+  border-collapse: collapse;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  margin: 50px auto;
+}
+
+tr,
+td,
+th {
+  border: 2px solid var(--main-color-2);
+  padding: 10px;
+}
+
+/* footer */
+footer{ 
+    margin: 0 auto;
+    height: auto;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--main-color-1);
+}
+
+footer li{
+    float:right;   
+    list-style-type: none;
+}
+
+footer a{
+    color: var(--main-color-2);
+    padding:20px;
+    display:block;
+    text-align:center;
+}
+
+footer a:hover {
+    color: white;
+}
