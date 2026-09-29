@@ -14,7 +14,10 @@
     <?php include '../includes/navigation/admin_header.php'; ?>
 
     <!-- table display -->
+     
     <div class="table-container">
+        <h2>Users</h2>
+        <p>(CourtConnect view)</p>
         <table>
             <thead>
                 <tr>

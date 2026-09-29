@@ -32,6 +32,20 @@ if (!$userId || empty($otp)) {
     exit();
 }
 
+$adminStatusStmt = $conn->prepare("SELECT status FROM admins WHERE user_id = ? LIMIT 1");
+$adminStatusStmt->bind_param("i", $userId);
+$adminStatusStmt->execute();
+$adminStatus = $adminStatusStmt->get_result()->fetch_assoc();
+$adminStatusStmt->close();
+
+if ($adminStatus && $adminStatus["status"] !== "Active") {
+    echo json_encode([
+        "success" => false,
+        "message" => "Your facility application must be approved before email verification."
+    ]);
+    exit();
+}
+
 if (!preg_match('/^\d{6}$/', $otp)) {
     echo json_encode([
         "success" => false,
@@ -74,17 +88,17 @@ if ($result->num_rows === 0) {
 $otpRecord = $result->fetch_assoc();
 $stmt->close();
 
-// //Checks expiration
-// $currentTime = time();
-// $expiryTime = strtotime($otpRecord["expires_at"]);
+//Checks expiration
+$currentTime = time();
+$expiryTime = strtotime($otpRecord["expires_at"]);
 
-// if ($expiryTime === false || $currentTime > $expiryTime) {
-//     echo json_encode([
-//         "success" => false,
-//         "message" => "OTP has expired. Please request a new code."
-//     ]);
-//     exit();
-// }
+if ($expiryTime === false || $currentTime > $expiryTime) {
+    echo json_encode([
+        "success" => false,
+        "message" => "OTP has expired. Please request a new code."
+    ]);
+    exit();
+}
 
 //Verify the OTP
 if (!hash_equals((string) $otpRecord["otp_code"], $otp)) {

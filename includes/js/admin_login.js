@@ -8,7 +8,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     password: form.get("password"),
   };
 
-  const response = await fetch("includes/backend-api/login.php", {
+  const response = await fetch("./includes/backend-api/adminlogin.php", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -24,28 +24,11 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
     if (result.requires_verification) {
-      if (result.is_facility_owner) {
-        window.location.href = "adminregister.php?resumeVerification=1";
-        return;
-      }
-      alert("Your account is not yet verified. Please verify your email.");
-      window.location.href = `verify.html?user_id=${result.user_id}`;
+      window.location.href = "adminregister.php?resumeVerification=1";
       return;
     }
-
     alert(result.message);
     return;
-  }
-
-  let destination = "index.php";
-  let destinationLabel = "your CourtConnect home.";
-
-  if (result.user.role_name === "courtconnect") {
-    destination = "Admin dashboard/reviewregistrations.php";
-    destinationLabel = "the developer review dashboard.";
-  } else if (result.user.admin_id || result.user.role_name === "facility_owner") {
-    destination = "Admin dashboard/admindex.php";
-    destinationLabel = "your facility dashboard.";
   }
 
   const notification = document.createElement("div");
@@ -57,13 +40,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     <div class="login-success-card">
       <span class="login-success-icon" aria-hidden="true">&#10003;</span>
       <strong>Welcome back, ${result.user.first_name}!</strong>
-      <small>Taking you to ${destinationLabel}</small>
+      <small>Taking you to your admin dashboard.</small>
       <span class="login-success-loader" aria-hidden="true"></span>
     </div>
   `;
   document.body.appendChild(notification);
 
   window.setTimeout(() => {
-    window.location.href = destination;
+    window.location.href = "Admin dashboard/admindex.php"; 
   }, loginRedirectDelay);
 });

@@ -43,9 +43,10 @@ if ($userId === false || $userId <= 0) {
 }
 
 // Get the user's email address 
-$sql = "SELECT email, first_name, is_verified
-        FROM users
-        WHERE user_id = ?";
+$sql = "SELECT u.email, u.first_name, u.is_verified,
+           (SELECT a.status FROM admins a WHERE a.user_id = u.user_id LIMIT 1) AS admin_status
+    FROM users u
+    WHERE u.user_id = ?";
 
 $stmt = $conn->prepare($sql);
 
@@ -81,6 +82,14 @@ if ((int) $user["is_verified"] === 1) {
     echo json_encode([
         "success" => false,
         "message" => "Account is already verified."
+    ]);
+    exit();
+}
+
+if ($user["admin_status"] !== null && $user["admin_status"] !== "Active") {
+    echo json_encode([
+        "success" => false,
+        "message" => "Your facility application must be approved before email verification."
     ]);
     exit();
 }

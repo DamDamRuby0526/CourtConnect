@@ -7,6 +7,8 @@ const form = document.getElementById("scheduleForm");
 // url search to get the court id
 const params = new URLSearchParams(window.location.search);
 const courtId = params.get("court_id");
+// change court id 
+document.getElementById("court-id").textContent = "Court id:" + courtId ?? N/A;
 
 async function loadSchedules() {
   if (!courtId) return;
@@ -43,7 +45,7 @@ async function loadSchedules() {
       edit.className = "edit-btn";
       edit.dataset.id = sched.schedule_id;
 
-      item.append(data, time, status, edit);
+      item.append(date, time, status, edit);
       grid.append(item);
     }
   } catch (err) {

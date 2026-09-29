@@ -86,12 +86,15 @@ document.addEventListener("click", async (e) => {
     );
     const result = await res.json();
 
-    if (!result.success) {
-      alert(result.message);
-      return;
-    }
 
-    const f = result.facility;
+  if (!result.success) {
+    alert(result.message);
+    return;
+  }
+
+  const f = result.facilities[0];
+
+
 
     document.getElementById("facility_name").value = f.facility_name;
     document.getElementById("address").value = f.address;

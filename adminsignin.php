@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="includes/css/styles.css" />
   <title>CourtConnect Bataan</title>
-  <script src="includes/js/login.js?v=20260929-3" defer></script>
+  <script src="includes/js/admin_login.js?v=20260929-2" defer></script>
 </head>
 
 <body>
@@ -22,7 +22,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <div>
 
       <form id="loginForm">
-        <h2>Sign In</h2>
+        <h2>Sign In As Facility</h2>
 
         <label for="email">Email</label><br>
         <input type="email" name="email" required autocomplete="email"><br>
@@ -32,7 +32,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
         <button type="submit" class="btn">Login</button>
 
-        <p>Don't have an account? <a href="register.php">Create one</a></p>
+        <p>Don't have an account? <a href="adminregister.php">Register as Admin</a></p>
       </form>
     </div>
 

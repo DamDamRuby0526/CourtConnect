@@ -7,9 +7,7 @@ $uploadDir = __DIR__ . '/../../uploads/facility';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// ============================================================
-// GET — fetch facility details to populate the edit form
-// ============================================================
+// get
 if ($method === 'GET') {
 
     $facilityId = $_GET['facility_id'] ?? null;
@@ -48,9 +46,7 @@ if ($method === 'GET') {
     exit();
 }
 
-// ============================================================
-// POST — perform the actual update
-// ============================================================
+//post update
 if ($method === 'POST') {
 
     $facilityId   = $_POST['facility_id'] ?? null;

@@ -14,7 +14,15 @@ if (!$facilityId || !is_numeric($facilityId)) {
 }
 
 // Get the facility name
-$facilitySql = "SELECT facility_name FROM facilities WHERE facility_id = ?";
+$facilitySql = "SELECT f.facility_name
+                                FROM facilities f
+                                WHERE f.facility_id = ?
+                                    AND NOT EXISTS (
+                                            SELECT 1
+                                            FROM admins a
+                                            WHERE a.facility_id = f.facility_id
+                                                AND a.status <> 'Active'
+                                    )";
 $facilityStmt = $conn->prepare($facilitySql);
 $facilityStmt->bind_param("i", $facilityId);
 $facilityStmt->execute();

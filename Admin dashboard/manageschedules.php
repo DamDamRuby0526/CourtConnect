@@ -18,7 +18,8 @@
     <h1>Manage Court Schedule</h1>
     <button type="button" id="add-btn"> Add New Schedule </button>
 
-    <h2>Court ID:</h2>
+  
+    <span id="court-id">Court ID:</span>
 
     <div class="grid-container" id="grid-container">   
     </div>

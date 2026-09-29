@@ -123,20 +123,22 @@ $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
 // Insert into users
 $sql = "INSERT INTO users
-(first_name, last_name, email, phone_number, password)
-VALUES (?,?,?,?,?)";
+(first_name, last_name, email, phone_number, password, role_id)
+VALUES (?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
+$roleId = 1; // user role 
+
 $stmt->bind_param(
-    "sssss",
+    "sssssi",
     $firstName,
     $lastName,
     $email,
     $phoneNumber,
-    $hashedPassword
+    $hashedPassword,
+    $roleId
 );
-
 
 // Execute it 
 if ($stmt->execute()) {
