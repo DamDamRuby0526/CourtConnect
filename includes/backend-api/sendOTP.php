@@ -153,6 +153,7 @@ $rateStmt->close();
 
 //Generate a six-digit OTP that expires after five minutes.
 $otp = (string) random_int(100000, 999999);
+date_default_timezone_set("Asia/Manila");
 $expiresAt = date("Y-m-d H:i:s", time() + 300);
 
 

@@ -35,7 +35,7 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $courtId);
 $stmt->execute();
 
-$result = mysqli_stmt_get_result($stmt);
+$result = $stmt->get_result();
 
 $schedules = [];
 
