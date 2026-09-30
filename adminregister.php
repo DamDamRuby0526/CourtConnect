@@ -185,9 +185,9 @@ if (session_status() === PHP_SESSION_NONE) {
         </div>
 
 
-      
+
         <!-- STEP 2: VERIFICATION -->
-      
+
 
         <div id="verificationStep" style="display: none;">
 

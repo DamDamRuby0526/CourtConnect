@@ -27,22 +27,41 @@ async function loadSchedules() {
 
     grid.replaceChildren();
 
+    if (data.schedules.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "owner-empty-state";
+      empty.textContent = "No reservation times yet. Add a time slot to make this court available.";
+      grid.append(empty);
+      return;
+    }
+
     for (const sched of data.schedules) {
       const item = document.createElement("div");
-      item.className = "item";
+      item.className = "owner-schedule-row";
 
       const date = document.createElement("h3");
-      date.textContent = sched.court_date;
+      date.textContent = new Date(`${sched.court_date}T00:00:00`).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
 
       const time = document.createElement("p");
-      time.textContent = sched.court_time;
+      time.className = "owner-schedule-time";
+      time.textContent = new Date(`1970-01-01T${sched.court_time}`).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
 
       const status = document.createElement("p");
+      status.className = `owner-court-status ${sched.schedule_status === "Available" ? "is-available" : "is-booked"}`;
       status.textContent = sched.schedule_status;
 
       const edit = document.createElement("button");
-      edit.textContent = "Edit";
-      edit.className = "edit-btn";
+      edit.type = "button";
+      edit.textContent = "Edit time";
+      edit.className = "edit-btn owner-secondary-button";
       edit.dataset.id = sched.schedule_id;
 
       item.append(date, time, status, edit);
@@ -57,14 +76,17 @@ async function loadSchedules() {
 document.getElementById("add-btn").addEventListener("click", () => {
   form.reset();
   form.dataset.scheduleId = "";
+  document.getElementById("scheduleDialogTitle").textContent = "Add reservation time";
   modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
 });
 
 // EDIT
 document.addEventListener("click", async (e) => {
-  if (!e.target.classList.contains("edit-btn")) return;
+  const editButton = e.target.closest(".edit-btn");
+  if (!editButton) return;
 
-  const id = e.target.dataset.id;
+  const id = editButton.dataset.id;
 
   const res = await fetch(
     `../includes/admin-php/get_schedules.php?court_id=${courtId}`,
@@ -82,13 +104,16 @@ document.addEventListener("click", async (e) => {
 
   form.dataset.scheduleId = id;
 
+  document.getElementById("scheduleDialogTitle").textContent = "Edit reservation time";
   modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
 });
 
 // save (add or edit)
 document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("save-btn")) {
+  if (e.target.closest("#scheduleForm .save-btn")) {
     const form = document.getElementById("scheduleForm");
+    if (!form.reportValidity()) return;
     const scheduleId = form.dataset.scheduleId;
     
     const endpoint = scheduleId
@@ -113,19 +138,24 @@ document.addEventListener("click", async (e) => {
 
     const result = await res.json();
 
-    if (!result.success) {
+    if (!res.ok || !result.success) {
       alert(result.message);
       return;
     }
 
     modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
     loadSchedules();
   }
 });
 
 // cancel
 document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("cancel-btn")) {
-    modal_container.classList.remove("show");
+  if (e.target.closest(".cancel-btn")) {
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+  } else if (e.target === modal) {
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
   }
 });

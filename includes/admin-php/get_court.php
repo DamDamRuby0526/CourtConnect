@@ -1,14 +1,15 @@
 <?php
 header("Content-Type: application/json");
-// require_once __DIR__ . "/admin_auth_guard.php";
-require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/facility_owner_guard.php";
 
-$facilityId = $_GET['facility_id'] ?? null;
+$facilityId = (int) $_SESSION["facility_id"];
+$requestedFacilityId = filter_var($_GET["facility_id"] ?? $facilityId, FILTER_VALIDATE_INT);
 
-if (!$facilityId || !is_numeric($facilityId)) {
+if (!$requestedFacilityId || $requestedFacilityId !== $facilityId) {
+    http_response_code(403);
     echo json_encode([
         "success" => false,
-        "message" => "Invalid or missing facility_id."
+        "message" => "You can only manage courts at your own facility."
     ]);
     exit();
 }
@@ -34,7 +35,7 @@ $facility = $facilityResult->fetch_assoc();
 $facilityStmt->close();
 
 // Get the courts belonging to that facility
-$sql = "SELECT court_id, court_no, court_rate, description, slot_duration, court_status
+$sql = "SELECT court_id, court_no, court_rate, description, court_img, slot_duration, court_status
         FROM court_details
         WHERE facility_id = ?";
 
@@ -49,10 +50,11 @@ while ($row = $result->fetch_assoc()) {
     $courts[] = $row;
 }
 
+$stmt->close();
+$conn->close();
+
 echo json_encode([
     "success" => true,
     "facility_name" => $facility["facility_name"],
     "courts" => $courts
 ]);
-
-$conn->close();

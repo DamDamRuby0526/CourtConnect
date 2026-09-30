@@ -1,138 +1,168 @@
-// display courts INSIDE a facility
-document.addEventListener("DOMContentLoaded", loadCourts);
-
-// search for facility_id in URL
 function getFacilityId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("facility_id");
+  return document.getElementById("ownerFacility")?.dataset.facilityId;
 }
 
 async function loadCourts() {
   const grid = document.getElementById("grid-container");
-  const facilityId = getFacilityId();
-
-  if (!facilityId) {
-    alert("No facility selected");
-    return;
-  }
 
   try {
-    const response = await fetch(
-      `../includes/admin-php/get_court.php?facility_id=${facilityId}`,
-    );
+    const response = await fetch("../includes/admin-php/get_court.php");
     const data = await response.json();
 
     if (!data.success) {
-      alert("Failed to load courts.");
+      grid.textContent = data.message || "Failed to load courts.";
       return;
     }
 
-    if (data.facility_name) {
-      document.getElementById("facility-name").textContent = data.facility_name;
-    }
-
     grid.replaceChildren();
+    document.getElementById("courtCount").textContent = `${data.courts.length} ${data.courts.length === 1 ? "court" : "courts"}`;
 
     if (data.courts.length === 0) {
       const empty = document.createElement("p");
-      empty.textContent = "No courts available for this facility yet.";
+      empty.className = "owner-empty-state";
+      empty.textContent = "No courts yet. Add your first court to start accepting reservations.";
       grid.append(empty);
       return;
     }
 
     for (const court of data.courts) {
-      const item = document.createElement("div");
-      item.className = "item";
+      const article = document.createElement("article");
+      article.className = "owner-court-row";
 
-      const name = document.createElement("p");
-      name.textContent = court.court_no;
+      const image = document.createElement("img");
+      image.className = "owner-court-image";
+      image.src = court.court_img ? `../uploads/court/${encodeURIComponent(court.court_img)}` : "../uploads/badminton-pickleball-court.svg";
+      image.alt = court.court_img ? `Court ${court.court_no}` : "CourtConnect court placeholder";
 
-      const rate = document.createElement("p");
-      rate.textContent = `Rate: ₱${court.court_rate} / hour`;
+      const details = document.createElement("div");
+      details.className = "owner-court-details";
+      const name = document.createElement("h3");
+      name.textContent = `Court ${court.court_no}`;
+      const description = document.createElement("p");
+      description.textContent = court.description;
+      const meta = document.createElement("div");
+      meta.className = "owner-court-meta";
+      meta.textContent = `₱${court.court_rate} / hour  ·  ${court.slot_duration} min slots`;
+      details.append(name, description, meta);
 
-      const desc = document.createElement("p");
-      desc.textContent = `Description: ${court.description}`;
+      const status = document.createElement("span");
+      status.className = `owner-court-status ${court.court_status === "Available" ? "is-available" : "is-maintenance"}`;
+      status.textContent = court.court_status;
 
-      const editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "edit-btn";
-      editBtn.textContent = "Manage Court";
-      editBtn.dataset.courtId = court.court_id;
+      const actions = document.createElement("div");
+      actions.className = "owner-court-actions";
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "edit-btn owner-secondary-button";
+      editButton.textContent = "Edit details";
+      editButton.dataset.courtId = court.court_id;
+      const scheduleButton = document.createElement("a");
+      scheduleButton.className = "owner-schedule-link";
+      scheduleButton.href = `manageschedules.php?court_id=${encodeURIComponent(court.court_id)}`;
+      scheduleButton.textContent = "Court schedule";
+      actions.append(editButton, scheduleButton);
 
-      const openBtn = document.createElement("button");
-      openBtn.type = "button";
-      openBtn.className = "schedule-btn";
-      openBtn.textContent = "Manage Schedule";
-      openBtn.dataset.courtId = court.court_id;
-
-      item.append(name, rate, desc, editBtn, openBtn);
-      grid.append(item);
+      article.append(image, details, status, actions);
+      grid.append(article);
     }
   } catch (error) {
     console.error("Error loading courts:", error);
   }
 }
-
-// open modal for ADD
-document.getElementById("add-btn").addEventListener("click", () => {
   const courtForm = document.getElementById("courtForm");
   const modalContainer = document.getElementById("modal_container");
-  const facilityId = getFacilityId();
-  courtForm.reset();
-  courtForm.dataset.facilityId = facilityId;
-  modal_container.classList.add("show");
-});
+  const courtImagePreview = document.getElementById("court_img_preview");
 
-// save button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("save-btn")) {
-    const form = document.getElementById("courtForm");
-    const facilityId = form.dataset.facilityId;
+  function closeCourtModal() {
+    modalContainer.classList.remove("show");
+    modalContainer.setAttribute("aria-hidden", "true");
+    courtForm.reset();
+    courtImagePreview.hidden = true;
+    courtImagePreview.removeAttribute("src");
+    document.getElementById("courtFormStatus").textContent = "";
+    document.getElementById("courtFormStatus").classList.remove("is-error");
+  }
 
-    const payload = {
-      facility_id: facilityId,
-      court_no: document.getElementById("court_no").value,
-      court_rate: document.getElementById("court_rate").value,
-      description: document.getElementById("description").value,
-      slot_duration: document.getElementById("slot_duration").value,
-      court_status: document.getElementById("court_status").value,
-    };
+  function openCourtModal(court = null) {
+    courtForm.reset();
+    courtForm.dataset.courtId = court?.court_id || "";
+    document.getElementById("courtDialogTitle").textContent = court ? `Edit Court ${court.court_no}` : "Add a court";
+    document.getElementById("court_no").value = court?.court_no || "";
+    document.getElementById("court_rate").value = court?.court_rate || "";
+    document.getElementById("description").value = court?.description || "";
+    document.getElementById("slot_duration").value = court?.slot_duration || "60";
+    document.getElementById("court_status").value = court?.court_status || "Available";
+    courtImagePreview.hidden = !court?.court_img;
+    if (court?.court_img) courtImagePreview.src = `../uploads/court/${encodeURIComponent(court.court_img)}`;
+    document.getElementById("courtFormStatus").textContent = "";
+    document.getElementById("courtFormStatus").classList.remove("is-error");
+    modalContainer.classList.add("show");
+    modalContainer.setAttribute("aria-hidden", "false");
+  }
 
-    const res = await fetch("../includes/admin-php/add_courts.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+  document.addEventListener("DOMContentLoaded", () => {
+    loadCourts();
+    document.getElementById("add-btn").addEventListener("click", () => openCourtModal());
+
+    document.getElementById("facilityHoursForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const status = document.getElementById("hoursStatus");
+      const response = await fetch("../includes/admin-php/update_facility_hours.php", {
+        method: "POST",
+        body: new FormData(event.currentTarget),
+      });
+      const result = await response.json();
+      status.textContent = result.message;
+      status.classList.toggle("is-error", !result.success);
     });
 
-    const result = await res.json();
+    document.getElementById("court_img").addEventListener("change", (event) => {
+      const file = event.currentTarget.files[0];
+      if (!file) return;
+      courtImagePreview.src = URL.createObjectURL(file);
+      courtImagePreview.hidden = false;
+    });
 
-    if (!result.success) {
-      alert(result.message);
-      return;
-    }
+    document.addEventListener("click", async (event) => {
+      const editButton = event.target.closest(".edit-btn");
+      if (editButton) {
+        const response = await fetch("../includes/admin-php/get_court.php");
+        const result = await response.json();
+        const court = result.courts?.find((item) => String(item.court_id) === editButton.dataset.courtId);
+        if (!result.success || !court) {
+          window.alert(result.message || "Could not load this court.");
+          return;
+        }
+        openCourtModal(court);
+        return;
+      }
 
-    const modalContainer = document.getElementById("modal_container");
-    modalContainer.classList.remove("show");
+      if (event.target.closest(".cancel-btn")) closeCourtModal();
+      if (event.target === modalContainer) closeCourtModal();
 
-    location.reload();
-  }
-});
+      const saveButton = event.target.closest(".save-btn");
+      if (!saveButton) return;
+      if (!courtForm.reportValidity()) return;
 
-// schedule page
-document.addEventListener("click", (e) => {
-  if (!e.target.classList.contains("schedule-btn")) return;
+      saveButton.disabled = true;
+      const status = document.getElementById("courtFormStatus");
+      status.textContent = "Saving court details...";
+      const formData = new FormData(courtForm);
+      const courtId = courtForm.dataset.courtId;
+      if (courtId) formData.append("court_id", courtId);
+      const endpoint = courtId ? "update_court.php" : "add_courts.php";
 
-  const courtId = e.target.dataset.courtId;
-
-  window.location.href = `manageschedules.php?court_id=${courtId}`;
-});
-
-
-// cancel
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("cancel-btn")) {
-    modal_container.classList.remove("show");
-  }
-});
+      try {
+        const response = await fetch(`../includes/admin-php/${endpoint}`, { method: "POST", body: formData });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || "Could not save court details.");
+        closeCourtModal();
+        await loadCourts();
+      } catch (error) {
+        status.textContent = error.message;
+        status.classList.add("is-error");
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+  });

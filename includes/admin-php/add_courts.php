@@ -1,71 +1,34 @@
 <?php
-// ayusin nalang format to match others
 header("Content-Type: application/json");
+require_once __DIR__ . "/facility_owner_guard.php";
+require_once __DIR__ . "/upload_helper.php";
 
-// require_once __DIR__ . "/admin_auth_guard.php";
-require_once __DIR__ . "/../backend-api/config.php";
+$facilityId = (int) $_SESSION["facility_id"];
+$courtNo = filter_var($_POST["court_no"] ?? null, FILTER_VALIDATE_INT);
+$courtRate = filter_var($_POST["court_rate"] ?? null, FILTER_VALIDATE_INT);
+$description = trim($_POST["description"] ?? "");
+$slotDuration = filter_var($_POST["slot_duration"] ?? null, FILTER_VALIDATE_INT);
+$courtStatus = trim($_POST["court_status"] ?? "");
 
-// json
-$data = json_decode(file_get_contents("php://input"), true);
-
-if (empty($data)) {
-
-    echo json_encode([
-        "success" => false,
-        "message" => "No data received."
-    ]);
-
+if (!$courtNo || !$courtRate || !$slotDuration || $description === "" || !in_array($courtStatus, ["Available", "Maintenance"], true)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Enter a court number, positive rate and duration, description, and valid status."]);
     exit();
 }
 
-$facilityId   = trim($data["facility_id"] ?? "");
-$courtNo      = trim($data["court_no"] ?? "");
-$courtRate    = trim($data["court_rate"] ?? "");
-$description  = trim($data["description"] ?? "");
-$slotDuration = trim($data["slot_duration"] ?? "");
-$courtStatus  = trim($data["court_status"] ?? "");
-
-if ($facilityId === "" || $courtNo === "" ||
-    $courtRate === "" || $description === "" ||
-    $slotDuration === "" || $courtStatus === "") 
-{
-    echo json_encode([
-        "success" => false,
-        "message" => "Please fill in the required fields."
-    ]);
-    return;
+$uploadDir = __DIR__ . "/../../uploads/court";
+try {
+    $courtImage = handleImageUpload("court_img", $uploadDir);
+} catch (RuntimeException $error) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => $error->getMessage()]);
+    exit();
 }
 
-if (!is_numeric($facilityId) || $facilityId <= 0) {
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Invalid facility ID."
-    ]);
-    return;
-}
-
-if (!is_numeric($courtRate) || $courtRate <= 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Rate must be a positive number."
-    ]);
-    return;
-}
-
-if (!is_numeric($slotDuration) || $slotDuration <= 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Slot duration must be a positive number."
-    ]);
-    return;
-}
-
-// insert facility id foregin key
-$sql = "INSERT INTO court_details (facility_id, court_no, court_rate, description, slot_duration, court_status)
-        VALUES (?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO court_details (facility_id, court_no, court_rate, description, court_img, slot_duration, court_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("isdsis", $facilityId, $courtNo, $courtRate, $description, $slotDuration, $courtStatus);
+$stmt->bind_param("iiissis", $facilityId, $courtNo, $courtRate, $description, $courtImage, $slotDuration, $courtStatus);
 
 if ($stmt->execute()) {
 
@@ -75,7 +38,10 @@ if ($stmt->execute()) {
         "court_id" => $stmt->insert_id
     ]);
 } else {
-
+    if ($courtImage && is_file($uploadDir . "/" . $courtImage)) {
+        unlink($uploadDir . "/" . $courtImage);
+    }
+    http_response_code(500);
     echo json_encode([
         "success" => false,
         "message" => "Failed to add court."
