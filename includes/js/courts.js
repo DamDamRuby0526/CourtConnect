@@ -43,6 +43,13 @@ async function loadCourts() {
       const item = document.createElement("div");
       item.className = "item";
 
+      const image = document.createElement("img");
+      image.className = "court-preview";
+      image.src = court.court_img
+        ? `uploads/court/${encodeURIComponent(court.court_img)}`
+        : "uploads/badminton-pickleball-court.svg";
+      image.alt = court.court_img ? `Court ${court.court_no}` : "CourtConnect court";
+
       const name = document.createElement("p");
       name.textContent = court.court_no;
 
@@ -58,7 +65,7 @@ async function loadCourts() {
       bookBtn.textContent = "Book now";
       bookBtn.dataset.courtId = court.court_id;
 
-      item.append(name, rate, desc, bookBtn);
+      item.append(image, name, rate, desc, bookBtn);
       grid.append(item);
     }
   } catch (error) {

@@ -1,9 +1,7 @@
 <?php
 
 header("Content-Type: application/json");
-
-// require_once __DIR__ . "/admin_auth_guard.php";
-require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/facility_owner_guard.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -15,13 +13,15 @@ if (!$data) {
     exit();
 }
 
-$scheduleId     = $data["schedule_id"] ?? null;
-$courtId        = $data["court_id"] ?? null;
+$scheduleId     = filter_var($data["schedule_id"] ?? null, FILTER_VALIDATE_INT);
+$courtId        = filter_var($data["court_id"] ?? null, FILTER_VALIDATE_INT);
 $courtDate      = $data["court_date"] ?? "";
 $courtTime      = $data["court_time"] ?? "";
 $scheduleStatus = $data["schedule_status"] ?? "";
+$facilityId     = (int) $_SESSION["facility_id"];
 
-if (!$scheduleId || !is_numeric($scheduleId)) {
+if (!$scheduleId) {
+    http_response_code(400);
     echo json_encode([
         "success" => false,
         "message" => "Invalid or missing schedule_id."
@@ -29,7 +29,8 @@ if (!$scheduleId || !is_numeric($scheduleId)) {
     exit();
 }
 
-if (!$courtId || !is_numeric($courtId)) {
+if (!$courtId) {
+    http_response_code(400);
     echo json_encode([
         "success" => false,
         "message" => "Invalid or missing court_id."
@@ -37,15 +38,39 @@ if (!$courtId || !is_numeric($courtId)) {
     exit();
 }
 
+    $parsedDate = DateTime::createFromFormat("!Y-m-d", $courtDate);
 if (
-    empty($courtDate) ||
-    empty($courtTime) ||
-    empty($scheduleStatus)
+        !$parsedDate || $parsedDate->format("Y-m-d") !== $courtDate ||
+    !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $courtTime) ||
+    !in_array($scheduleStatus, ["Available", "Booked"], true)
 ) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Please fill in the required fields."
-    ]);
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Enter a valid date, time, and schedule status."]);
+    exit();
+}
+
+$ownershipStmt = $conn->prepare(
+    "SELECT cs.schedule_id, cd.slot_duration, f.opening_time, f.closing_time
+     FROM court_schedule cs
+     INNER JOIN court_details cd ON cd.court_id = cs.court_id
+     INNER JOIN facilities f ON f.facility_id = cd.facility_id
+     WHERE cs.schedule_id = ? AND cs.court_id = ? AND cd.facility_id = ?"
+);
+$ownershipStmt->bind_param("iii", $scheduleId, $courtId, $facilityId);
+$ownershipStmt->execute();
+$ownedSchedule = $ownershipStmt->get_result()->fetch_assoc();
+$ownershipStmt->close();
+
+if (!$ownedSchedule) {
+    http_response_code(404);
+    echo json_encode(["success" => false, "message" => "Schedule not found in your facility."]);
+    exit();
+}
+
+$slotEnd = strtotime($courtTime) + ((int) $ownedSchedule["slot_duration"] * 60);
+if ($courtTime < substr($ownedSchedule["opening_time"], 0, 5) || $slotEnd > strtotime($ownedSchedule["closing_time"])) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "This time slot must fit within your facility's opening hours."]);
     exit();
 }
 
@@ -71,7 +96,7 @@ if ($stmt->execute()) {
         "message" => "Schedule updated successfully."
     ]);
 } else {
-
+    http_response_code(500);
     echo json_encode([
         "success" => false,
         "message" => "Update failed."

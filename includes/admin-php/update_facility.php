@@ -1,6 +1,6 @@
 <?php
 header("Content-Type: application/json");
-require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/facility_owner_guard.php";
 require 'upload_helper.php';
 
 $uploadDir = __DIR__ . '/../../uploads/facility';
@@ -57,8 +57,10 @@ if ($method === 'POST') {
     $openingTime  = trim($_POST['opening_time'] ?? "");
     $closingTime  = trim($_POST['closing_time'] ?? "");
 
-    if (!$facilityId || !is_numeric($facilityId)) {
-        echo json_encode(["success" => false, "message" => "Invalid or missing facility_id."]);
+    $ownerFacilityId = (int) $_SESSION["facility_id"];
+    if (!$facilityId || !is_numeric($facilityId) || (int) $facilityId !== $ownerFacilityId) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "message" => "You can only update your own facility."]);
         exit();
     }
 

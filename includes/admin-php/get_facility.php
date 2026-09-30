@@ -1,7 +1,5 @@
 <?php
-session_start();
-header("Content-Type: application/json");
-require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/facility_owner_guard.php";
 
 // Check if admin is logged in
 if (!isset($_SESSION["facility_id"])) {
@@ -12,7 +10,13 @@ if (!isset($_SESSION["facility_id"])) {
     exit();
 }
 
-$facilityId = $_SESSION["facility_id"];
+$facilityId = (int) $_SESSION["facility_id"];
+$requestedFacilityId = filter_var($_GET["facility_id"] ?? $facilityId, FILTER_VALIDATE_INT);
+if (!$requestedFacilityId || $requestedFacilityId !== $facilityId) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "message" => "You can only view your own facility."]);
+    exit();
+}
 
 // Get only the assigned facility
 $sql = "SELECT facility_id, facility_name, sport_type, address, municipality,

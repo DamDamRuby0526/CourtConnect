@@ -15,14 +15,14 @@ if (!$facilityId || !is_numeric($facilityId)) {
 
 // Get the facility name
 $facilitySql = "SELECT f.facility_name
-                                FROM facilities f
-                                WHERE f.facility_id = ?
-                                    AND NOT EXISTS (
-                                            SELECT 1
-                                            FROM admins a
-                                            WHERE a.facility_id = f.facility_id
-                                                AND a.status <> 'Active'
-                                    )";
+FROM facilities f
+WHERE f.facility_id = ?
+AND NOT EXISTS (
+SELECT 1
+FROM admins a
+WHERE a.facility_id = f.facility_id
+AND a.status <> 'Active'
+    )";
 $facilityStmt = $conn->prepare($facilitySql);
 $facilityStmt->bind_param("i", $facilityId);
 $facilityStmt->execute();
@@ -42,7 +42,7 @@ $facility = $facilityResult->fetch_assoc();
 $facilityStmt->close();
 
 // Get the courts belonging to that facility
-$sql = "SELECT court_id, court_no, court_rate, description
+$sql = "SELECT court_id, court_no, court_rate, description, court_img
         FROM court_details
         WHERE facility_id = ?";
 
