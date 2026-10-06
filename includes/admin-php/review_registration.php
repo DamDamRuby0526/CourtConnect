@@ -39,4 +39,3 @@ if ($updated !== 1) {
 
 echo json_encode(["success" => true, "message" => "Application marked as " . strtolower($status) . "."]);
 $conn->close();
-?>

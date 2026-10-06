@@ -1,6 +1,5 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-
   const form = new FormData(e.target);
 
   const data = {
@@ -43,7 +42,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   if (result.user.role_name === "courtconnect") {
     destination = "Admin dashboard/reviewregistrations.php";
     destinationLabel = "the developer review dashboard.";
-  } else if (result.user.admin_id || result.user.role_name === "facility_owner") {
+  } else if (
+    result.user.admin_id ||
+    result.user.role_name === "facility_owner"
+  ) {
     destination = "Admin dashboard/admindex.php";
     destinationLabel = "your facility dashboard.";
   }
@@ -51,7 +53,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const notification = document.createElement("div");
   const loginRedirectDelay = 2000;
   notification.className = "login-success-overlay";
-  notification.style.setProperty("--login-redirect-delay", `${loginRedirectDelay}ms`);
+  notification.style.setProperty(
+    "--login-redirect-delay",
+    `${loginRedirectDelay}ms`,
+  );
   notification.setAttribute("role", "status");
   notification.innerHTML = `
     <div class="login-success-card">

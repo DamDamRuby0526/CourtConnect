@@ -1,8 +1,4 @@
-document
-  .getElementById("registerForm")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
-
+document.getElementById("registerForm").addEventListener("submit", async (e) => {e.preventDefault();
     const form = new FormData(e.target);
 
     if (form.get("email") !== form.get("confirm_email")) {
@@ -64,7 +60,6 @@ document
   });
 
 // Move through the six OTP fields as the user types.
-
 const inputs = document.getElementById("inputs");
 const otpInputs = Array.from(inputs.querySelectorAll('input[name="otp"]'));
 
@@ -97,7 +92,6 @@ inputs.addEventListener("keyup", function (e) {
 });
 
 // form actions
-
 document.getElementById("otpForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 

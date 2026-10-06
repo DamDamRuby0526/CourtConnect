@@ -9,7 +9,7 @@ async function loadFacilities() {
 
     if (!data.success) {
       alert("Failed to load facilities.");
-      return;       
+      return;
     }
 
     grid.replaceChildren();
@@ -59,7 +59,6 @@ document.addEventListener("click", (e) => {
   window.location.href = `managecourts.php?facility_id=${facilityId}`;
 });
 
-
 function resetImagePreviews() {
   for (const key of ["facility_img", "qr_img"]) {
     document.getElementById(`${key}_preview`).style.display = "none";
@@ -86,16 +85,12 @@ document.addEventListener("click", async (e) => {
     );
     const result = await res.json();
 
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
 
-  if (!result.success) {
-    alert(result.message);
-    return;
-  }
-
-  const f = result.facilities[0];
-
-
-
+    const f = result.facilities[0];
     document.getElementById("facility_name").value = f.facility_name;
     document.getElementById("address").value = f.address;
     document.getElementById("municipality").value = f.municipality;

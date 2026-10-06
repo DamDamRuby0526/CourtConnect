@@ -27,4 +27,3 @@ echo json_encode([
     "rejection_reason" => $application["rejection_reason"]
 ]);
 $conn->close();
-?>

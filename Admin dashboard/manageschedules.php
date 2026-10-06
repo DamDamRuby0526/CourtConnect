@@ -63,34 +63,32 @@ $facilityName = $court["facility_name"];
             <span id="court-id" class="owner-court-count">Court <?= (int) $court["court_no"] ?></span>
             <div class="owner-schedule-grid" id="grid-container" aria-live="polite"></div>
 
-    <!-- MODAL -->
-    <div class="modal-container owner-modal" id="modal_container" aria-hidden="true">
-        <div class="modal owner-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle">
-            <form id="scheduleForm">
+            <!-- MODAL -->
+            <div class="modal-container owner-modal" id="modal_container" aria-hidden="true">
+                <div class="modal owner-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle">
+                    <form id="scheduleForm">
 
-                <h2 id="scheduleDialogTitle">Schedule details</h2>
+                        <h2 id="scheduleDialogTitle">Schedule details</h2>
 
-                <label for="court_date">Date</label>
-                <input type="date" id="court_date" name="court_date" required>
+                        <label for="court_date">Date</label>
+                        <input type="date" id="court_date" name="court_date" required>
 
-                <label for="court_time">Start time</label>
-                <input type="time" id="court_time" name="court_time" required>
+                        <label for="court_time">Start time</label>
+                        <input type="time" id="court_time" name="court_time" required>
 
-                <label for="schedule_status">Status</label>
-                <select id="schedule_status" name="schedule_status">
-                    <option value="Available">Available</option>
-                    <option value="Booked">Booked</option>
-                </select><br>
+                        <label for="schedule_status">Status</label>
+                        <select id="schedule_status" name="schedule_status">
+                            <option value="Available">Available</option>
+                            <option value="Booked">Booked</option>
+                        </select><br>
 
-                <button type="button" class="owner-primary-button save-btn">Save slot</button>
+                        <button type="button" class="owner-primary-button save-btn">Save slot</button>
+                        <button type="button" class="owner-secondary-button cancel-btn">Cancel</button>
 
-                <button type="button" class="owner-secondary-button cancel-btn">Cancel</button>
+                    </form>
 
-            </form>
-
-        </div>
-
-    </div>
+                </div>
+            </div>
 
         </main>
     </div>

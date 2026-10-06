@@ -94,7 +94,6 @@ try {
         "message" => "Booking confirmed.",
         "booking_id" => $bookingId
     ]);
-
 } catch (RuntimeException $e) {
     $conn->rollback();
     echo json_encode([
@@ -111,4 +110,3 @@ try {
 }
 
 $conn->close();
-?>

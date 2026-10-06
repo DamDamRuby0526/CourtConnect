@@ -16,15 +16,12 @@ if (session_status() === PHP_SESSION_NONE) {
 
 <body>
 
-
     <?php include 'includes/navigation/header.php'; ?>
 
-    <!-- fetch id -->
     <h1 id="facility-name">Facility Name</h1>
     <h2>Manage Courts</h2>
     <div class="grid-container" id="grid-container">
     </div>
-
 
     <!-- modal open user edit form -->
     <div class="modal-container" id="modal_container">

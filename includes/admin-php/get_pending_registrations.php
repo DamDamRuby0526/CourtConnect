@@ -19,4 +19,3 @@ while ($row = $result->fetch_assoc()) {
 
 echo json_encode(["success" => true, "registrations" => $registrations]);
 $conn->close();
-?>

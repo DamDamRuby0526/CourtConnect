@@ -20,9 +20,9 @@ if (!$courtId) {
     exit();
 }
 
-    $parsedDate = DateTime::createFromFormat("!Y-m-d", $courtDate);
+$parsedDate = DateTime::createFromFormat("!Y-m-d", $courtDate);
 if (
-        !$parsedDate || $parsedDate->format("Y-m-d") !== $courtDate ||
+    !$parsedDate || $parsedDate->format("Y-m-d") !== $courtDate ||
     !preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $courtTime) ||
     !in_array($scheduleStatus, ["Available", "Booked"], true)
 ) {
@@ -75,5 +75,3 @@ if ($stmt->execute()) {
 
 $stmt->close();
 $conn->close();
-
-?>

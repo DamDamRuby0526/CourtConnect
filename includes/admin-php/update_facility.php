@@ -64,8 +64,10 @@ if ($method === 'POST') {
         exit();
     }
 
-    if (empty($facilityName) || empty($sportType) || empty($address) ||
-        empty($municipality) || empty($openingTime) || empty($closingTime)) {
+    if (
+        empty($facilityName) || empty($sportType) || empty($address) ||
+        empty($municipality) || empty($openingTime) || empty($closingTime)
+    ) {
         echo json_encode(["success" => false, "message" => "Please fill in all required fields."]);
         exit();
     }
@@ -120,8 +122,15 @@ if ($method === 'POST') {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param(
         "ssssssssi",
-        $facilityName, $sportType, $address, $municipality,
-        $openingTime, $closingTime, $facilityImg, $qrImg, $facilityId
+        $facilityName,
+        $sportType,
+        $address,
+        $municipality,
+        $openingTime,
+        $closingTime,
+        $facilityImg,
+        $qrImg,
+        $facilityId
     );
 
     if ($stmt->execute()) {

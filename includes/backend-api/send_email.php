@@ -27,7 +27,7 @@ function sendOtpEmail(
         ],
         "subject" => "Your CourtConnect verification code",
         "htmlContent" =>
-            "<!DOCTYPE html>
+        "<!DOCTYPE html>
             <html>
             <body style=\"font-family:Arial,sans-serif;background:#f7f4ea;padding:24px;\">
                 <div style=\"max-width:520px;margin:auto;background:#ffffff;
@@ -56,7 +56,7 @@ function sendOtpEmail(
             </body>
             </html>",
         "textContent" =>
-            "Hello {$recipientName},\n\n" .
+        "Hello {$recipientName},\n\n" .
             "Your CourtConnect verification code is {$otp}.\n" .
             "It expires in 5 minutes. Do not share this code."
     ];
@@ -113,5 +113,3 @@ function sendOtpEmail(
         "message" => "Unable to send the verification email."
     ];
 }
-
-?>

@@ -45,8 +45,7 @@ if (session_status() === PHP_SESSION_NONE) {
     <p>Already have an account? <a href="signin.php"> Login</a></p>
   </form>
 
-
-
+  <!-- OTP Modal -->
   <div class="modal-container" id="modal_container">
     <div class="modal">
       <form id="otpForm" class="otp-form">
@@ -67,8 +66,6 @@ if (session_status() === PHP_SESSION_NONE) {
       </form>
     </div>
   </div>
-
-
 
 </body>
 

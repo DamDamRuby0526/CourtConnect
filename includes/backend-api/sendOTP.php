@@ -62,7 +62,6 @@ if (!$stmt) {
 
 $stmt->bind_param("i", $userId);
 $stmt->execute();
-
 $result = $stmt->get_result();
 
 if ($result->num_rows !== 1) {
@@ -106,7 +105,6 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // Generation of OTP CODE
-
 //Allow only one OTP request every 60 seconds.
 $rateStmt = $conn->prepare(
     "SELECT expires_at
@@ -142,7 +140,7 @@ if ($rateResult->num_rows === 1) {
         echo json_encode([
             "success" => false,
             "message" =>
-                "Please wait {$waitSeconds} seconds before requesting another code.",
+            "Please wait {$waitSeconds} seconds before requesting another code.",
             "retry_after" => $waitSeconds
         ]);
         exit();
@@ -232,7 +230,7 @@ $emailResult = sendOtpEmail(
 
 if (empty($emailResult["success"])) {
     // Remove the unusable OTP when the email cannot be sent.
-    
+
 
     $deleteStmt = $conn->prepare(
         "DELETE FROM otp_codes WHERE user_id = ?"
@@ -249,7 +247,3 @@ $conn->close();
 
 echo json_encode($emailResult);
 exit();
-
-
-
-?>

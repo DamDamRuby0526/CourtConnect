@@ -127,7 +127,7 @@ echo json_encode([
         "role_name" => $user["role_name"],
         "admin_id" => $user["admin_id"] ? (int) $user["admin_id"] : null,
         "facility_id" => $user["facility_id"] ? (int) $user["facility_id"] : null
-    ] 
+    ]
 ]);
 
 $stmt->close();

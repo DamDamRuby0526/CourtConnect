@@ -7,8 +7,8 @@ require 'config.php';
 $data = json_decode(file_get_contents("php://input"), true);
 
 //Check if data exists
-if (!$data){
-    echo json_encode ([
+if (!$data) {
+    echo json_encode([
         "success" => false,
         "message" => "No data received"
     ]);
@@ -52,11 +52,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 $sql = "SELECT user_id FROM users WHERE email = ?";
 
 $stmt = $conn->prepare($sql);
-
 $stmt->bind_param("s", $email);
-
 $stmt->execute();
-
 $stmt->store_result();
 
 if ($stmt->num_rows > 0) {
@@ -95,27 +92,25 @@ if ($stmt->num_rows > 0) {
 $stmt->close();
 
 // Reject Short passwords
-if(strlen($password) < 8){
+if (strlen($password) < 8) {
 
     echo json_encode([
-        "success"=>false,
-        "message"=>"Password must be at least 8 characters."
+        "success" => false,
+        "message" => "Password must be at least 8 characters."
     ]);
 
     exit();
-
 }
 
 // Rejects Invalid Phone number
-if(!preg_match('/^09\d{9}$/', $phoneNumber)){
+if (!preg_match('/^09\d{9}$/', $phoneNumber)) {
 
     echo json_encode([
-        "success"=>false,
-        "message"=>"Invalid Philippine phone number."
+        "success" => false,
+        "message" => "Invalid Philippine phone number."
     ]);
 
     exit();
-
 }
 
 //Hash password
@@ -151,7 +146,6 @@ if ($stmt->execute()) {
         "user_id" => $newUserId,
         "requires_verification" => true
     ]);
-
 } else {
 
     echo json_encode([
@@ -163,5 +157,3 @@ if ($stmt->execute()) {
 $stmt->close();
 
 $conn->close();
-
-?>

@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     tbody.replaceChildren();
-
     // populate table with user data
     for (const user of data.users) {
       const newTr = document.createElement("tr");
@@ -35,11 +34,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       // add one more column for edit button
       const actionTd = document.createElement("td");
       const editBtn = document.createElement("button");
-
       editBtn.textContent = "Update";
       editBtn.className = "update-btn";
       editBtn.dataset.userId = user.user_id;
-
       // append update button to the last column
       actionTd.append(editBtn);
       newTr.append(actionTd);
@@ -66,13 +63,11 @@ document.addEventListener("click", async (e) => {
     }
 
     const user = result.user;
-
     document.getElementById("registerForm").dataset.userId = user.user_id;
     document.getElementById("first_name").value = user.first_name;
     document.getElementById("last_name").value = user.last_name;
     document.getElementById("email").value = user.email;
     document.getElementById("phone_number").value = user.phone_number;
-
     modal_container.classList.add("show");
   }
 });

@@ -34,7 +34,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   const notification = document.createElement("div");
   const loginRedirectDelay = 2000;
   notification.className = "login-success-overlay";
-  notification.style.setProperty("--login-redirect-delay", `${loginRedirectDelay}ms`);
+  notification.style.setProperty(
+    "--login-redirect-delay",
+    `${loginRedirectDelay}ms`,
+  );
   notification.setAttribute("role", "status");
   notification.innerHTML = `
     <div class="login-success-card">
@@ -47,6 +50,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   document.body.appendChild(notification);
 
   window.setTimeout(() => {
-    window.location.href = "Admin dashboard/admindex.php"; 
+    window.location.href = "Admin dashboard/admindex.php";
   }, loginRedirectDelay);
 });

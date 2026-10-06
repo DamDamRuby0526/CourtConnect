@@ -27,8 +27,6 @@ if (session_status() === PHP_SESSION_NONE) {
     </div>
     
 
-
-
 </body>
 
 <?php include 'includes/navigation/footer.php'; ?>

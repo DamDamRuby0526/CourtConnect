@@ -7,8 +7,9 @@ const form = document.getElementById("scheduleForm");
 // url search to get the court id
 const params = new URLSearchParams(window.location.search);
 const courtId = params.get("court_id");
-// change court id 
-document.getElementById("court-id").textContent = "Court id:" + courtId ?? N/A;
+// change court id
+document.getElementById("court-id").textContent =
+  "Court id:" + courtId ?? N / A;
 
 async function loadSchedules() {
   if (!courtId) return;
@@ -30,7 +31,8 @@ async function loadSchedules() {
     if (data.schedules.length === 0) {
       const empty = document.createElement("p");
       empty.className = "owner-empty-state";
-      empty.textContent = "No reservation times yet. Add a time slot to make this court available.";
+      empty.textContent =
+        "No reservation times yet. Add a time slot to make this court available.";
       grid.append(empty);
       return;
     }
@@ -40,7 +42,9 @@ async function loadSchedules() {
       item.className = "owner-schedule-row";
 
       const date = document.createElement("h3");
-      date.textContent = new Date(`${sched.court_date}T00:00:00`).toLocaleDateString(undefined, {
+      date.textContent = new Date(
+        `${sched.court_date}T00:00:00`,
+      ).toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -49,7 +53,9 @@ async function loadSchedules() {
 
       const time = document.createElement("p");
       time.className = "owner-schedule-time";
-      time.textContent = new Date(`1970-01-01T${sched.court_time}`).toLocaleTimeString([], {
+      time.textContent = new Date(
+        `1970-01-01T${sched.court_time}`,
+      ).toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
       });
@@ -76,7 +82,8 @@ async function loadSchedules() {
 document.getElementById("add-btn").addEventListener("click", () => {
   form.reset();
   form.dataset.scheduleId = "";
-  document.getElementById("scheduleDialogTitle").textContent = "Add reservation time";
+  document.getElementById("scheduleDialogTitle").textContent =
+    "Add reservation time";
   modal.classList.add("show");
   modal.setAttribute("aria-hidden", "false");
 });
@@ -104,7 +111,8 @@ document.addEventListener("click", async (e) => {
 
   form.dataset.scheduleId = id;
 
-  document.getElementById("scheduleDialogTitle").textContent = "Edit reservation time";
+  document.getElementById("scheduleDialogTitle").textContent =
+    "Edit reservation time";
   modal.classList.add("show");
   modal.setAttribute("aria-hidden", "false");
 });
@@ -115,7 +123,7 @@ document.addEventListener("click", async (e) => {
     const form = document.getElementById("scheduleForm");
     if (!form.reportValidity()) return;
     const scheduleId = form.dataset.scheduleId;
-    
+
     const endpoint = scheduleId
       ? "../includes/admin-php/update_schedule.php"
       : "../includes/admin-php/add_schedule.php";

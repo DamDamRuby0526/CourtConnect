@@ -23,4 +23,3 @@ if (!$user || (int) $user["role_id"] !== 4 || (int) $user["is_verified"] !== 1) 
 }
 
 $_SESSION["role_id"] = 4;
-?>

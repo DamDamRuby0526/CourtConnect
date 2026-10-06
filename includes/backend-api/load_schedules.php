@@ -13,7 +13,7 @@ if (!$court_id || !is_numeric($court_id)) {
 }
 
 $sql = "SELECT schedule_id, court_id, court_date, court_time, schedule_status FROM court_schedule WHERE court_id = ?";
-       
+
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $court_id);
 $stmt->execute();

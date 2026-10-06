@@ -13,7 +13,8 @@
 }
 
 * { margin: 0; box-sizing: border-box; }
-body { background: var(--cream); color: var(--ink); font-family: "Trebuchet MS", Arial, sans-serif; }
+html { height: 100%; box-sizing: border-box; }
+body { position: relative; margin: 0; min-height: 100%;   padding-bottom: 6rem; background: var(--cream); color: var(--ink); font-family: "Trebuchet MS", Arial, sans-serif; }
 a { color: inherit; }
 
 .site-header { position: relative; z-index: 999; background: rgba(250,249,244,.96); border-bottom: 1px solid var(--line); }
@@ -71,7 +72,7 @@ h2 { margin-top: 14px; font-size: 42px; line-height: 1.1; }
 .callout { max-width: 1176px; margin: 0 auto 80px; padding: 44px 52px; display: flex; align-items: center; justify-content: space-between; background: var(--ink); color: var(--cream); }
 .callout h2 { margin-top: 8px; font-size: 34px; }
 .button-light { background: var(--main-color-1); color: var(--ink); }
-.site-footer { padding: 24px 32px; display: flex; justify-content: space-between; background: #e8f0e9; color: var(--muted); font-size: 12px; }
+.site-footer { position: absolute; right: 0; bottom: 0; left: 0; padding: 24px 32px; display: flex; justify-content: space-between; background: #e8f0e9; color: var(--muted); font-size: 12px; }
 .site-footer div { display: flex; gap: 22px; }
 .site-footer a { text-decoration: none; }
 
@@ -135,9 +136,8 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .auth-section-hint { margin: -2px 0 16px; color: var(--muted); font-size: 12px; }
 
 
-/* =========================================
-   FACILITY REGISTRATION PROGRESS
-   ========================================= */
+
+/* FACILITY REGISTRATION PROGRESS */
 
 .registration-progress {
   display: flex;
@@ -194,9 +194,7 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 }
 
 
-/* =========================================
-   VERIFICATION NOTICE
-   ========================================= */
+/* VERIFICATION NOTICE */
 
 .verification-notice {
   margin: 20px 0;
@@ -219,9 +217,7 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 }
 
 
-/* =========================================
-   BACK / SUBMIT BUTTONS
-   ========================================= */
+/* BACK / SUBMIT BUTTONS */
 
 .verification-buttons {
   display: grid;
