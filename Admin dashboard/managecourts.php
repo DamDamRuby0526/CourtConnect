@@ -28,6 +28,7 @@ if (!$facility) {
 }
 
 $ownerDashboardLayout = true;
+$ownerNavPage = "facility";
 $facilityName = $facility["facility_name"];
 
 function ownerEscape($value)

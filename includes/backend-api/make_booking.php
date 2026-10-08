@@ -80,6 +80,16 @@ try {
     $bookingId = $stmt->insert_id;
     $stmt->close();
 
+    $paymentMethod = "Gcash";
+    $paymentStatus = "Pending";
+    $stmt = $conn->prepare(
+        "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, paid_at)
+         VALUES (?, ?, ?, NULL, NULL)"
+    );
+    $stmt->bind_param("iss", $bookingId, $paymentMethod, $paymentStatus);
+    $stmt->execute();
+    $stmt->close();
+
     // Mark the schedule as no longer available
     $sql = "UPDATE court_schedule SET schedule_status = 'Booked' WHERE schedule_id = ?";
     $stmt = $conn->prepare($sql);

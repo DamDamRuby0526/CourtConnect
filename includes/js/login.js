@@ -56,7 +56,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   notification.innerHTML = `
     <div class="login-success-card">
       <span class="login-success-icon" aria-hidden="true">&#10003;</span>
-      <strong>Welcome back, ${result.user.first_name}!</strong>
+      <strong>Welcome, ${result.user.first_name}!</strong>
       <small>Taking you to ${destinationLabel}</small>
       <span class="login-success-loader" aria-hidden="true"></span>
     </div>

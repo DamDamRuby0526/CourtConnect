@@ -31,6 +31,7 @@ if (!$court) {
 }
 
 $ownerDashboardLayout = true;
+$ownerNavPage = "facility";
 $facilityName = $court["facility_name"];
 ?>
 <!DOCTYPE html>
