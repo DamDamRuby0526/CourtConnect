@@ -103,7 +103,9 @@ input { width: 100%; padding: 15px; margin: 8px 0; border-radius: 5px; border: 1
 .item img.court-preview { display: block; width: 100%; height: 150px; margin-bottom: 13px; object-fit: cover; }
 .modal-container { background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; opacity: 0; pointer-events: none; overflow: auto; }
 .modal-container.show { opacity: 1; pointer-events: auto; }
-.modal { background: white; border-radius: 8px; border-top: 4px solid var(--teal); padding: 30px 50px; width: 600px; max-width: 100%; }
+.modal { max-height: calc(100vh - 36px); overflow-y: auto; background: white; border-radius: 8px; border-top: 4px solid var(--teal); padding: 45px 75px; width: 900px; max-width: calc(100vw - 36px); font-size: 1.5rem; }
+.modal input, .modal select, .modal textarea, .modal button { font-size: 1em; }
+.modal form button { width: auto; min-height: 51px; padding: 10px 20px; }
 .otp-form { width: 100%; max-width: 520px; margin: 0; padding: 0; border-radius: 0; box-shadow: none; }
 .otp-form h2 { margin-bottom: 12px; font-size: 32px; }
 .otp-instructions { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -396,6 +398,8 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .owner-primary-button > span { font-size: 15px; }
 .owner-secondary-button { border-color: #d3ded6; background: #fff; color: #34566a; }
 .owner-secondary-button:hover { border-color: #93b978; background: #f4f8ef; }
+.owner-danger-button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; padding: 0 13px; border: 1px solid #ad4640; border-radius: 2px; background: #ad4640; color: #fff; font-family: inherit; font-size: 9px; font-weight: 600; cursor: pointer; }
+.owner-danger-button:hover { border-color: #913a35; background: #913a35; }
 .owner-hours-section, .owner-courts-section { padding: 21px 0 25px; border-top: 1px solid #dce4dd; }
 .owner-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 17px; }
 .owner-section-heading h2 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 14px; font-weight: 600; }
@@ -432,29 +436,45 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .owner-schedule-row .owner-secondary-button { min-height: 28px; font-size: 8px; }
 .owner-empty-state { grid-column: 1 / -1; padding: 28px 0; color: #728187; font-size: 10px; }
 .owner-modal { z-index: 1100; padding: 18px; background: rgba(8, 32, 52, .48); }
-.owner-modal-panel { width: min(590px, 100%); max-height: min(90vh, 760px); overflow-y: auto; padding: 25px; border: 1px solid #dce4dd; border-top: 3px solid var(--green); border-radius: 3px; background: #fff; box-shadow: 0 24px 80px rgba(9, 43, 69, .2); }
+.owner-modal-panel { width: min(960px, 100%); max-height: min(96vh, 1230px); overflow-y: auto; padding: 44px; border: 1px solid #dce4dd; border-top: 3px solid var(--green); border-radius: 3px; background: #fff; box-shadow: 0 24px 80px rgba(9, 43, 69, .2); }
 .owner-modal-panel form { width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .owner-modal-panel form:not(#courtForm) { display: flex; flex-direction: column; gap: 6px; }
-.owner-modal-panel form:not(#courtForm) h2 { margin: 0 0 8px; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 16px; font-weight: 600; }
-.owner-modal-panel form:not(#courtForm) label { margin: 3px 0 0; color: #546a72; font-size: 9px; font-weight: 500; }
-.owner-modal-panel form:not(#courtForm) input, .owner-modal-panel form:not(#courtForm) select { height: 35px; margin: 0; padding: 6px 8px; border: 1px solid #d5dfd8; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 10px; }
+.owner-modal-panel form:not(#courtForm) h2 { margin: 0 0 8px; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 24px; font-weight: 600; }
+.owner-modal-panel form:not(#courtForm) label { margin: 3px 0 0; color: #546a72; font-size: 13.5px; font-weight: 500; }
+.owner-modal-panel form:not(#courtForm) input, .owner-modal-panel form:not(#courtForm) select { height: 48px; margin: 0; padding: 9px 12px; border: 1px solid #d5dfd8; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 15px; }
 .owner-modal-panel form:not(#courtForm) .owner-modal-actions { margin-top: 10px; }
 .owner-modal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 19px; }
-.owner-modal-heading .owner-breadcrumb { margin-bottom: 3px; }
-.owner-modal-heading h2 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 17px; font-weight: 600; }
-.owner-close-button { width: 28px; height: 28px; padding: 0; border: 0; background: transparent; color: #62757c; font-size: 22px; line-height: 1; cursor: pointer; }
+.owner-modal-heading .owner-breadcrumb { margin-bottom: 3px; font-size: 13.5px; }
+.owner-modal-heading h2 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 25.5px; font-weight: 600; }
+.owner-close-button { width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: #62757c; font-size: 33px; line-height: 1; cursor: pointer; }
 .owner-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
-.owner-form-grid label { display: flex; min-width: 0; flex-direction: column; gap: 5px; margin: 0; color: #546a72; font-size: 9px; font-weight: 500; }
-.owner-form-grid input, .owner-form-grid select, .owner-form-grid textarea { width: 100%; min-width: 0; margin: 0; padding: 8px 9px; border: 1px solid #d5dfd8; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 10px; }
-.owner-form-grid input:not([type="file"]), .owner-form-grid select { height: 34px; }
-.owner-form-grid input[type="file"] { padding: 7px; font-size: 8px; }
+.owner-form-grid label { display: flex; min-width: 0; flex-direction: column; gap: 7px; margin: 0; color: #546a72; font-size: 13.5px; font-weight: 500; }
+.owner-form-grid input, .owner-form-grid select, .owner-form-grid textarea { width: 100%; min-width: 0; margin: 0; padding: 12px 13.5px; border: 1px solid #d5dfd8; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 15px; }
+.owner-form-grid input:not([type="file"]), .owner-form-grid select { height: 51px; }
+.owner-form-grid input[type="file"] { padding: 10.5px; font-size: 12px; }
 .owner-form-grid textarea { resize: vertical; }
-.owner-form-grid label small { color: #7d8e91; font-size: 8px; font-weight: 400; }
+.owner-form-grid label small { color: #7d8e91; font-size: 12px; font-weight: 400; }
 .owner-wide-field { grid-column: 1 / -1; }
 .owner-image-preview { display: block; width: auto; max-width: 100%; max-height: 170px; margin-top: 13px; object-fit: contain; }
 .owner-image-preview[hidden] { display: none; }
-.owner-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
+.owner-modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+.owner-modal-actions .owner-primary-button, .owner-modal-actions .owner-secondary-button, .owner-modal-actions .owner-danger-button { min-height: 51px; padding: 0 19.5px; font-size: 13.5px; }
 .owner-modal-actions button:disabled { cursor: wait; opacity: .55; }
+.owner-confirm-panel { width: min(720px, 100%); }
+.owner-confirm-message { margin: 0; color: #4e6872; font-size: 15px; line-height: 1.6; }
+.owner-accounts-section { padding: 21px 0 25px; border-top: 1px solid #dce4dd; }
+.owner-account-list { border-top: 1px solid #dce4dd; }
+.owner-account-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; align-items: center; gap: 18px; padding: 15px 9px; border-bottom: 1px solid #e5ebe5; }
+.owner-account-row:hover { background: rgba(233, 241, 229, .42); }
+.owner-account-details { min-width: 0; }
+.owner-account-details h3 { margin: 0; color: #193e59; font-family: "Poppins", sans-serif; font-size: 11px; font-weight: 600; }
+.owner-account-details p { overflow: hidden; margin: 4px 0 2px; color: #4e6872; font-size: 9px; text-overflow: ellipsis; }
+.owner-account-details span { color: #728187; font-size: 8px; }
+.owner-account-status { padding: 4px 7px; font-size: 8px; font-weight: 600; }
+.owner-account-status.is-active { background: #e7f3df; color: #4a7f2b; }
+.owner-account-status.is-inactive { background: #f3e5e1; color: #984c43; }
+.owner-account-actions { display: flex; align-items: center; gap: 7px; }
+.owner-account-row button:disabled { cursor: wait; opacity: .55; }
 
 @media (max-width: 900px) {
   .owner-layout { grid-template-columns: 205px minmax(0, 1fr); }
@@ -488,7 +508,11 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .owner-schedule-time { grid-column: 1; }
   .owner-schedule-row .owner-court-status { justify-self: end; }
   .owner-schedule-row .owner-secondary-button { grid-column: 2; grid-row: 1 / span 2; }
+  .owner-account-row { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .owner-account-details { grid-column: 1 / -1; }
+  .owner-account-status { grid-column: 1; }
+  .owner-account-actions { grid-column: 2; grid-row: 2; }
   .owner-form-grid { grid-template-columns: 1fr; }
   .owner-wide-field { grid-column: auto; }
-  .owner-modal-panel { padding: 19px; }
+  .owner-modal-panel { padding: 29px; }
 }

@@ -1,6 +1,33 @@
 <?php
 require_once __DIR__ . "/../includes/backend-api/config.php";
 
+$userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
+$facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
+$roleId = (int) ($_SESSION["role_id"] ?? 0);
+if (!$userId || !$facilityId || !in_array($roleId, [2, 3], true)) {
+    header("Location: ../adminsignin.php");
+    exit();
+}
+
+$accessStmt = $conn->prepare(
+    "SELECT a.admin_id
+     FROM admins a
+     INNER JOIN users u ON u.user_id = a.user_id
+     WHERE a.user_id = ? AND a.facility_id = ? AND a.status = 'Active'
+         AND u.role_id = ? AND u.is_verified = 1
+     LIMIT 1"
+);
+$accessStmt->bind_param("iii", $userId, $facilityId, $roleId);
+$accessStmt->execute();
+$hasAccess = $accessStmt->get_result()->fetch_assoc();
+$accessStmt->close();
+if (!$hasAccess) {
+    $_SESSION = [];
+    session_destroy();
+    header("Location: ../adminsignin.php");
+    exit();
+}
+
 $adminDashboardLayout = true;
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
 $facilityName = "Your facility";

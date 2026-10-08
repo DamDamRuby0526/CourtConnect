@@ -1,4 +1,4 @@
-<?php if (!empty($ownerDashboardLayout)): ?>
+    <?php if (!empty($ownerDashboardLayout)): ?>
     <aside class="owner-sidebar">
         <a class="owner-brand" href="admindex.php">
             <span class="owner-brand-mark" aria-hidden="true">CC</span>
@@ -7,7 +7,8 @@
         <nav class="owner-nav" aria-label="Owner workspace">
             <span class="owner-nav-label">MANAGE</span>
             <a href="admindex.php"><span aria-hidden="true">&#9633;</span>Bookings &amp; payments</a>
-            <a class="active" href="managecourts.php"><span aria-hidden="true">&#9638;</span>Court settings</a>
+            <a class="<?= ($ownerNavPage ?? "") === "courts" ? "active" : "" ?>" href="managecourts.php"><span aria-hidden="true">&#9638;</span>Court settings</a>
+            <a class="<?= ($ownerNavPage ?? "") === "accounts" ? "active" : "" ?>" href="manageadmins.php"><span aria-hidden="true">&#9786;</span>Admin accounts</a>
         </nav>
         <div class="owner-sidebar-user">
             <span class="owner-user-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr($_SESSION["first_name"] ?? "O", 0, 1)), ENT_QUOTES, "UTF-8") ?></span>
@@ -29,6 +30,7 @@
             <?php if ((int) ($_SESSION["role_id"] ?? 0) === 3): ?>
                 <span class="admin-nav-label">OWNER SETTINGS</span>
                 <a href="managecourts.php"><span aria-hidden="true">&#9638;</span>Court settings</a>
+                <a href="manageadmins.php"><span aria-hidden="true">&#9786;</span>Admin accounts</a>
             <?php endif; ?>
         </nav>
         <div class="admin-sidebar-user">

@@ -28,6 +28,7 @@ if (!$facility) {
 }
 
 $ownerDashboardLayout = true;
+$ownerNavPage = "courts";
 $facilityName = $facility["facility_name"];
 
 function ownerEscape($value)
@@ -99,7 +100,6 @@ function ownerEscape($value)
                         <p class="owner-breadcrumb">COURT DETAILS</p>
                         <h2 id="courtDialogTitle">Add a court</h2>
                     </div>
-                    <button type="button" class="owner-close-button cancel-btn" aria-label="Close">&times;</button>
                 </div>
                 <div class="owner-form-grid">
                     <label for="court_no">Court number

@@ -76,6 +76,14 @@ if ($user["admin_status"] === "Pending") {
     exit();
 }
 
+if ($user["admin_status"] === "Inactive") {
+    echo json_encode([
+        "success" => false,
+        "message" => "This admin account has been disabled by the facility owner."
+    ]);
+    exit();
+}
+
 if ($user["admin_status"] !== null && $user["admin_status"] !== "Active") {
     $_SESSION["pending_facility_user_id"] = (int) $user["user_id"];
     echo json_encode([
