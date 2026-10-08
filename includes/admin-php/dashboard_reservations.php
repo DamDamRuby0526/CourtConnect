@@ -50,21 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
     }
     $slotsStmt->close();
 
-    $customersStmt = $conn->prepare(
-        "SELECT user_id, first_name, last_name, email
-         FROM users
-         WHERE role_id = 1 AND is_verified = 1
-         ORDER BY first_name, last_name
-         LIMIT 500"
-    );
-    $customersStmt->execute();
-    $customersResult = $customersStmt->get_result();
-    $customers = [];
-    while ($customer = $customersResult->fetch_assoc()) {
-        $customers[] = $customer;
-    }
-    $customersStmt->close();
-    echo json_encode(["success" => true, "slots" => $slots, "customers" => $customers]);
+    echo json_encode(["success" => true, "slots" => $slots]);
     exit();
 }
 
@@ -76,10 +62,22 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 $data = json_decode(file_get_contents("php://input"), true) ?? [];
 $scheduleId = filter_var($data["schedule_id"] ?? null, FILTER_VALIDATE_INT);
-$customerId = filter_var($data["customer_id"] ?? null, FILTER_VALIDATE_INT);
-if (!$scheduleId || !$customerId) {
+$customerName = trim($data["customer_name"] ?? "");
+$customerPhone = trim($data["customer_phone"] ?? "");
+$paymentMethod = $data["payment_method"] ?? "";
+if (!$scheduleId || $customerName === "" || $customerPhone === "") {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Choose an available time and a registered customer."]);
+    echo json_encode(["success" => false, "message" => "Enter the customer's name and phone number."]);
+    exit();
+}
+if (strlen($customerName) > 200 || strlen($customerPhone) > 30 || !preg_match('/^[+0-9()\s.-]{7,30}$/', $customerPhone)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Enter a valid customer name and phone number."]);
+    exit();
+}
+if (!in_array($paymentMethod, ["Gcash", "Cash"], true)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Choose GCash or Cash as the payment method."]);
     exit();
 }
 
@@ -103,27 +101,17 @@ try {
         throw new RuntimeException("That time is no longer available. Refresh and choose another slot.");
     }
 
-    $customerStmt = $conn->prepare("SELECT user_id FROM users WHERE user_id = ? AND role_id = 1 AND is_verified = 1 LIMIT 1");
-    $customerStmt->bind_param("i", $customerId);
-    $customerStmt->execute();
-    $customer = $customerStmt->get_result()->fetch_assoc();
-    $customerStmt->close();
-    if (!$customer) {
-        throw new RuntimeException("Choose a verified customer account.");
-    }
-
     $courtId = (int) $slot["court_id"];
     $totalAmount = (float) $slot["court_rate"];
     $bookingStmt = $conn->prepare(
-        "INSERT INTO bookings (user_id, court_id, schedule_id, total_amount)
-         VALUES (?, ?, ?, ?)"
+        "INSERT INTO bookings (user_id, customer_name, customer_phone, court_id, schedule_id, total_amount)
+         VALUES (NULL, ?, ?, ?, ?, ?)"
     );
-    $bookingStmt->bind_param("iiid", $customerId, $courtId, $scheduleId, $totalAmount);
+    $bookingStmt->bind_param("ssiid", $customerName, $customerPhone, $courtId, $scheduleId, $totalAmount);
     $bookingStmt->execute();
     $bookingId = $bookingStmt->insert_id;
     $bookingStmt->close();
 
-    $paymentMethod = "Gcash";
     $paymentStatus = "Pending";
     $paymentStmt = $conn->prepare(
         "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, paid_at)

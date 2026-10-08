@@ -366,6 +366,27 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .payment-unpaid { background: #f0eded; color: #786d6d; }
 .payment-summary { display: flex; align-items: center; gap: 18px; color: #65777e; font-size: 10px; }
 .payment-summary strong { color: var(--navy); font-size: 14px; font-weight: 600; }
+.payment-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.payment-row-actions button { min-width: 0; min-height: 29px; padding: 0 6px; font-size: 8px; white-space: normal; }
+.payment-row-actions .admin-book-slot-button { min-width: 0; padding: 0 6px; font-size: 8px; }
+.payment-table-wrap { width: 100%; min-width: 0; overflow-x: hidden; }
+.payment-table { width: 100%; min-width: 0; table-layout: fixed; }
+.payment-table th, .payment-table td { padding: 8px 5px; font-size: 8px; overflow-wrap: anywhere; white-space: normal; }
+.payment-table th:nth-child(1), .payment-table td:nth-child(1) { width: 12%; }
+.payment-table th:nth-child(2), .payment-table td:nth-child(2) { width: 7%; }
+.payment-table th:nth-child(3), .payment-table td:nth-child(3) { width: 15%; }
+.payment-table th:nth-child(4), .payment-table td:nth-child(4) { width: 8%; }
+.payment-table th:nth-child(5), .payment-table td:nth-child(5) { width: 9%; }
+.payment-table th:nth-child(6), .payment-table td:nth-child(6) { width: 8%; }
+.payment-table th:nth-child(7), .payment-table td:nth-child(7) { width: 11%; }
+.payment-table th:nth-child(8), .payment-table td:nth-child(8) { width: 8%; }
+.payment-table th:nth-child(9), .payment-table td:nth-child(9) { width: 22%; }
+.payment-rejected { background: #f3e5e1; color: #984c43; }
+.payment-edit-panel { width: min(780px, 100%); }
+.payment-receipt-panel { width: min(1180px, 100%); }
+.payment-receipt-preview { display: block; width: 100%; max-height: 72vh; object-fit: contain; background: #f4f6f3; }
+.payment-edit-panel label { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; color: #546a72; font-size: 13.5px; font-weight: 500; }
+.payment-edit-panel input, .payment-edit-panel select { width: 100%; height: 48px; padding: 9px 12px; border: 1px solid #d5dfd8; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 15px; }
 .payment-filter { display: flex; width: min(240px, 100%); flex-direction: column; gap: 5px; margin: 15px 0; color: #718087; font-size: 9px; }
 .payment-filter select { height: 32px; padding: 4px 8px; border: 1px solid #d8e1dc; border-radius: 2px; background: #fff; color: #28475a; font-family: inherit; font-size: 10px; }
 .admin-book-slot-button:disabled { cursor: default; opacity: .65; }
@@ -580,4 +601,15 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .owner-account-details { grid-column: 1 / -1; }
   .owner-account-status { grid-column: 1; }
   .owner-account-actions { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 650px) {
+  .payment-table thead { display: none; }
+  .payment-table, .payment-table tbody { display: block; width: 100%; }
+  .payment-table tbody tr.payment-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 10px; border-bottom: 1px solid #dce4dd; }
+  .payment-table tbody tr.payment-row td { display: block; min-width: 0; padding: 8px; border-bottom: 0; font-size: 9px; }
+  .payment-table tbody tr.payment-row td::before { display: block; margin-bottom: 3px; color: #718087; content: attr(data-label); font-size: 7px; font-weight: 600; }
+  .payment-table tbody tr.payment-row td[data-label="Action"] { grid-column: 1 / -1; }
+  .payment-table tbody tr.payment-row[hidden] { display: none; }
+  .payment-table tbody tr:not(.payment-row) { display: block; }
+  .payment-table tbody tr:not(.payment-row) td { display: block; }
 }

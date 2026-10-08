@@ -45,12 +45,13 @@ $facilityStmt->close();
 
 $bookingsStmt = $conn->prepare(
     "SELECT b.booking_id, b.total_amount, b.created_at,
-            u.first_name, u.last_name,
+            COALESCE(b.customer_name, CONCAT(u.first_name, ' ', u.last_name)) AS customer_name,
+            COALESCE(b.customer_phone, u.phone_number) AS customer_phone,
             cs.court_date, cs.court_time,
             cd.court_no, cd.slot_duration,
             p.payment_status
      FROM bookings b
-     INNER JOIN users u ON u.user_id = b.user_id
+    LEFT JOIN users u ON u.user_id = b.user_id
      INNER JOIN court_details cd ON cd.court_id = b.court_id
      INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
      LEFT JOIN (
@@ -60,6 +61,7 @@ $bookingsStmt = $conn->prepare(
      ) latest_payment ON latest_payment.booking_id = b.booking_id
      LEFT JOIN payments p ON p.payments_id = latest_payment.payments_id
      WHERE cd.facility_id = ? AND cs.schedule_status = 'Booked'
+         AND p.payment_status = 'Paid'
          AND (cs.court_date > CURDATE() OR (cs.court_date = CURDATE() AND cs.court_time >= CURTIME()))
      ORDER BY cs.court_date ASC, cs.court_time ASC
      LIMIT 100"
@@ -136,7 +138,7 @@ function bookingsPageEscape($value)
                                 <th scope="col">Time</th>
                                 <th scope="col">Court</th>
                                 <th scope="col">Duration</th>
-                                <th scope="col">Player</th>
+                                        <th scope="col">Customer</th>
                                 <th scope="col">Amount</th>
                                 <th scope="col">Payment</th>
                                 <th scope="col">Booked on</th>
@@ -148,12 +150,12 @@ function bookingsPageEscape($value)
                             <?php else: ?>
                                 <?php foreach ($bookings as $booking): ?>
                                     <?php $paymentSlug = strtolower($booking["payment_status"] ?? "unpaid"); ?>
-                                    <tr class="booking-row" data-date="<?= bookingsPageEscape($booking["court_date"]) ?>" data-player="<?= bookingsPageEscape($booking["first_name"] . " " . $booking["last_name"]) ?>" data-payment="<?= bookingsPageEscape($paymentSlug) ?>">
+                                    <tr class="booking-row" data-date="<?= bookingsPageEscape($booking["court_date"]) ?>" data-player="<?= bookingsPageEscape($booking["customer_name"]) ?>" data-payment="<?= bookingsPageEscape($paymentSlug) ?>">
                                         <td data-label="Date"><?= bookingsPageEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
                                         <td data-label="Time"><?= bookingsPageEscape(date("g:i A", strtotime($booking["court_time"]))) ?></td>
                                         <td data-label="Court"><?= bookingsPageEscape($booking["court_no"]) ?></td>
                                         <td data-label="Duration"><?= (int) $booking["slot_duration"] ?> min</td>
-                                        <td data-label="Player" class="booking-player"><?= bookingsPageEscape($booking["first_name"] . " " . $booking["last_name"]) ?></td>
+                                        <td data-label="Customer" class="booking-player"><?= bookingsPageEscape($booking["customer_name"]) ?><small><?= bookingsPageEscape($booking["customer_phone"] ?? "") ?></small></td>
                                         <td data-label="Amount">&#8369;<?= number_format((float) $booking["total_amount"], 2) ?></td>
                                         <td data-label="Payment"><span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($booking["payment_status"] ?? "Unpaid") ?></span></td>
                                         <td data-label="Booked on"><?= bookingsPageEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></td>

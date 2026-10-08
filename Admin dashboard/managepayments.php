@@ -72,19 +72,21 @@ $conn->close();
                     </div>
                     <div class="payment-summary" aria-live="polite">
                         <span><strong id="pendingPaymentCount">--</strong> pending</span>
+                        <span><strong id="rejectedPaymentCount">--</strong> rejected</span>
                         <span><strong id="paidPaymentTotal">--</strong> paid total</span>
                     </div>
                 </div>
                 <label class="payment-filter">
                     <span>Payment status</span>
                     <select id="paymentStatusFilter">
-                        <option value="">All statuses</option>
+                        <option value="">All status</option>
                         <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
                         <option value="paid">Paid</option>
                     </select>
                 </label>
                 <p id="paymentMessage" class="owner-form-status" role="status" aria-live="polite"></p>
-                <div class="schedule-table-wrap">
+                <div class="schedule-table-wrap payment-table-wrap">
                     <table class="schedule-table payment-table">
                         <thead>
                             <tr>
@@ -92,7 +94,7 @@ $conn->close();
                                 <th scope="col">Court</th>
                                 <th scope="col">Customer</th>
                                 <th scope="col">Method</th>
-                                <th scope="col">Reference</th>
+                                <th scope="col">Reference Number</th>
                                 <th scope="col">Amount</th>
                                 <th scope="col">Receipt</th>
                                 <th scope="col">Status</th>
@@ -120,6 +122,65 @@ $conn->close();
             <div class="owner-modal-actions">
                 <button type="button" class="owner-secondary-button" id="cancelMarkPaid">Cancel</button>
                 <button type="button" class="owner-primary-button" id="confirmMarkPaid">Mark as paid</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-container owner-modal" id="editPaymentModal" aria-hidden="true">
+        <div class="modal owner-modal-panel payment-edit-panel" role="dialog" aria-modal="true" aria-labelledby="editPaymentTitle">
+            <form id="editPaymentForm">
+                <div class="owner-modal-heading">
+                    <div>
+                        <p class="owner-breadcrumb">PAYMENT DETAILS</p>
+                        <h2 id="editPaymentTitle">Edit payment</h2>
+                    </div>
+                </div>
+                <input type="hidden" id="editPaymentId" name="payment_id">
+                <div class="owner-form-grid payment-edit-grid">
+                    <label for="editCustomerName">Customer name
+                        <input type="text" id="editCustomerName" name="customer_name" maxlength="200" required>
+                    </label>
+                    <label for="editCustomerPhone">Phone number
+                        <input type="tel" id="editCustomerPhone" name="customer_phone" maxlength="30" required>
+                    </label>
+                    <label for="editPaymentMethod">Payment method
+                        <select id="editPaymentMethod" name="payment_method" required>
+                            <option value="Gcash">GCash</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </label>
+                    <label class="owner-wide-field" for="editPaymentSchedule">Court and time
+                        <select id="editPaymentSchedule" name="schedule_id" required></select>
+                    </label>
+                    <label for="editPaymentReference" id="editPaymentReferenceField">Reference number
+                        <input type="text" id="editPaymentReference" name="reference_number" maxlength="50">
+                    </label>
+                    <label for="editPaymentStatusSelect">Payment status
+                        <select id="editPaymentStatusSelect" name="payment_status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Paid">Paid</option>
+                        </select>
+                    </label>
+                </div>
+                <p id="editPaymentFeedback" class="owner-form-status" role="status" aria-live="polite"></p>
+                <div class="owner-modal-actions">
+                    <button type="button" class="owner-secondary-button" id="cancelEditPayment">Cancel</button>
+                    <button type="submit" class="owner-primary-button" id="savePaymentChanges">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="modal-container owner-modal" id="paymentReceiptModal" aria-hidden="true">
+        <div class="modal owner-modal-panel payment-receipt-panel" role="dialog" aria-modal="true" aria-labelledby="paymentReceiptTitle">
+            <div class="owner-modal-heading">
+                <div>
+                    <p class="owner-breadcrumb">PAYMENT REVIEW</p>
+                    <h2 id="paymentReceiptTitle">GCash receipt</h2>
+                </div>
+            </div>
+            <img id="paymentReceiptImage" class="payment-receipt-preview" alt="Uploaded GCash receipt">
+            <div class="owner-modal-actions">
+                <button type="button" class="owner-secondary-button" id="closePaymentReceipt">Close</button>
             </div>
         </div>
     </div>

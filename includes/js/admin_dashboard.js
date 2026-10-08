@@ -4,9 +4,7 @@ const manualBookingForm = document.getElementById("manualBookingForm");
 const availableSlotsList = document.getElementById("availableSlotsList");
 const availableSlotsStatus = document.getElementById("availableSlotsStatus");
 const availableSlotCount = document.getElementById("availableSlotCount");
-const manualCustomerSelect = document.getElementById("manualCustomerId");
 let availableSlots = [];
-let customers = [];
 let slotsLoaded = false;
 
 document.getElementById("refreshBookings").addEventListener("click", () => location.reload());
@@ -14,7 +12,7 @@ document.getElementById("refreshBookings").addEventListener("click", () => locat
 function setManualBookingOpen(open) {
   manualBookingModal.classList.toggle("show", open);
   manualBookingModal.setAttribute("aria-hidden", String(!open));
-  if (open) manualCustomerSelect.focus();
+  if (open) document.getElementById("manualCustomerName").focus();
 }
 
 function formatSlotDate(dateString) {
@@ -40,15 +38,6 @@ function makeTextElement(tagName, className, text) {
   element.className = className;
   element.textContent = text;
   return element;
-}
-
-function populateCustomers() {
-  for (const customer of customers) {
-    const option = document.createElement("option");
-    option.value = customer.user_id;
-    option.textContent = `${customer.first_name} ${customer.last_name} (${customer.email})`;
-    manualCustomerSelect.append(option);
-  }
 }
 
 function renderAvailableSlots() {
@@ -91,8 +80,6 @@ async function loadAvailableSlots() {
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "Unable to load available court times.");
     availableSlots = result.slots;
-    customers = result.customers;
-    populateCustomers();
     slotsLoaded = true;
     renderAvailableSlots();
   } catch (error) {

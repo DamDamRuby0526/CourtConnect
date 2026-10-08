@@ -21,10 +21,11 @@ if ($facilityId && $facilityId > 0) {
     }
 
     $todayStmt = $conn->prepare(
-        "SELECT b.booking_id, u.first_name, u.last_name, cs.court_date, cs.court_time,
+        "SELECT b.booking_id, COALESCE(b.customer_name, CONCAT(u.first_name, ' ', u.last_name)) AS customer_name,
+            cs.court_date, cs.court_time,
                 cd.court_no, cd.slot_duration
          FROM bookings b
-         INNER JOIN users u ON u.user_id = b.user_id
+         LEFT JOIN users u ON u.user_id = b.user_id
          INNER JOIN court_details cd ON cd.court_id = b.court_id
          INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
          WHERE cd.facility_id = ? AND cs.court_date = CURDATE()
@@ -122,7 +123,7 @@ function dashboardEscape($value)
                             <article class="dashboard-today-row">
                                 <time datetime="<?= dashboardEscape($booking["court_date"] . "T" . $booking["court_time"]) ?>"><?= dashboardEscape(date("g:i A", strtotime($booking["court_time"]))) ?></time>
                                 <strong>Court <?= dashboardEscape($booking["court_no"]) ?></strong>
-                                <span><?= dashboardEscape($booking["first_name"] . " " . $booking["last_name"]) ?></span>
+                                <span><?= dashboardEscape($booking["customer_name"]) ?></span>
                                 <small><?= (int) $booking["slot_duration"] ?> min</small>
                             </article>
                         <?php endforeach; ?>
@@ -156,11 +157,20 @@ function dashboardEscape($value)
                 </div>
                 <p class="manual-booking-slot" id="manualBookingSlot"></p>
                 <input type="hidden" name="schedule_id" id="manualScheduleId">
-                <label for="manualCustomerId">Customer
-                    <select id="manualCustomerId" name="customer_id" required>
-                        <option value="">Choose a registered customer</option>
-                    </select>
-                </label>
+                <div class="owner-form-grid manual-booking-fields">
+                    <label for="manualCustomerName">Customer name
+                        <input type="text" id="manualCustomerName" name="customer_name" maxlength="200" autocomplete="name" required>
+                    </label>
+                    <label for="manualCustomerPhone">Phone number
+                        <input type="tel" id="manualCustomerPhone" name="customer_phone" maxlength="30" autocomplete="tel" required>
+                    </label>
+                    <label class="owner-wide-field" for="manualPaymentMethod">Payment method
+                        <select id="manualPaymentMethod" name="payment_method" required>
+                            <option value="Gcash">GCash</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </label>
+                </div>
                 <p class="owner-form-status" id="manualBookingStatus" role="status" aria-live="polite"></p>
                 <div class="owner-modal-actions">
                     <button type="button" class="owner-secondary-button" id="cancelManualBooking">Cancel</button>
