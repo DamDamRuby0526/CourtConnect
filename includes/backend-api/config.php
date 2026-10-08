@@ -10,6 +10,8 @@ $database = "courtconnect";
 
 $conn = mysqli_connect($host, $username, $password, $database);
 
+date_default_timezone_set("Asia/Manila");
+
 if (!$conn) {
     header("Content-Type: application/json");
     http_response_code(500);

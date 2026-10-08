@@ -1,6 +1,7 @@
 <?php
 header("Content-Type: application/json");
 require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/upload_helper.php";
 
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
@@ -60,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit();
 }
 
-$data = json_decode(file_get_contents("php://input"), true) ?? [];
+$data = $_POST;
 $scheduleId = filter_var($data["schedule_id"] ?? null, FILTER_VALIDATE_INT);
 $customerName = trim($data["customer_name"] ?? "");
 $customerPhone = trim($data["customer_phone"] ?? "");
@@ -82,6 +83,14 @@ if (!in_array($paymentMethod, ["Gcash", "Cash"], true)) {
 }
 
 try {
+    $receiptImage = null;
+    if ($paymentMethod === "Gcash") {
+        $receiptImage = handleImageUpload("gcash_receipt", __DIR__ . "/../../uploads/payment-receipts");
+        if ($receiptImage === null) {
+            throw new RuntimeException("Upload the GCash payment receipt.");
+        }
+    }
+
     $conn->begin_transaction();
     $slotStmt = $conn->prepare(
         "SELECT cs.court_id, cd.court_rate
@@ -104,22 +113,29 @@ try {
     $courtId = (int) $slot["court_id"];
     $totalAmount = (float) $slot["court_rate"];
     $bookingStmt = $conn->prepare(
-        "INSERT INTO bookings (user_id, customer_name, customer_phone, court_id, schedule_id, total_amount)
-         VALUES (NULL, ?, ?, ?, ?, ?)"
+           "INSERT INTO bookings (user_id, booking_type, customer_name, customer_phone, court_id, schedule_id, total_amount)
+            VALUES (NULL, 'walk_in', ?, ?, ?, ?, ?)"
     );
     $bookingStmt->bind_param("ssiid", $customerName, $customerPhone, $courtId, $scheduleId, $totalAmount);
     $bookingStmt->execute();
     $bookingId = $bookingStmt->insert_id;
     $bookingStmt->close();
 
-    $paymentStatus = "Pending";
+    $paymentStatus = "Paid";
+    $bookingPaymentStatus = "paid";
+    $paidAtSql = "NOW()";
     $paymentStmt = $conn->prepare(
-        "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, paid_at)
-         VALUES (?, ?, ?, NULL, NULL)"
+        "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, receipt_image, paid_at)
+         VALUES (?, ?, ?, NULL, ?, " . $paidAtSql . ")"
     );
-    $paymentStmt->bind_param("iss", $bookingId, $paymentMethod, $paymentStatus);
+    $paymentStmt->bind_param("isss", $bookingId, $paymentMethod, $paymentStatus, $receiptImage);
     $paymentStmt->execute();
     $paymentStmt->close();
+
+    $bookingStatusStmt = $conn->prepare("UPDATE bookings SET payment_status = ? WHERE booking_id = ?");
+    $bookingStatusStmt->bind_param("si", $bookingPaymentStatus, $bookingId);
+    $bookingStatusStmt->execute();
+    $bookingStatusStmt->close();
 
     $updateStmt = $conn->prepare(
         "UPDATE court_schedule SET schedule_status = 'Booked'
@@ -133,12 +149,28 @@ try {
     }
     $updateStmt->close();
     $conn->commit();
-    echo json_encode(["success" => true, "message" => "Booking confirmed.", "booking_id" => $bookingId]);
+    $receiptImage = null;
+    $message = $paymentMethod === "Cash"
+        ? "Booking confirmed and cash payment recorded as paid."
+        : "Booking confirmed, GCash receipt saved, and payment recorded as paid.";
+    echo json_encode(["success" => true, "message" => $message, "booking_id" => $bookingId]);
 } catch (RuntimeException $error) {
     $conn->rollback();
+    if (!empty($receiptImage)) {
+        $receiptPath = __DIR__ . "/../../uploads/payment-receipts/" . basename($receiptImage);
+        if (is_file($receiptPath)) {
+            unlink($receiptPath);
+        }
+    }
     echo json_encode(["success" => false, "message" => $error->getMessage()]);
 } catch (Throwable $error) {
     $conn->rollback();
+    if (!empty($receiptImage)) {
+        $receiptPath = __DIR__ . "/../../uploads/payment-receipts/" . basename($receiptImage);
+        if (is_file($receiptPath)) {
+            unlink($receiptPath);
+        }
+    }
     http_response_code(500);
     error_log("Dashboard booking error: " . $error->getMessage());
     echo json_encode(["success" => false, "message" => "Unable to create this booking."]);

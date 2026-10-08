@@ -334,6 +334,7 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .manual-booking-panel { width: min(930px, 100%); }
 .manual-booking-panel label { display: flex; flex-direction: column; gap: 8px; color: #546a72; font-size: 13.5px; font-weight: 500; }
 .manual-booking-panel select { width: 100%; }
+#manualGcashReceiptField[hidden] { display: none; }
 .manual-booking-slot { margin: 0 0 18px; color: #477c35; font-size: 14px; font-weight: 600; }
 .booking-section { min-width: 0; }
 .booking-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding-bottom: 17px; border-bottom: 1px solid #dce4dd; }
@@ -364,13 +365,16 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .payment-paid { background: #e7f3df; color: #4a7f2b; }
 .payment-pending { background: #fff2d2; color: #94701f; }
 .payment-unpaid { background: #f0eded; color: #786d6d; }
-.payment-summary { display: flex; align-items: center; gap: 18px; color: #65777e; font-size: 10px; }
+.payment-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 18px; color: #65777e; font-size: 10px; }
 .payment-summary strong { color: var(--navy); font-size: 14px; font-weight: 600; }
+.payment-customer { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.payment-customer strong { color: #173e59; font-size: 9px; font-weight: 600; }
+.payment-customer small { color: #718087; font-size: 8px; }
 .payment-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 .payment-row-actions button { min-width: 0; min-height: 29px; padding: 0 6px; font-size: 8px; white-space: normal; }
 .payment-row-actions .admin-book-slot-button { min-width: 0; padding: 0 6px; font-size: 8px; }
-.payment-table-wrap { width: 100%; min-width: 0; overflow-x: hidden; }
-.payment-table { width: 100%; min-width: 0; table-layout: fixed; }
+.payment-table-wrap { width: 100%; min-width: 0; overflow-x: auto; }
+.payment-table { width: 100%; min-width: 660px; table-layout: fixed; }
 .payment-table th, .payment-table td { padding: 8px 5px; font-size: 8px; overflow-wrap: anywhere; white-space: normal; }
 .payment-table th:nth-child(1), .payment-table td:nth-child(1) { width: 12%; }
 .payment-table th:nth-child(2), .payment-table td:nth-child(2) { width: 7%; }
@@ -604,7 +608,7 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 }
 @media (max-width: 650px) {
   .payment-table thead { display: none; }
-  .payment-table, .payment-table tbody { display: block; width: 100%; }
+  .payment-table, .payment-table tbody { display: block; width: 100%; min-width: 0; }
   .payment-table tbody tr.payment-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 10px; border-bottom: 1px solid #dce4dd; }
   .payment-table tbody tr.payment-row td { display: block; min-width: 0; padding: 8px; border-bottom: 0; font-size: 9px; }
   .payment-table tbody tr.payment-row td::before { display: block; margin-bottom: 3px; color: #718087; content: attr(data-label); font-size: 7px; font-weight: 600; }

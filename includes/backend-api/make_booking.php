@@ -71,11 +71,22 @@ try {
     $stmt->close();
     $totalAmount = $court["court_rate"];
 
+        $userStmt = $conn->prepare("SELECT first_name, last_name, phone_number FROM users WHERE user_id = ?");
+        $userStmt->bind_param("i", $userId);
+        $userStmt->execute();
+        $customer = $userStmt->get_result()->fetch_assoc();
+        $userStmt->close();
+        if (!$customer) {
+        throw new RuntimeException("Unable to load your customer details.");
+        }
+        $customerName = trim($customer["first_name"] . " " . $customer["last_name"]);
+        $customerPhone = $customer["phone_number"];
+
     // Insert the booking
-    $sql = "INSERT INTO bookings (user_id, court_id, schedule_id, total_amount)
-            VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO bookings (user_id, booking_type, customer_name, customer_phone, court_id, schedule_id, total_amount)
+            VALUES (?, 'online', ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiid", $userId, $courtId, $scheduleId, $totalAmount);
+        $stmt->bind_param("issiid", $userId, $customerName, $customerPhone, $courtId, $scheduleId, $totalAmount);
     $stmt->execute();
     $bookingId = $stmt->insert_id;
     $stmt->close();

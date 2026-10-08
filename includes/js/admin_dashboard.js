@@ -15,6 +15,15 @@ function setManualBookingOpen(open) {
   if (open) document.getElementById("manualCustomerName").focus();
 }
 
+function updateManualPaymentFields() {
+  const isGcash = document.getElementById("manualPaymentMethod").value === "Gcash";
+  const receiptField = document.getElementById("manualGcashReceiptField");
+  const receiptInput = document.getElementById("manualGcashReceipt");
+  receiptField.hidden = !isGcash;
+  receiptInput.required = isGcash;
+  if (!isGcash) receiptInput.value = "";
+}
+
 function formatSlotDate(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);
   return new Date(year, month - 1, day).toLocaleDateString(undefined, {
@@ -97,6 +106,7 @@ function openBookingForSlot(scheduleId) {
   document.getElementById("manualBookingStatus").textContent = "";
   document.getElementById("manualBookingStatus").classList.remove("is-error");
   manualBookingForm.reset();
+  updateManualPaymentFields();
   document.getElementById("manualScheduleId").value = slot.schedule_id;
   setManualBookingOpen(true);
 }
@@ -123,6 +133,7 @@ availableSlotsList.addEventListener("click", (event) => {
 });
 
 document.getElementById("cancelManualBooking").addEventListener("click", () => setManualBookingOpen(false));
+document.getElementById("manualPaymentMethod").addEventListener("change", updateManualPaymentFields);
 manualBookingModal.addEventListener("click", (event) => {
   if (event.target === manualBookingModal) setManualBookingOpen(false);
 });
@@ -140,8 +151,7 @@ manualBookingForm.addEventListener("submit", async (event) => {
   try {
     const response = await fetch("../includes/admin-php/dashboard_reservations.php", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(new FormData(manualBookingForm))),
+      body: new FormData(manualBookingForm),
     });
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "Unable to create this booking.");

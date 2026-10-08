@@ -170,6 +170,11 @@ function dashboardEscape($value)
                             <option value="Cash">Cash</option>
                         </select>
                     </label>
+                    <label class="owner-wide-field" id="manualGcashReceiptField" for="manualGcashReceipt" hidden>
+                        GCash receipt image
+                        <input type="file" id="manualGcashReceipt" name="gcash_receipt" accept="image/jpeg,image/png,image/webp">
+                        <small>JPG, PNG, or WEBP. Maximum 5 MB.</small>
+                    </label>
                 </div>
                 <p class="owner-form-status" id="manualBookingStatus" role="status" aria-live="polite"></p>
                 <div class="owner-modal-actions">

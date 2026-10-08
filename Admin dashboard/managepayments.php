@@ -60,7 +60,7 @@ $conn->close();
                     <p class="admin-subtitle">Review GCash receipts and record confirmed payments.</p>
                 </div>
                 <div class="admin-head-actions">
-                    <span class="admin-today"><?= date("l, F j") ?></span>
+                    <span class="admin-today"><?= date("l, F j, Y") ?></span>
                     <button class="admin-refresh-button" type="button" id="refreshPayments" aria-label="Refresh payments" title="Refresh payments">&#8635;</button>
                 </div>
             </header>
@@ -136,20 +136,11 @@ $conn->close();
                 </div>
                 <input type="hidden" id="editPaymentId" name="payment_id">
                 <div class="owner-form-grid payment-edit-grid">
-                    <label for="editCustomerName">Customer name
-                        <input type="text" id="editCustomerName" name="customer_name" maxlength="200" required>
-                    </label>
-                    <label for="editCustomerPhone">Phone number
-                        <input type="tel" id="editCustomerPhone" name="customer_phone" maxlength="30" required>
-                    </label>
                     <label for="editPaymentMethod">Payment method
                         <select id="editPaymentMethod" name="payment_method" required>
                             <option value="Gcash">GCash</option>
                             <option value="Cash">Cash</option>
                         </select>
-                    </label>
-                    <label class="owner-wide-field" for="editPaymentSchedule">Court and time
-                        <select id="editPaymentSchedule" name="schedule_id" required></select>
                     </label>
                     <label for="editPaymentReference" id="editPaymentReferenceField">Reference number
                         <input type="text" id="editPaymentReference" name="reference_number" maxlength="50">

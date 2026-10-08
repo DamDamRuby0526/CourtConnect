@@ -5,11 +5,26 @@ const editPaymentModal = document.getElementById("editPaymentModal");
 const editPaymentForm = document.getElementById("editPaymentForm");
 const paymentReceiptModal = document.getElementById("paymentReceiptModal");
 const paymentReceiptImage = document.getElementById("paymentReceiptImage");
+const pesoFormatter = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+});
 let payments = [];
-let availableSchedules = [];
 let pendingPaymentId = null;
-let editingPayment = null;
+let paymentMessageTimeout = null;
 const markPaidModal = document.getElementById("markPaidModal");
+
+function showPaymentMessage(message, isError = false) {
+  clearTimeout(paymentMessageTimeout);
+  paymentMessage.textContent = message;
+  paymentMessage.classList.toggle("is-error", isError);
+  if (message && !isError) {
+    paymentMessageTimeout = setTimeout(() => {
+      paymentMessage.textContent = "";
+    }, 5000);
+  }
+}
 
 function setMarkPaidModalOpen(open) {
   markPaidModal.classList.toggle("show", open);
@@ -22,39 +37,14 @@ function setEditPaymentModalOpen(open) {
   editPaymentModal.classList.toggle("show", open);
   editPaymentModal.setAttribute("aria-hidden", String(!open));
   if (open) document.getElementById("editPaymentMethod").focus();
-  else editingPayment = null;
 }
 
 function openEditPayment(payment) {
-  editingPayment = payment;
   document.getElementById("editPaymentId").value = payment.payments_id;
-  document.getElementById("editCustomerName").value = payment.customer_name || "";
-  document.getElementById("editCustomerPhone").value = payment.customer_phone || "";
   document.getElementById("editPaymentMethod").value = payment.payment_method;
   document.getElementById("editPaymentReference").value = payment.reference_number || "";
   updateReferenceField();
   document.getElementById("editPaymentStatusSelect").value = payment.payment_status;
-  const scheduleSelect = document.getElementById("editPaymentSchedule");
-  scheduleSelect.replaceChildren();
-  const currentSchedule = {
-    schedule_id: payment.schedule_id,
-    court_no: payment.court_no,
-    court_date: payment.court_date,
-    court_time: payment.court_time,
-    slot_duration: payment.slot_duration,
-  };
-  const schedules = [currentSchedule, ...availableSchedules.filter((schedule) =>
-    String(schedule.schedule_id) !== String(payment.schedule_id),
-  )];
-  for (const schedule of schedules) {
-    const option = document.createElement("option");
-    option.value = schedule.schedule_id;
-    const currentLabel = String(schedule.schedule_id) === String(payment.schedule_id) ? "Current · " : "";
-    option.textContent = `${currentLabel}Court ${schedule.court_no} · ${formatPaymentDate(schedule.court_date, schedule.court_time)} · ${schedule.slot_duration} min`;
-    scheduleSelect.append(option);
-  }
-  scheduleSelect.value = payment.schedule_id;
-  updateScheduleOptionsForStatus();
   const formStatus = document.getElementById("editPaymentFeedback");
   formStatus.textContent = "";
   formStatus.classList.remove("is-error");
@@ -79,15 +69,6 @@ function updateReferenceField() {
   field.hidden = isCash;
   referenceInput.disabled = isCash;
   if (isCash) referenceInput.value = "";
-}
-
-function updateScheduleOptionsForStatus() {
-  const isRejected = document.getElementById("editPaymentStatusSelect").value === "Rejected";
-  const scheduleSelect = document.getElementById("editPaymentSchedule");
-  for (const option of scheduleSelect.options) {
-    option.disabled = isRejected && String(option.value) !== String(editingPayment.schedule_id);
-  }
-  if (isRejected) scheduleSelect.value = editingPayment.schedule_id;
 }
 
 function paymentCell(label, value, className = "") {
@@ -115,6 +96,20 @@ function formatPaymentDate(dateString, timeString) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function customerDetails(payment) {
+  const customer = document.createElement("div");
+  customer.className = "payment-customer";
+  const name = document.createElement("strong");
+  name.textContent = payment.customer_name || "Walk-in customer";
+  customer.append(name);
+  if (payment.customer_phone) {
+    const phone = document.createElement("small");
+    phone.textContent = payment.customer_phone;
+    customer.append(phone);
+  }
+  return customer;
 }
 
 function renderPayments() {
@@ -169,10 +164,10 @@ function renderPayments() {
     row.append(
       paymentCell("Booking date", formatPaymentDate(payment.court_date, payment.court_time)),
       paymentCell("Court", `Court ${payment.court_no}`),
-      paymentCell("Customer", `${payment.customer_name}${payment.customer_phone ? ` · ${payment.customer_phone}` : ""}`),
-      paymentCell("Method", payment.payment_method),
+      paymentCell("Customer", customerDetails(payment)),
+      paymentCell("Method", payment.payment_method === "Gcash" ? "GCash" : "Cash"),
       paymentCell("Reference", payment.reference_number || "Not provided"),
-      paymentCell("Amount", `₱${Number(payment.total_amount).toFixed(2)}`),
+      paymentCell("Amount", pesoFormatter.format(Number(payment.total_amount))),
       paymentCell("Receipt", receipt),
       paymentCell("Status", status),
       paymentCell("Action", [editButton, action]),
@@ -188,14 +183,12 @@ async function loadPayments() {
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "Unable to load payment records.");
     payments = result.payments;
-    availableSchedules = result.available_schedules;
     document.getElementById("pendingPaymentCount").textContent = result.pending_count;
     document.getElementById("rejectedPaymentCount").textContent = result.rejected_count;
-    document.getElementById("paidPaymentTotal").textContent = `₱${Number(result.paid_total).toFixed(2)}`;
+    document.getElementById("paidPaymentTotal").textContent = pesoFormatter.format(Number(result.paid_total));
     renderPayments();
   } catch (error) {
-    paymentMessage.textContent = error.message || "Unable to load payment records.";
-    paymentMessage.classList.add("is-error");
+    showPaymentMessage(error.message || "Unable to load payment records.", true);
   } finally {
     paymentRows.removeAttribute("aria-busy");
   }
@@ -224,8 +217,7 @@ async function markPaymentPaid() {
   const paymentId = pendingPaymentId;
   const confirmButton = document.getElementById("confirmMarkPaid");
   confirmButton.disabled = true;
-  paymentMessage.classList.remove("is-error");
-  paymentMessage.textContent = "Updating payment status...";
+  showPaymentMessage("Updating payment status...");
   setMarkPaidModalOpen(false);
   try {
     const response = await fetch("../includes/admin-php/manage_payments.php", {
@@ -235,11 +227,10 @@ async function markPaymentPaid() {
     });
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "Unable to update payment status.");
-    paymentMessage.textContent = result.message;
+    showPaymentMessage(result.message);
     await loadPayments();
   } catch (error) {
-    paymentMessage.textContent = error.message || "Unable to update payment status.";
-    paymentMessage.classList.add("is-error");
+    showPaymentMessage(error.message || "Unable to update payment status.", true);
   } finally {
     confirmButton.disabled = false;
   }
@@ -264,9 +255,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && paymentReceiptModal.classList.contains("show")) setPaymentReceiptOpen(false);
 });
 
-document.getElementById("editPaymentStatusSelect").addEventListener("change", (event) => {
-  updateScheduleOptionsForStatus();
-});
 document.getElementById("editPaymentMethod").addEventListener("change", updateReferenceField);
 
 editPaymentForm.addEventListener("submit", async (event) => {
@@ -287,10 +275,8 @@ editPaymentForm.addEventListener("submit", async (event) => {
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "Unable to save payment details.");
     setEditPaymentModalOpen(false);
-    paymentMessage.textContent = result.message;
-    paymentMessage.classList.remove("is-error");
+    showPaymentMessage(result.message);
     await loadPayments();
-    paymentMessage.textContent = result.message;
   } catch (error) {
     formStatus.textContent = error.message || "Unable to save payment details.";
     formStatus.classList.add("is-error");
