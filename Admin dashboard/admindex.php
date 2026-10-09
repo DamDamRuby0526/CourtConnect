@@ -30,6 +30,8 @@ if ($facilityId && $facilityId > 0) {
          INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
          WHERE cd.facility_id = ? AND cs.court_date = CURDATE()
              AND cs.schedule_status = 'Booked'
+             AND b.arrived_at IS NULL
+             AND b.did_not_arrive_at IS NULL
          ORDER BY cs.court_time ASC, cd.court_no ASC"
     );
     if ($todayStmt) {
@@ -125,10 +127,12 @@ function dashboardEscape($value)
                                 <strong>Court <?= dashboardEscape($booking["court_no"]) ?></strong>
                                 <span><?= dashboardEscape($booking["customer_name"]) ?></span>
                                 <small><?= (int) $booking["slot_duration"] ?> min</small>
+                                <button type="button" class="dashboard-arrived-button" data-booking-id="<?= (int) $booking["booking_id"] ?>">Arrived</button>
                             </article>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
+                <p class="dashboard-empty" id="todayBookingsStatus" role="status" aria-live="polite" hidden></p>
             </section>
 
             <section class="dashboard-detail-panel" id="availableCourtsPanel" aria-labelledby="availableCourtsHeading" hidden>
@@ -182,6 +186,21 @@ function dashboardEscape($value)
                     <button type="submit" class="owner-primary-button" id="submitManualBooking">Confirm booking</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <div class="modal-container owner-modal" id="arrivedConfirmationModal" aria-hidden="true">
+        <div class="modal owner-modal-panel owner-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="arrivedConfirmationTitle" aria-describedby="arrivedConfirmationMessage">
+            <div class="owner-modal-heading">
+                <div>
+                    <h2 id="arrivedConfirmationTitle">Customer Arrived?</h2>
+                </div>
+            </div>
+            <p class="owner-confirm-message" id="arrivedConfirmationMessage">Confirm that this customer has arrived for their booking.</p>
+            <div class="owner-modal-actions">
+                <button type="button" class="owner-secondary-button" id="cancelArrivedConfirmation">Cancel</button>
+                <button type="button" class="owner-danger-button" id="markNoShowConfirmation">Mark as no-show</button>
+                <button type="button" class="owner-primary-button" id="confirmArrivedConfirmation">Confirm</button>
+            </div>
         </div>
     </div>
 </body>

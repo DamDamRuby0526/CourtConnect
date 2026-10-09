@@ -29,10 +29,9 @@ if (!$hasAccess) {
 }
 
 $adminDashboardLayout = true;
-$adminNavPage = "bookings";
+$adminNavPage = "history";
 $facilityName = "Your facility";
 $bookings = [];
-$paidPaymentTotal = 0;
 
 $facilityStmt = $conn->prepare("SELECT facility_name FROM facilities WHERE facility_id = ?");
 $facilityStmt->bind_param("i", $facilityId);
@@ -49,9 +48,9 @@ $bookingsStmt = $conn->prepare(
             COALESCE(b.customer_phone, u.phone_number) AS customer_phone,
             cs.court_date, cs.court_time,
             cd.court_no, cd.slot_duration,
-            p.payment_status
+            p.payment_status, b.arrived_at, b.did_not_arrive_at
      FROM bookings b
-    LEFT JOIN users u ON u.user_id = b.user_id
+     LEFT JOIN users u ON u.user_id = b.user_id
      INNER JOIN court_details cd ON cd.court_id = b.court_id
      INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
      LEFT JOIN (
@@ -60,27 +59,23 @@ $bookingsStmt = $conn->prepare(
          GROUP BY booking_id
      ) latest_payment ON latest_payment.booking_id = b.booking_id
      LEFT JOIN payments p ON p.payments_id = latest_payment.payments_id
-     WHERE cd.facility_id = ? AND cs.schedule_status = 'Booked'
-         AND b.arrived_at IS NULL
-         AND b.did_not_arrive_at IS NULL
-         AND p.payment_status = 'Paid'
-         AND (cs.court_date > CURDATE() OR (cs.court_date = CURDATE() AND cs.court_time >= CURTIME()))
-     ORDER BY cs.court_date ASC, cs.court_time ASC
-     LIMIT 100"
+     WHERE cd.facility_id = ?
+         AND (b.arrived_at IS NOT NULL
+             OR b.did_not_arrive_at IS NOT NULL
+             OR cs.court_date < CURDATE()
+             OR (cs.court_date = CURDATE() AND cs.court_time < CURTIME()))
+     ORDER BY cs.court_date DESC, cs.court_time DESC"
 );
 $bookingsStmt->bind_param("i", $facilityId);
 $bookingsStmt->execute();
 $bookingsResult = $bookingsStmt->get_result();
 while ($booking = $bookingsResult->fetch_assoc()) {
     $bookings[] = $booking;
-    if ($booking["payment_status"] === "Paid") {
-        $paidPaymentTotal += (float) $booking["total_amount"];
-    }
 }
 $bookingsStmt->close();
 $conn->close();
 
-function bookingsPageEscape($value)
+function bookingHistoryEscape($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
@@ -94,7 +89,7 @@ function bookingsPageEscape($value)
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Upcoming Bookings | CourtConnect</title>
+    <title>Booking History | CourtConnect</title>
 </head>
 <body class="admin-ui">
     <div class="admin-layout">
@@ -102,26 +97,26 @@ function bookingsPageEscape($value)
         <main class="admin-content">
             <header class="admin-page-head">
                 <div>
-                    <p class="admin-breadcrumb"><?= $roleId === 3 ? "FACILITY OWNER" : "FACILITY ADMIN" ?> <span>/</span> BOOKINGS</p>
-                    <h1>Upcoming bookings</h1>
-                    <p class="admin-subtitle">Confirmed reservations from today onward, ordered by date and time.</p>
+                    <p class="admin-breadcrumb"><?= $roleId === 3 ? "FACILITY OWNER" : "FACILITY ADMIN" ?> <span>/</span> HISTORY / ARCHIVE</p>
+                    <h1>Booking history</h1>
+                    <p class="admin-subtitle">Bookings appear here after their scheduled time passes or when attendance is recorded.</p>
                 </div>
                 <div class="admin-head-actions">
-                    <span class="admin-today"><?= date("l, F j") ?></span>
-                    <button class="admin-refresh-button" type="button" id="refreshBookings" aria-label="Refresh bookings" title="Refresh bookings">&#8635;</button>
+                    <span class="admin-today"><?= date("l, F j, Y") ?></span>
+                    <button class="admin-refresh-button" type="button" id="refreshBookings" aria-label="Refresh booking history" title="Refresh booking history">&#8635;</button>
                 </div>
             </header>
-            <section class="booking-section" aria-label="Upcoming bookings">
+            <section class="booking-section" aria-label="Archived bookings">
                 <div class="booking-section-head">
                     <div>
-                        <h2>Reservations</h2>
-                        <p><?= bookingsPageEscape($facilityName) ?> <span class="section-divider">/</span> All courts</p>
+                        <h2>Archived reservations</h2>
+                        <p><?= bookingHistoryEscape($facilityName) ?> <span class="section-divider">/</span> All courts</p>
                     </div>
                     <div class="booking-totals" aria-live="polite">
                         <span><strong id="visibleCount"><?= count($bookings) ?></strong> shown</span>
                     </div>
                 </div>
-                <div class="booking-tools" role="search" aria-label="Filter bookings">
+                <div class="booking-tools" role="search" aria-label="Filter booking history">
                     <label class="booking-filter booking-date-filter">
                         <span>Date</span>
                         <input type="date" id="bookingDate" aria-label="Filter by date">
@@ -140,27 +135,37 @@ function bookingsPageEscape($value)
                                 <th scope="col">Time</th>
                                 <th scope="col">Court</th>
                                 <th scope="col">Duration</th>
-                                        <th scope="col">Customer</th>
+                                <th scope="col">Customer</th>
                                 <th scope="col">Amount</th>
                                 <th scope="col">Payment</th>
+                                <th scope="col">Attendance</th>
                                 <th scope="col">Booked on</th>
                             </tr>
                         </thead>
-                        <tbody id="bookingRows">
+                        <tbody>
                             <?php if (!$bookings): ?>
-                                <tr><td colspan="8" class="schedule-empty">No upcoming bookings found for <?= bookingsPageEscape($facilityName) ?>.</td></tr>
+                                <tr><td colspan="9" class="schedule-empty">No past bookings found for <?= bookingHistoryEscape($facilityName) ?>.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($bookings as $booking): ?>
                                     <?php $paymentSlug = strtolower($booking["payment_status"] ?? "unpaid"); ?>
-                                    <tr class="booking-row" data-date="<?= bookingsPageEscape($booking["court_date"]) ?>" data-player="<?= bookingsPageEscape($booking["customer_name"]) ?>" data-payment="<?= bookingsPageEscape($paymentSlug) ?>">
-                                        <td data-label="Date"><?= bookingsPageEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
-                                        <td data-label="Time"><?= bookingsPageEscape(date("g:i A", strtotime($booking["court_time"]))) ?></td>
-                                        <td data-label="Court"><?= bookingsPageEscape($booking["court_no"]) ?></td>
+                                    <?php
+                                        $attendanceStatus = $booking["did_not_arrive_at"]
+                                            ? "Did not arrive"
+                                            : ($booking["arrived_at"] ? "Arrived" : "Not recorded");
+                                        $attendanceSlug = $booking["did_not_arrive_at"]
+                                            ? "no-show"
+                                            : ($booking["arrived_at"] ? "arrived" : "not-recorded");
+                                    ?>
+                                    <tr class="booking-row" data-date="<?= bookingHistoryEscape($booking["court_date"]) ?>" data-player="<?= bookingHistoryEscape($booking["customer_name"]) ?>">
+                                        <td data-label="Date"><?= bookingHistoryEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
+                                        <td data-label="Time"><?= bookingHistoryEscape(date("g:i A", strtotime($booking["court_time"]))) ?></td>
+                                        <td data-label="Court"><?= bookingHistoryEscape($booking["court_no"]) ?></td>
                                         <td data-label="Duration"><?= (int) $booking["slot_duration"] ?> min</td>
-                                        <td data-label="Customer" class="booking-player"><?= bookingsPageEscape($booking["customer_name"]) ?><small><?= bookingsPageEscape($booking["customer_phone"] ?? "") ?></small></td>
+                                        <td data-label="Customer" class="booking-player"><?= bookingHistoryEscape($booking["customer_name"]) ?><small><?= bookingHistoryEscape($booking["customer_phone"] ?? "") ?></small></td>
                                         <td data-label="Amount">&#8369;<?= number_format((float) $booking["total_amount"], 2) ?></td>
-                                        <td data-label="Payment"><span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($booking["payment_status"] ?? "Unpaid") ?></span></td>
-                                        <td data-label="Booked on"><?= bookingsPageEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></td>
+                                        <td data-label="Payment"><span class="payment-status payment-<?= bookingHistoryEscape($paymentSlug) ?>"><?= bookingHistoryEscape($booking["payment_status"] ?? "Unpaid") ?></span></td>
+                                        <td data-label="Attendance"><span class="attendance-status attendance-status-<?= bookingHistoryEscape($attendanceSlug) ?>"><?= bookingHistoryEscape($attendanceStatus) ?></span></td>
+                                        <td data-label="Booked on"><?= bookingHistoryEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -169,7 +174,7 @@ function bookingsPageEscape($value)
                     <p class="schedule-no-results" id="noResults" hidden>No bookings match those filters.</p>
                 </div>
             </section>
-            <footer class="admin-footer"><span><?= bookingsPageEscape($facilityName) ?></span><span>Paid total: &#8369;<?= number_format($paidPaymentTotal, 2) ?></span></footer>
+            <footer class="admin-footer"><span><?= bookingHistoryEscape($facilityName) ?></span></footer>
         </main>
     </div>
     <script>

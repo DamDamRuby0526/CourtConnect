@@ -8,6 +8,7 @@
             <span class="owner-nav-label">WORKSPACE</span>
             <a class="<?= ($ownerNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
             <a class="<?= ($ownerNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
+            <a class="<?= ($ownerNavPage ?? "") === "history" ? "active" : "" ?>" href="bookinghistory.php"><span aria-hidden="true">&#8634;</span>History / Archive</a>
             <a class="<?= ($ownerNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
             <span class="owner-nav-label">OWNER SETTINGS</span>
             <div class="owner-nav-submenu">
@@ -31,6 +32,7 @@
             <span class="admin-nav-label">WORKSPACE</span>
             <a class="<?= ($adminNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
             <a class="<?= ($adminNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
+            <a class="<?= ($adminNavPage ?? "") === "history" ? "active" : "" ?>" href="bookinghistory.php"><span aria-hidden="true">&#8634;</span>History / Archive</a>
             <a class="<?= ($adminNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
             <?php if ((int) ($_SESSION["role_id"] ?? 0) === 3): ?>
                 <span class="admin-nav-label">OWNER SETTINGS</span>

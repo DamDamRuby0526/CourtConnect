@@ -320,11 +320,14 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .dashboard-detail-heading h2 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 16px; font-weight: 600; line-height: 1.4; }
 .dashboard-detail-heading p, .dashboard-detail-heading > span { margin-top: 3px; color: #728187; font-size: 9px; }
 .dashboard-empty { padding: 20px 8px; color: #728187; font-size: 11px; }
-.dashboard-today-row { display: grid; grid-template-columns: 95px minmax(100px, .7fr) minmax(0, 1fr) 70px; align-items: center; gap: 12px; min-height: 47px; padding: 8px; border-bottom: 1px solid #e8ede8; }
+.dashboard-today-row { display: grid; grid-template-columns: 95px minmax(100px, .7fr) minmax(0, 1fr) 70px auto; align-items: center; gap: 12px; min-height: 47px; padding: 8px; border-bottom: 1px solid #e8ede8; }
 .dashboard-today-row time { color: #397a61; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .dashboard-today-row strong { color: #193e59; font-size: 10px; font-weight: 600; }
 .dashboard-today-row > span, .dashboard-today-row small { color: #6d7d81; font-size: 9px; }
 .dashboard-today-row small { justify-self: end; }
+.dashboard-arrived-button { min-height: 30px; padding: 0 10px; border: 1px solid var(--green); border-radius: 2px; background: var(--green); color: #173c27; font-family: inherit; font-size: 9px; font-weight: 600; cursor: pointer; }
+.dashboard-arrived-button:hover { border-color: #67a52f; background: #86c248; }
+.dashboard-arrived-button:disabled { cursor: default; opacity: .65; }
 .dashboard-available-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 15px; padding: 12px 8px; border-bottom: 1px solid #e8ede8; }
 .dashboard-available-details { display: grid; min-width: 0; grid-template-columns: minmax(100px, .7fr) minmax(0, 1.4fr) minmax(100px, .7fr); align-items: center; gap: 10px; }
 .dashboard-available-details strong { color: #193e59; font-size: 10px; font-weight: 600; }
@@ -427,8 +430,9 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .dashboard-summary-cards { grid-template-columns: 1fr; gap: 9px; }
   .dashboard-summary-card { min-height: 104px; padding: 15px; }
   .dashboard-summary-card strong { font-size: 30px; }
-  .dashboard-today-row { grid-template-columns: 75px minmax(80px, .8fr) minmax(0, 1fr); gap: 7px; padding: 8px 4px; }
-  .dashboard-today-row small { grid-column: 2 / -1; justify-self: start; }
+  .dashboard-today-row { grid-template-columns: 75px minmax(80px, .8fr) minmax(0, 1fr) auto; gap: 7px; padding: 8px 4px; }
+  .dashboard-today-row small { grid-column: 2 / 3; justify-self: start; }
+  .dashboard-arrived-button { grid-column: 3 / -1; grid-row: 2; justify-self: end; }
   .dashboard-available-row { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 11px 4px; }
   .dashboard-available-details { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .admin-book-slot-button { justify-self: start; }
@@ -564,6 +568,10 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .owner-modal-actions button:disabled { cursor: wait; opacity: .55; }
 .owner-confirm-panel { width: min(720px, 100%); }
 .owner-confirm-message { margin: 0; color: #4e6872; font-size: 15px; line-height: 1.6; }
+.attendance-status { display: inline-block; padding: 4px 8px; border-radius: 2px; font-size: 9px; font-weight: 600; white-space: nowrap; }
+.attendance-status-arrived { background: #e4f1db; color: #477c35; }
+.attendance-status-no-show { background: #f7e4e1; color: #984c43; }
+.attendance-status-not-recorded { background: #eef1f2; color: #62757c; }
 
 @media (max-width: 900px) {
   .owner-layout { grid-template-columns: 205px minmax(0, 1fr); }

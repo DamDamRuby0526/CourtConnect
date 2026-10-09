@@ -1,13 +1,67 @@
 const dashboardCards = [...document.querySelectorAll("[data-dashboard-panel]")];
 const manualBookingModal = document.getElementById("manualBookingModal");
 const manualBookingForm = document.getElementById("manualBookingForm");
+const arrivedConfirmationModal = document.getElementById("arrivedConfirmationModal");
 const availableSlotsList = document.getElementById("availableSlotsList");
 const availableSlotsStatus = document.getElementById("availableSlotsStatus");
 const availableSlotCount = document.getElementById("availableSlotCount");
 let availableSlots = [];
 let slotsLoaded = false;
+let pendingArrivalButton = null;
 
 document.getElementById("refreshBookings").addEventListener("click", () => location.reload());
+
+const todayBookingsPanel = document.getElementById("todayBookingsPanel");
+todayBookingsPanel.addEventListener("click", (event) => {
+  const button = event.target.closest(".dashboard-arrived-button");
+  if (!button) return;
+
+  pendingArrivalButton = button;
+  arrivedConfirmationModal.classList.add("show");
+  arrivedConfirmationModal.setAttribute("aria-hidden", "false");
+  document.getElementById("cancelArrivedConfirmation").focus();
+});
+
+function closeArrivedConfirmation() {
+  arrivedConfirmationModal.classList.remove("show");
+  arrivedConfirmationModal.setAttribute("aria-hidden", "true");
+  if (pendingArrivalButton) pendingArrivalButton.focus();
+  pendingArrivalButton = null;
+}
+
+async function saveBookingAttendance(attendance) {
+  const button = pendingArrivalButton;
+  if (!button) return;
+
+  arrivedConfirmationModal.classList.remove("show");
+  arrivedConfirmationModal.setAttribute("aria-hidden", "true");
+  pendingArrivalButton = null;
+  const status = document.getElementById("todayBookingsStatus");
+  status.hidden = false;
+  button.disabled = true;
+  status.textContent = attendance === "arrived" ? "Marking booking as arrived..." : "Marking booking as no-show...";
+  try {
+    const response = await fetch("../includes/admin-php/mark_booking_arrived.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ booking_id: button.dataset.bookingId, attendance }),
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.message || "Unable to update this booking.");
+    window.location.reload();
+  } catch (error) {
+    status.textContent = error.message || "Unable to update this booking.";
+    button.disabled = false;
+    button.focus();
+  }
+}
+
+document.getElementById("cancelArrivedConfirmation").addEventListener("click", closeArrivedConfirmation);
+arrivedConfirmationModal.addEventListener("click", (event) => {
+  if (event.target === arrivedConfirmationModal) closeArrivedConfirmation();
+});
+document.getElementById("confirmArrivedConfirmation").addEventListener("click", () => saveBookingAttendance("arrived"));
+document.getElementById("markNoShowConfirmation").addEventListener("click", () => saveBookingAttendance("no_show"));
 
 function setManualBookingOpen(open) {
   manualBookingModal.classList.toggle("show", open);
@@ -139,6 +193,7 @@ manualBookingModal.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && manualBookingModal.classList.contains("show")) setManualBookingOpen(false);
+  if (event.key === "Escape" && arrivedConfirmationModal.classList.contains("show")) closeArrivedConfirmation();
 });
 
 manualBookingForm.addEventListener("submit", async (event) => {
