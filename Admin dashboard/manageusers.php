@@ -44,19 +44,14 @@
     <div class="modal-container" id="modal_container">
         <div class="modal">
             <form id="registerForm">
-
                 <p>First Name</p>
                 <input type="text" id="first_name" name="first_name" required><br>
-
                 <p>Last Name</p>
                 <input type="text" id="last_name" name="last_name" required><br>
-
                 <p>Email</p>
                 <input type="email" id="email" name="email" required><br>
-
                 <p>Contact Number (09 format)</p>
                 <input type="text" id="phone_number" name="phone_number" required><br>
-
                 <button type="button" class="save-btn">Save</button>
                 <button type="button" class="cancel-btn">Cancel</button>
             </form>

@@ -70,6 +70,7 @@ function dashboardEscape($value)
 ?>
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -80,6 +81,7 @@ function dashboardEscape($value)
     <script src="../includes/js/admin_dashboard.js" defer></script>
     <title>Upcoming reservations | CourtConnect</title>
 </head>
+
 <body class="admin-ui">
     <div class="admin-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
@@ -185,14 +187,44 @@ function dashboardEscape($value)
                     <button type="button" class="owner-secondary-button" id="cancelManualBooking">Cancel</button>
                     <button type="submit" class="owner-primary-button" id="submitManualBooking">Confirm booking</button>
                 </div>
-            </form>
-        </div>
-    </div>
-    <div class="modal-container owner-modal" id="arrivedConfirmationModal" aria-hidden="true">
-        <div class="modal owner-modal-panel owner-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="arrivedConfirmationTitle" aria-describedby="arrivedConfirmationMessage">
-            <div class="owner-modal-heading">
-                <div>
-                    <h2 id="arrivedConfirmationTitle">Customer Arrived?</h2>
+
+                <div class="schedule-table-wrap">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Time</th>
+                                <th scope="col">Court</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Player</th>
+                                <th scope="col">Amount</th>
+                                <th scope="col">Payment</th>
+                                <th scope="col">Booked on</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingRows">
+                            <?php if (!$facilityId): ?>
+                                <tr><td colspan="8" class="schedule-empty">Sign in with a facility admin account to view bookings.</td></tr>
+                            <?php elseif (!$bookings): ?>
+                                <tr><td colspan="8" class="schedule-empty">No reservations found for <?= dashboardEscape($facilityName) ?>.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($bookings as $booking): ?>
+                                    <?php $paymentSlug = strtolower($booking["payment_status"] ?? "unpaid"); ?>
+                                    <tr class="booking-row" data-date="<?= dashboardEscape($booking["court_date"]) ?>" data-player="<?= dashboardEscape($booking["first_name"] . " " . $booking["last_name"]) ?>" data-payment="<?= dashboardEscape($paymentSlug) ?>" data-has-payment="<?= $booking["payment_status"] !== null ? "true" : "false" ?>" data-upcoming="<?= $booking["court_date"] >= date("Y-m-d") ? "true" : "false" ?>">
+                                        <td data-label="Date"><?= dashboardEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
+                                        <td data-label="Time"><?= dashboardEscape(date("g:i A", strtotime($booking["court_time"]))) ?></td>
+                                        <td data-label="Court"><?= dashboardEscape($booking["court_no"]) ?></td>
+                                        <td data-label="Duration"><?= (int) $booking["slot_duration"] ?> min</td>
+                                        <td data-label="Player" class="booking-player"><?= dashboardEscape($booking["first_name"] . " " . $booking["last_name"]) ?></td>
+                                        <td data-label="Amount">₱<?= number_format((float) $booking["total_amount"], 2) ?></td>
+                                        <td data-label="Payment"><span class="payment-status payment-<?= dashboardEscape($paymentSlug) ?>"><?= dashboardEscape($booking["payment_status"] ?? "Unpaid") ?></span></td>
+                                        <td data-label="Booked on"><?= dashboardEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                    <p class="schedule-no-results" id="noResults" hidden>No bookings match those filters.</p>
                 </div>
             </div>
             <p class="owner-confirm-message" id="arrivedConfirmationMessage">Confirm that this customer has arrived for their booking.</p>
@@ -203,5 +235,56 @@ function dashboardEscape($value)
             </div>
         </div>
     </div>
+    <script>
+        const bookingFilters = [
+            document.getElementById("bookingDate"),
+            document.getElementById("playerSearch"),
+            document.getElementById("paymentFilter")
+        ];
+        const bookingRows = [...document.querySelectorAll(".booking-row")];
+        const adminViews = [...document.querySelectorAll("[data-admin-view]")];
+        const visibleCount = document.getElementById("visibleCount");
+        const noResults = document.getElementById("noResults");
+        let activeView = "bookings";
+
+        function filterBookings() {
+            const [dateValue, playerValue, paymentValue] = bookingFilters.map((filter) => filter.value.trim().toLowerCase());
+            let visible = 0;
+
+            bookingRows.forEach((row) => {
+                const matchesView = activeView === "bookings"
+                    || (activeView === "payments" && row.dataset.hasPayment === "true")
+                    || (activeView === "upcoming" && row.dataset.upcoming === "true");
+                const matches = matchesView
+                    && (!dateValue || row.dataset.date === dateValue)
+                    && (!playerValue || row.dataset.player.toLowerCase().includes(playerValue))
+                    && (!paymentValue || row.dataset.payment === paymentValue);
+                row.hidden = !matches;
+                if (matches) visible++;
+            });
+
+            visibleCount.textContent = visible;
+            noResults.hidden = visible > 0 || bookingRows.length === 0;
+        }
+
+        bookingFilters.forEach((filter) => filter.addEventListener("input", filterBookings));
+        document.getElementById("clearFilters").addEventListener("click", () => {
+            bookingFilters.forEach((filter) => { filter.value = ""; });
+            filterBookings();
+        });
+        document.getElementById("refreshBookings").addEventListener("click", () => location.reload());
+        adminViews.forEach((link) => link.addEventListener("click", (event) => {
+            event.preventDefault();
+            activeView = link.dataset.adminView;
+            adminViews.forEach((item) => {
+                const isActive = item === link;
+                item.classList.toggle("active", isActive);
+                if (isActive) item.setAttribute("aria-current", "page");
+                else item.removeAttribute("aria-current");
+            });
+            filterBookings();
+        }));
+    </script>
 </body>
+
 </html>

@@ -102,7 +102,7 @@ try {
     $stmt->close();
 
     // Mark the schedule as no longer available
-    $sql = "UPDATE court_schedule SET schedule_status = 'Booked' WHERE schedule_id = ?";
+    $sql = "UPDATE court_schedule SET schedule_status = 'Pending' WHERE schedule_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $scheduleId);
     $stmt->execute();
@@ -112,7 +112,7 @@ try {
 
     echo json_encode([
         "success" => true,
-        "message" => "Booking confirmed.",
+        "message" => "Booking confirmation Pending.",
         "booking_id" => $bookingId
     ]);
 

@@ -14,17 +14,11 @@ if (session_status() === PHP_SESSION_NONE) {
 </head>
 
 <body>
-
-
-    <?php include 'includes/navigation/header.php'; ?>
-
+<?php include 'includes/navigation/header.php'; ?>
     <div>
         <h2>Contact Us</h2>
         <p></p>
-
     </div>
-
-
 </body>
 
 <?php include 'includes/navigation/footer.php'; ?>

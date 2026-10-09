@@ -20,26 +20,17 @@ if (session_status() === PHP_SESSION_NONE) {
 
   <div>
     <div>
-
       <form id="loginForm">
         <h2>Sign In As Facility</h2>
-
         <label for="email">Email</label><br>
         <input type="email" name="email" required autocomplete="email"><br>
-
         <label for="password">Password</label><br>
         <input type="password" name="password" required autocomplete="password"><br>
-
         <button type="submit" class="btn">Login</button>
-
         <p>Don't have an account? <a href="adminregister.php">Register as Admin</a></p>
       </form>
     </div>
-
-
   </div>
-
-
 
 </body>
 

@@ -26,11 +26,11 @@ if (session_status() === PHP_SESSION_NONE) {
     <div class="auth-visual">
       <p class="auth-visual-eyebrow">FOR FACILITY OWNERS</p>
 
-      <h2>List your courts.<br>Start earning bookings.</h2>
+      <h2>List your courts.<br />Start earning bookings.</h2>
 
       <p>
-        Join facility owners across Bataan managing reservations,
-        rates, and bookings in one place.
+        Join facility owners across Bataan managing reservations, rates, and
+        bookings in one place.
       </p>
     </div>
 
@@ -82,8 +82,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 required>
             </div>
 
-
-            <div class="field-group">
+          <div class="field-group">
               <label for="last_name">Last Name</label>
 
               <input

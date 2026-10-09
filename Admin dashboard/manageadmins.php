@@ -38,6 +38,7 @@ function ownerAccountsEscape($value)
 ?>
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,6 +49,7 @@ function ownerAccountsEscape($value)
     <script src="../includes/js/admin_manageaccounts.js" defer></script>
     <title>Admin accounts | CourtConnect</title>
 </head>
+
 <body class="owner-ui">
     <div class="owner-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
@@ -127,4 +129,5 @@ function ownerAccountsEscape($value)
         </div>
     </div>
 </body>
+
 </html>

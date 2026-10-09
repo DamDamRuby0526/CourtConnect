@@ -15,22 +15,15 @@ if (session_status() === PHP_SESSION_NONE) {
 </head>
 
 <body>
-
-
 <?php include 'includes/navigation/header.php'; ?>
 
-   
-    <h2 class="page-title">Available Facilities</h2>
-    
+<h2 class="page-title">Available Facilities</h2>
     <div class="grid-container" id="facilities-container">
         <!-- facility cards injected by facilities.js -->
     </div>
     
 
-
-
 </body>
-
 <?php include 'includes/navigation/footer.php'; ?>
 
 </html>

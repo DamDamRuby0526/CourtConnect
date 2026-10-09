@@ -36,7 +36,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <img class="hero-logo-image" src="uploads/badminton-pickleball-court.svg" alt="Illustration of a badminton and pickleball court">
             </div>
         </section>
-        
+
         <section class="benefits" aria-label="Why use CourtConnect">
             <div class="section-heading">
                 <p class="eyebrow">WHY COURTCONNECT</p>
@@ -67,7 +67,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <h2>Your next game starts here.</h2>
             </div>
             <a class="button button-light" href="register.php">Create an account <span aria-hidden="true">&rarr;</span></a>
-             <a class="button button-light" href="adminregister.php">Register as a Facility<span aria-hidden="true">&rarr;</span></a>
+            <a class="button button-light" href="adminregister.php">Register as a Facility<span aria-hidden="true">&rarr;</span></a>
         </section>
     </main>
 

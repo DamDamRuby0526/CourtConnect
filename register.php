@@ -22,25 +22,18 @@ if (session_status() === PHP_SESSION_NONE) {
     <h2>Sign Up</h2>
     <label for="first_name">First Name</label><br>
     <input type="text" id="first_name" name="first_name" required><br>
-
     <label for="last_name">Last Name</label><br>
     <input type="text" id="last_name" name="last_name" required><br>
-
     <label for="email">Email</label><br>
     <input type="email" id="email" name="email" required autocomplete="email"><br>
-
     <label for="confirm_email">Confirm Email</label><br>
     <input type="email" id="confirm_email" name="confirm_email" required autocomplete="email"><br>
-
     <label for="phone_number">Contact Number (09 format)</label><br>
     <input type="text" id="phone_number" name="phone_number" required><br>
-
     <label for="password">Password (8 characters minimum)</label><br>
     <input type="password" id="password" name="password" required><br>
-
     <label for="confirm_password">Confirm Password</label><br>
     <input type="password" id="confirm_password" name="confirm_password" required><br>
-
     <button type="submit" class="btn">Next</button>
     <p>Already have an account? <a href="signin.php"> Login</a></p>
   </form>
@@ -61,7 +54,6 @@ if (session_status() === PHP_SESSION_NONE) {
           <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 5" required>
           <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" aria-label="OTP digit 6" required>
         </div>
-
         <button type="submit" id="submitOtpButton" class="btn">Submit Code</button>
         <p>Didn't receive the code? <a href="#" id="resendOtpLink">Request to resend OTP code</a></p>
       </form>
