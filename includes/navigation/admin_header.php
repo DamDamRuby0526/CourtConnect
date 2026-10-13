@@ -1,14 +1,15 @@
 <?php if (!empty($ownerDashboardLayout)): ?>
     <aside class="owner-sidebar">
         <a class="owner-brand" href="admindex.php">
-            <span class="owner-brand-mark" aria-hidden="true">CC</span>
-            <span><strong>CourtConnect</strong><small>FACILITY OWNER</small></span>
+            <?php if (!empty($facilityLogo)): ?>
+                <img class="admin-facility-logo" src="../uploads/facility/<?= rawurlencode(basename($facilityLogo)) ?>" alt="">
+            <?php endif; ?>
+            <span><strong>CourtConnect</strong><small><?= htmlspecialchars((string) ($facilityName ?? "Facility owner"), ENT_QUOTES, "UTF-8") ?></small></span>
         </a>
         <nav class="owner-nav" aria-label="Owner workspace">
             <span class="owner-nav-label">WORKSPACE</span>
             <a class="<?= ($ownerNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
             <a class="<?= ($ownerNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
-            <a class="<?= ($ownerNavPage ?? "") === "history" ? "active" : "" ?>" href="bookinghistory.php"><span aria-hidden="true">&#8634;</span>History / Archive</a>
             <a class="<?= ($ownerNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
             <span class="owner-nav-label">OWNER SETTINGS</span>
             <div class="owner-nav-submenu">
@@ -25,14 +26,15 @@
 <?php elseif (!empty($adminDashboardLayout)): ?>
     <aside class="admin-sidebar">
         <a class="admin-brand" href="admindex.php">
-            <span class="admin-brand-mark" aria-hidden="true">CC</span>
+            <?php if (!empty($facilityLogo)): ?>
+                <img class="admin-facility-logo" src="../uploads/facility/<?= rawurlencode(basename($facilityLogo)) ?>" alt="">
+            <?php endif; ?>
             <span class="admin-brand-copy"><strong>CourtConnect</strong><small><?= htmlspecialchars((string) ($facilityName ?? "Club admin"), ENT_QUOTES, "UTF-8") ?></small></span>
         </a>
         <nav class="admin-nav" aria-label="Admin workspace">
             <span class="admin-nav-label">WORKSPACE</span>
             <a class="<?= ($adminNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
             <a class="<?= ($adminNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
-            <a class="<?= ($adminNavPage ?? "") === "history" ? "active" : "" ?>" href="bookinghistory.php"><span aria-hidden="true">&#8634;</span>History / Archive</a>
             <a class="<?= ($adminNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
             <?php if ((int) ($_SESSION["role_id"] ?? 0) === 3): ?>
                 <span class="admin-nav-label">OWNER SETTINGS</span>
@@ -65,3 +67,5 @@
         </nav>
     </header>
 <?php endif; ?>
+
+<script src="../includes/js/admin_dialog.js"></script>

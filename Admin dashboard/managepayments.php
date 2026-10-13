@@ -30,10 +30,12 @@ if (!$hasAccess) {
 
 $adminDashboardLayout = true;
 $adminNavPage = "payments";
-$facilityStmt = $conn->prepare("SELECT facility_name FROM facilities WHERE facility_id = ?");
+$facilityStmt = $conn->prepare("SELECT facility_name, facility_img FROM facilities WHERE facility_id = ?");
 $facilityStmt->bind_param("i", $facilityId);
 $facilityStmt->execute();
-$facilityName = $facilityStmt->get_result()->fetch_assoc()["facility_name"] ?? "Your facility";
+$facility = $facilityStmt->get_result()->fetch_assoc();
+$facilityName = $facility["facility_name"] ?? "Your facility";
+$facilityLogo = $facility["facility_img"] ?? "";
 $facilityStmt->close();
 $conn->close();
 ?>
@@ -125,6 +127,29 @@ $conn->close();
             </div>
         </div>
     </div>
+    <div class="modal-container owner-modal" id="rejectPaymentModal" aria-hidden="true">
+        <div class="modal owner-modal-panel payment-reject-panel" role="dialog" aria-modal="true" aria-labelledby="rejectPaymentTitle">
+            <form id="rejectPaymentForm">
+                <div class="owner-modal-heading">
+                    <div>
+                        <p class="owner-breadcrumb">PAYMENT REVIEW</p>
+                        <h2 id="rejectPaymentTitle">Reject payment</h2>
+                    </div>
+                </div>
+                <p class="owner-confirm-message" id="rejectPaymentDetails"></p>
+                <input type="hidden" id="rejectPaymentId" name="payment_id">
+                <label class="payment-rejection-label" for="rejectionReason">Reason for rejection
+                    <textarea id="rejectionReason" name="rejection_reason" maxlength="500" rows="5" required
+                        placeholder="Example: The uploaded receipt is unclear, the payment amount does not match the booking total, or the reference number is invalid."></textarea>
+                </label>
+                <p id="rejectPaymentFeedback" class="owner-form-status" role="status" aria-live="polite"></p>
+                <div class="owner-modal-actions">
+                    <button type="button" class="owner-secondary-button" id="cancelRejectPayment">Cancel</button>
+                    <button type="submit" class="owner-primary-button" id="confirmRejectPayment">Confirm rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="modal-container owner-modal" id="editPaymentModal" aria-hidden="true">
         <div class="modal owner-modal-panel payment-edit-panel" role="dialog" aria-modal="true" aria-labelledby="editPaymentTitle">
             <form id="editPaymentForm">
@@ -148,7 +173,6 @@ $conn->close();
                     <label for="editPaymentStatusSelect">Payment status
                         <select id="editPaymentStatusSelect" name="payment_status" required>
                             <option value="Pending">Pending</option>
-                            <option value="Rejected">Rejected</option>
                             <option value="Paid">Paid</option>
                         </select>
                     </label>

@@ -1,3 +1,40 @@
+const resumeVerification = new URLSearchParams(window.location.search).get("resumeVerification") === "1";
+const resumeUserId = new URLSearchParams(window.location.search).get("user_id");
+
+async function resumeOtpVerification(userId) {
+  const otpForm = document.getElementById("otpForm");
+  otpForm.dataset.userId = userId;
+  document.getElementById("modal_container").classList.add("show");
+
+  const sendResponse = await fetch("includes/backend-api/sendOTP.php", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  const sendResult = await sendResponse.json();
+  if (!sendResult.success) {
+    alert(sendResult.message);
+    return;
+  }
+
+  if (sendResult.otp_code) {
+    alert(`Development OTP: ${sendResult.otp_code}`);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  if (resumeVerification && resumeUserId) {
+    const registerForm = document.getElementById("registerForm");
+    if (registerForm) {
+      registerForm.style.display = "none";
+    }
+    await resumeOtpVerification(resumeUserId);
+  }
+});
+
 document
   .getElementById("registerForm")
   .addEventListener("submit", async (e) => {
@@ -129,9 +166,26 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
 
     const result = await response.json();
     alert(result.message);
-    // redirect to signin page if successful
+    // redirect to home page after successful verification without forcing login again
     if (result.success) {
-      window.location.href = "signin.php";
+      const notification = document.createElement("div");
+      const loginRedirectDelay = 2000;
+      notification.className = "login-success-overlay";
+      notification.style.setProperty("--login-redirect-delay", `${loginRedirectDelay}ms`);
+      notification.setAttribute("role", "status");
+      notification.innerHTML = `
+        <div class="login-success-card">
+          <span class="login-success-icon" aria-hidden="true">&#10003;</span>
+          <strong>Welcome, ${result.user.first_name}!</strong>
+          <small>Taking you to your home page.</small>
+          <span class="login-success-loader" aria-hidden="true"></span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+
+      window.setTimeout(() => {
+        window.location.href = "index.php";
+      }, loginRedirectDelay);
     }
   } catch (error) {
     alert("Network error. Please try again.");

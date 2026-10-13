@@ -50,7 +50,8 @@ if (
 }
 
 $ownershipStmt = $conn->prepare(
-    "SELECT cs.schedule_id, cd.slot_duration, f.opening_time, f.closing_time
+        "SELECT cs.schedule_id, cs.schedule_status, cs.hold_expires_at,
+            cd.slot_duration, f.opening_time, f.closing_time
      FROM court_schedule cs
      INNER JOIN court_details cd ON cd.court_id = cs.court_id
      INNER JOIN facilities f ON f.facility_id = cd.facility_id
@@ -66,6 +67,11 @@ if (!$ownedSchedule) {
     echo json_encode(["success" => false, "message" => "Schedule not found in your facility."]);
     exit();
 }
+if ($ownedSchedule["schedule_status"] === "Held" && $ownedSchedule["hold_expires_at"] > date("Y-m-d H:i:s")) {
+    http_response_code(409);
+    echo json_encode(["success" => false, "message" => "This time is temporarily held for player checkout."]);
+    exit();
+}
 
 $slotEnd = strtotime($courtTime) + ((int) $ownedSchedule["slot_duration"] * 60);
 if ($courtTime < substr($ownedSchedule["opening_time"], 0, 5) || $slotEnd > strtotime($ownedSchedule["closing_time"])) {
@@ -75,7 +81,7 @@ if ($courtTime < substr($ownedSchedule["opening_time"], 0, 5) || $slotEnd > strt
 }
 
 $sql = "UPDATE court_schedule
-        SET court_date = ?, court_time = ?, schedule_status = ?
+    SET court_date = ?, court_time = ?, schedule_status = ?, hold_expires_at = NULL
         WHERE schedule_id = ? AND court_id = ?";
 
 $stmt = $conn->prepare($sql);

@@ -24,7 +24,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
     if (result.requires_verification) {
-      window.location.href = "adminregister.php?resumeVerification=1";
+      const userId = result.user?.user_id ?? result.user_id;
+      const redirectUrl = new URL("adminregister.php", window.location.href);
+      redirectUrl.searchParams.set("resumeVerification", "1");
+      if (userId) {
+        redirectUrl.searchParams.set("user_id", String(userId));
+      }
+      window.location.href = redirectUrl.toString();
       return;
     }
     alert(result.message);

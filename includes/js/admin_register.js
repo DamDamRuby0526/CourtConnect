@@ -28,7 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const pendingReviewTitle = document.getElementById("pendingReviewTitle");
   const pendingReviewMessage = document.getElementById("pendingReviewMessage");
   const backToHomeButton = document.getElementById("backToHome");
-  const resumeVerification = new URLSearchParams(window.location.search).get("resumeVerification") === "1";
+  const queryParams = new URLSearchParams(window.location.search);
+  const resumeVerification = queryParams.get("resumeVerification") === "1";
+  const resumeUserId = queryParams.get("user_id");
   let reviewPollingInterval = null;
   let otpRequestInProgress = false;
 
@@ -42,12 +44,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function checkReviewStatus() {
     try {
-      const response = await fetch("includes/backend-api/registration_status.php");
+      const statusUrl = resumeUserId
+        ? `includes/backend-api/registration_status.php?user_id=${encodeURIComponent(resumeUserId)}`
+        : "includes/backend-api/registration_status.php";
+      const response = await fetch(statusUrl);
       const result = await response.json();
 
       if (!result.success) return;
 
-      document.getElementById("otpForm").dataset.userId = result.user_id;
+      const activeUserId = resumeUserId || result.user_id;
+      document.getElementById("otpForm").dataset.userId = activeUserId;
 
       if (result.status === "Active") {
         window.clearInterval(reviewPollingInterval);
@@ -65,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const sendResponse = await fetch("includes/backend-api/sendOTP.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: result.user_id })
+          body: JSON.stringify({ user_id: activeUserId })
         });
         const sendResult = await sendResponse.json();
 
@@ -98,10 +104,14 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "index.php";
   });
 
-  fetch("includes/backend-api/registration_status.php")
+  const initialStatusUrl = resumeUserId
+    ? `includes/backend-api/registration_status.php?user_id=${encodeURIComponent(resumeUserId)}`
+    : "includes/backend-api/registration_status.php";
+
+  fetch(initialStatusUrl)
     .then(response => response.json())
     .then(result => {
-      if (result.success) beginReviewWait(result.user_id);
+      if (result.success) beginReviewWait(resumeUserId || result.user_id);
     })
     .catch(() => {});
 

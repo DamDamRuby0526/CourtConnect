@@ -1,5 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
+if (PHP_SAPI !== "cli" && session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
@@ -25,5 +25,11 @@ if (!$conn) {
 }
 
 $conn->set_charset("utf8mb4");
+$conn->query("SET time_zone = '+08:00'");
+
+require_once __DIR__ . "/../expire_unpaid_bookings.php";
+if (PHP_SAPI !== "cli") {
+    expireUnpaidBookings($conn);
+}
 
 ?>

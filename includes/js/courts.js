@@ -1,187 +1,157 @@
-// display courts INSIDE a facility
-document.addEventListener("DOMContentLoaded", loadCourts);
+const ALLOW_MULTIPLE_SLOTS = false;
 
-function getFacilityId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("facility_id");
+function formatSlotTime(value) {
+  const [hoursValue, minutes] = value.split(":").map(Number);
+  const suffix = hoursValue >= 12 ? "PM" : "AM";
+  const hours = hoursValue % 12 || 12;
+  return `${hours}:${String(minutes).padStart(2, "0")} ${suffix}`;
 }
 
-async function loadCourts() {
-  const grid = document.getElementById("grid-container");
-  const facilityId = getFacilityId();
+function formatDate(value) {
+  return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-  if (!facilityId) {
-    container.textContent = "No facility selected.";
-    return;
-  }
+function showCourtToast(title, message, type = "success") {
+  if (typeof window.showToast === "function") window.showToast(title, message, type);
+}
+
+async function loadCourtSlots(card, date) {
+  const courtId = card.querySelector(".court-book-button").dataset.courtId;
+  const slotList = card.querySelector(".court-slot-list");
+  const emptyMessage = card.querySelector(".court-slot-empty");
+  const nextDateButton = card.querySelector(".court-next-date");
+  const loadingMessage = card.querySelector(".court-slot-loading");
+  const continueButton = card.querySelector(".court-continue-button");
+  const summary = card.querySelector(".court-booking-summary");
+  slotList.replaceChildren();
+  emptyMessage.hidden = true;
+  nextDateButton.hidden = true;
+  loadingMessage.hidden = false;
+  continueButton.disabled = true;
+  card.selectedSchedule = null;
+  summary.querySelector(".summary-date").textContent = "Choose a date";
+  summary.querySelector(".summary-time").textContent = "Choose a time";
+  summary.querySelector(".summary-total").textContent = "P0";
 
   try {
-    const response = await fetch(
-      `includes/backend-api/load_courts.php?facility_id=${facilityId}`,
-    );
-    const data = await response.json();
+    const response = await fetch(`includes/backend-api/load_schedules.php?court_id=${encodeURIComponent(courtId)}&date=${encodeURIComponent(date)}`);
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.message || "Unable to load times for this date.");
 
-    if (!data.success) {
-      alert(data.message || "Failed to load courts.");
-      return;
+    for (const schedule of result.schedules) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = `court-slot-chip ${schedule.schedule_status === "Available" ? "is-available" : "is-unavailable"}`;
+      chip.textContent = formatSlotTime(schedule.court_time);
+      chip.disabled = schedule.schedule_status !== "Available";
+      chip.setAttribute("aria-label", `${formatSlotTime(schedule.court_time)}${chip.disabled ? ", unavailable" : ", available"}`);
+
+      if (!chip.disabled) {
+        chip.addEventListener("click", () => {
+          if (!ALLOW_MULTIPLE_SLOTS) {
+            slotList.querySelectorAll(".court-slot-chip.is-selected").forEach((selectedChip) => {
+              selectedChip.classList.remove("is-selected");
+            });
+            card.selectedSchedule = schedule;
+            chip.classList.add("is-selected");
+          }
+          const rate = Number(continueButton.dataset.courtRate);
+          const duration = Number(continueButton.dataset.slotDuration);
+          summary.querySelector(".summary-date").textContent = formatDate(schedule.court_date);
+          summary.querySelector(".summary-time").textContent = formatSlotTime(schedule.court_time);
+          summary.querySelector(".summary-duration").textContent = `${duration} min`;
+          summary.querySelector(".summary-total").textContent = `P${rate.toFixed(2)}`;
+          continueButton.disabled = false;
+        });
+      }
+      slotList.append(chip);
     }
-
-    if (data.facility_name) {
-      document.getElementById("facility-name").textContent = data.facility_name;
-    }
-
-    grid.replaceChildren();
-
-    if (data.courts.length === 0) {
-      const empty = document.createElement("p");
-      empty.textContent = "No courts available for this facility yet.";
-      grid.append(empty);
-      return;
-    }
-
-    for (const court of data.courts) {
-      const item = document.createElement("div");
-      item.className = "item";
-
-      const image = document.createElement("img");
-      image.className = "court-preview";
-      image.src = court.court_img
-        ? `uploads/court/${encodeURIComponent(court.court_img)}`
-        : "uploads/badminton-pickleball-court.svg";
-      image.alt = court.court_img ? `Court ${court.court_no}` : "CourtConnect court";
-
-      const name = document.createElement("p");
-      name.textContent = `Court Number: ${court.court_no}`;
-
-      const rate = document.createElement("p");
-      rate.textContent = `Rate: ₱${court.court_rate} / hour`;
-
-      const desc = document.createElement("p");
-      desc.textContent = `Description: ${court.description}`;
-
-      const bookBtn = document.createElement("button");
-      bookBtn.type = "button";
-      bookBtn.className = "book-btn";
-      bookBtn.textContent = "Book now";
-      bookBtn.dataset.courtId = court.court_id;
-
-      item.append(image, name, rate, desc, bookBtn);
-      grid.append(item);
+    const hasAvailableSlot = result.schedules.some((schedule) => schedule.schedule_status === "Available");
+    emptyMessage.hidden = hasAvailableSlot;
+    if (!hasAvailableSlot && result.next_available_date) {
+      nextDateButton.dataset.date = result.next_available_date;
+      nextDateButton.textContent = `See next available: ${formatDate(result.next_available_date)}`;
+      nextDateButton.hidden = false;
     }
   } catch (error) {
-    console.error("Error loading courts:", error);
+    showCourtToast("Unable to load times", error.message || "Please try again.", "error");
+    emptyMessage.hidden = false;
+    emptyMessage.querySelector("span").textContent = "Unable to load times for this date.";
+    nextDateButton.hidden = true;
+  } finally {
+    loadingMessage.hidden = true;
   }
 }
 
-function getScheduleId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("schedule_id");
-}
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".court-card-image").forEach((image) => {
+    const fallback = image.parentElement.querySelector(".court-image-fallback");
+    const showFallback = () => {
+      image.hidden = true;
+    };
+    image.addEventListener("load", () => {
+      image.classList.remove("is-loading");
+      if (fallback) fallback.hidden = true;
+    }, { once: true });
+    image.addEventListener("error", showFallback, { once: true });
+    if (image.complete) {
+      if (image.naturalWidth === 0) showFallback();
+      else {
+        image.classList.remove("is-loading");
+        if (fallback) fallback.hidden = true;
+      }
+    }
+  });
 
-// open modal for booking
-//check if user is logged in first
-//then move to login/register first
+  document.querySelectorAll(".court-card").forEach((card) => {
+    const openButton = card.querySelector(".court-book-button");
+    if (!openButton) return;
 
-// open modal and load schedules for the clicked court
-document.addEventListener("click", async (e) => {
-    if (e.target.classList.contains("book-btn")) {
-        const courtId = e.target.dataset.courtId;
-        const courtNo = e.target.dataset.courtNo;
-        selectedCourtRate = parseFloat(e.target.dataset.courtRate);
- 
-        document.getElementById("bookForm").dataset.courtId = courtId;
-        document.getElementById("booking_court_id").value = courtId;
-        document.getElementById("booking-total").textContent = "";
- 
-        const select = document.getElementById("scheduleSelect");
-        select.innerHTML = '<option value="" disabled selected>Loading schedules...</option>';
- 
-        modal_container.classList.add("show");
- 
-        try {
-            const response = await fetch(
-                `includes/backend-api/load_schedules.php?court_id=${courtId}`
-            );
-            const data = await response.json();
- 
-            if (!data.success) {
-                select.innerHTML = '<option value="" disabled selected>Unable to load schedules</option>';
-                return;
-            }
- 
-            if (data.schedules.length === 0) {
-                select.innerHTML = '<option value="" disabled selected>No available slots</option>';
-                return;
-            }
- 
-            select.innerHTML = '<option value="" disabled selected>Select a slot</option>';
- 
-            for (const schedule of data.schedules) {
-                const option = document.createElement("option");
-                option.value = schedule.schedule_id;
-                option.textContent = `${schedule.court_date} — ${schedule.court_time}`;
-                select.append(option);
-            }
- 
-        } catch (error) {
-            console.error("Error loading schedules:", error);
-            select.innerHTML = '<option value="" disabled selected>Unable to load schedules</option>';
-        }
-    }
-});
- 
-// show the running total as the user picks a slot
-document.addEventListener("change", (e) => {
-    if (e.target.id === "scheduleSelect") {
-        document.getElementById("booking-total").textContent =
-            selectedCourtRate ? `Total: ₱${selectedCourtRate.toFixed(2)}` : "";
-    }
-});
- 
-// cancel button
-document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("cancel-btn")) {
-        modal_container.classList.remove("show");
-    }
-});
- 
-// save button — submit the booking
-document.addEventListener("click", async (e) => {
-    if (e.target.classList.contains("save-btn")) {
-        const form = document.getElementById("bookForm");
-        const courtId = form.dataset.courtId;
-        const scheduleId = document.getElementById("scheduleSelect").value;
- 
-        if (!scheduleId) {
-            alert("Please select a time slot.");
-            return;
-        }
- 
-        const payload = {
-            court_id: courtId,
-            schedule_id: scheduleId
-        };
- 
-        try {
-            const response = await fetch("includes/backend-api/make_booking.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
- 
-            const result = await response.json();
- 
-            if (!result.success) {
-                alert(result.message || "Booking failed.");
-                return;
-            }
- 
-            alert("Booking confirmed!");
-            modal_container.classList.remove("show");
- 
-        } catch (error) {
-            console.error("Error creating booking:", error);
-            alert("Something went wrong. Please try again.");
-        }
-    }
+    const panel = card.querySelector(".court-booking-panel");
+    const dateInput = card.querySelector(".court-date-input");
+    const continueButton = card.querySelector(".court-continue-button");
+    const nextDateButton = card.querySelector(".court-next-date");
+    openButton.addEventListener("click", async () => {
+      panel.hidden = !panel.hidden;
+      const isOpen = !panel.hidden;
+      openButton.textContent = isOpen ? "Close times" : "Book now";
+      openButton.classList.toggle("player-primary-button", !isOpen);
+      openButton.classList.toggle("player-secondary-link", isOpen);
+      if (!panel.hidden) await loadCourtSlots(card, dateInput.value);
+    });
+
+    dateInput.addEventListener("change", () => loadCourtSlots(card, dateInput.value));
+    nextDateButton.addEventListener("click", () => {
+      dateInput.value = nextDateButton.dataset.date;
+      loadCourtSlots(card, dateInput.value);
+    });
+    continueButton.addEventListener("click", async () => {
+      if (!card.selectedSchedule) return;
+      if (document.querySelector(".courts-page").dataset.loggedIn !== "true") {
+        const returnTo = `${window.location.pathname}${window.location.search}#court-${openButton.dataset.courtId}`;
+        window.location.href = `signin.php?return_to=${encodeURIComponent(returnTo)}`;
+        return;
+      }
+
+      continueButton.disabled = true;
+      try {
+        const response = await fetch("includes/backend-api/make_booking.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ schedule_id: card.selectedSchedule.schedule_id }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || "That slot was just taken.");
+        window.location.href = `checkout.php?booking_id=${encodeURIComponent(result.booking_id)}`;
+      } catch (error) {
+        showCourtToast("Booking unavailable", error.message || "That slot was just taken.", "error");
+        await loadCourtSlots(card, dateInput.value);
+      }
+    });
+  });
 });

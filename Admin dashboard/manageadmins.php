@@ -9,7 +9,7 @@ if (!$ownerId || !$facilityId || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
 }
 
 $facilityStmt = $conn->prepare(
-    "SELECT f.facility_name
+    "SELECT f.facility_name, f.facility_img
      FROM facilities f
      INNER JOIN admins a ON a.facility_id = f.facility_id
      INNER JOIN users u ON u.user_id = a.user_id
@@ -29,6 +29,7 @@ if (!$facility) {
 $ownerDashboardLayout = true;
 $ownerNavPage = "accounts";
 $facilityName = $facility["facility_name"];
+$facilityLogo = $facility["facility_img"];
 $conn->close();
 
 function ownerAccountsEscape($value)

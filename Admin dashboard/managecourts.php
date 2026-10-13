@@ -10,7 +10,7 @@ if (!$ownerId || !$facilityId || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
 }
 
 $facilityStmt = $conn->prepare(
-    "SELECT f.facility_id, f.facility_name, f.opening_time, f.closing_time
+    "SELECT f.facility_id, f.facility_name, f.facility_img, f.qr_img, f.opening_time, f.closing_time
      FROM facilities f
      INNER JOIN admins a ON a.facility_id = f.facility_id
      INNER JOIN users u ON u.user_id = a.user_id
@@ -30,6 +30,7 @@ if (!$facility) {
 $ownerDashboardLayout = true;
 $ownerNavPage = "facility";
 $facilityName = $facility["facility_name"];
+$facilityLogo = $facility["facility_img"];
 
 function ownerEscape($value)
 {
@@ -60,6 +61,60 @@ function ownerEscape($value)
                 </div>
                 <button type="button" id="add-btn" class="owner-primary-button"><span aria-hidden="true">+</span> Add court</button>
             </header>
+
+            <section class="owner-branding-section" aria-labelledby="facilityBrandingHeading">
+                <div class="owner-section-heading">
+                    <div>
+                        <h2 id="facilityBrandingHeading">Facility Logo</h2>
+                        <p>Update the logo and facility name shown to players.</p>
+                    </div>
+                </div>
+                <form id="facilityBrandingForm" class="owner-branding-form" enctype="multipart/form-data">
+                    <div class="owner-branding-upload-section">
+                        <p class="owner-branding-upload-label">Facility Logo</p>
+                        <div class="owner-branding-logo-row">
+                        <img
+                            class="owner-branding-preview"
+                            id="facilityLogoPreview"
+                            src="<?= !empty($facility["facility_img"]) ? "../uploads/facility/" . rawurlencode(basename($facility["facility_img"])) : "../uploads/badminton-pickleball-court.svg" ?>"
+                            alt="Facility logo preview"
+                            data-current-logo="<?= !empty($facility["facility_img"]) ? "1" : "0" ?>">
+                        <div class="owner-branding-controls">
+                            <input id="facilityLogoInput" name="facility_logo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                            <input id="removeFacilityLogo" name="remove_logo" type="hidden" value="0">
+                            <div class="owner-branding-buttons">
+                                <button type="button" class="owner-secondary-button" id="uploadFacilityLogo">Upload Logo</button>
+                                <button type="button" class="owner-secondary-button" id="clearFacilityLogo" <?= empty($facility["facility_img"]) ? "disabled" : "" ?>>Remove Logo</button>
+                            </div>
+                            <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
+                        </div>
+                        </div>
+                    </div>
+                    <div class="owner-branding-upload-section">
+                        <p class="owner-branding-upload-label">GCash QR Code</p>
+                        <div class="owner-branding-logo-row">
+                            <div class="owner-qr-preview-wrap">
+                                <img
+                                    class="owner-branding-preview owner-qr-preview"
+                                    id="gcashQrPreview"
+                                    src="<?= !empty($facility["qr_img"]) ? "../uploads/qr/" . rawurlencode(basename($facility["qr_img"])) : "" ?>"
+                                    alt="GCash QR code preview"
+                                    <?= empty($facility["qr_img"]) ? "hidden" : "" ?>>
+                                <span id="gcashQrPlaceholder" class="owner-qr-placeholder" <?= !empty($facility["qr_img"]) ? "hidden" : "" ?>>No GCash QR uploaded</span>
+                            </div>
+                            <div class="owner-branding-controls">
+                                <input id="gcashQrInput" name="gcash_qr" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                                <button type="button" class="owner-secondary-button" id="uploadGcashQr">Upload GCash QR</button>
+                                <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <label class="owner-branding-name-label" for="facilityNameInput">Facility Name</label>
+                    <input class="owner-branding-name-input" id="facilityNameInput" name="facility_name" type="text" maxlength="250" value="<?= ownerEscape($facility["facility_name"]) ?>" required>
+                    <p id="facilityBrandingStatus" class="owner-form-status" role="status" aria-live="polite"></p>
+                    <button class="owner-primary-button" id="saveFacilityBranding" type="submit">Save Changes</button>
+                </form>
+            </section>
 
             <section class="owner-hours-section" aria-labelledby="hoursHeading">
                 <div class="owner-section-heading">

@@ -31,7 +31,8 @@ if (!$hasAccess) {
 
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
     $stmt = $conn->prepare(
-        "SELECT p.payments_id, p.payment_method, p.payment_status, p.reference_number, p.receipt_image,
+        "SELECT p.payments_id, p.payment_method, p.payment_status, p.reference_number,
+            p.rejection_reason, p.receipt_image,
             p.paid_at, p.created_at, b.booking_id, b.booking_type, b.total_amount, b.court_id, b.schedule_id,
                 CASE WHEN b.booking_type = 'walk_in' OR b.user_id IS NULL
                     THEN COALESCE(NULLIF(b.customer_name, ''), 'Walk-in customer')
@@ -95,12 +96,125 @@ if (!$paymentId) {
     exit();
 }
 
+if ($action === "reject") {
+    $rejectionReason = is_string($data["rejection_reason"] ?? null)
+        ? trim($data["rejection_reason"])
+        : "";
+    if ($rejectionReason === "" || mb_strlen($rejectionReason, "UTF-8") > 500) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => $rejectionReason === ""
+                ? "Enter a reason for rejecting this payment."
+                : "The rejection reason must be 500 characters or fewer."
+        ]);
+        exit();
+    }
+
+    try {
+        $conn->begin_transaction();
+        $currentStmt = $conn->prepare(
+            "SELECT p.payment_status, b.booking_id, b.status AS booking_status,
+                    b.schedule_id, cs.schedule_status,
+                    TIMESTAMPDIFF(SECOND, NOW(), cs.hold_expires_at) AS hold_seconds
+             FROM payments p
+             INNER JOIN bookings b ON b.booking_id = p.booking_id
+             INNER JOIN court_details cd ON cd.court_id = b.court_id
+             INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
+             WHERE p.payments_id = ? AND cd.facility_id = ?
+             FOR UPDATE"
+        );
+        $currentStmt->bind_param("ii", $paymentId, $facilityId);
+        $currentStmt->execute();
+        $current = $currentStmt->get_result()->fetch_assoc();
+        $currentStmt->close();
+
+        if (!$current) {
+            http_response_code(404);
+            throw new RuntimeException("Payment was not found for this facility.");
+        }
+        if ($current["payment_status"] !== "Pending") {
+            http_response_code(409);
+            throw new RuntimeException("Only pending payments can be rejected.");
+        }
+        if (in_array($current["booking_status"], ["cancelled", "completed"], true)) {
+            http_response_code(409);
+            throw new RuntimeException("This booking is no longer active.");
+        }
+
+        $paymentStmt = $conn->prepare(
+            "UPDATE payments
+             SET payment_status = 'Rejected', rejection_reason = ?, paid_at = NULL
+             WHERE payments_id = ? AND payment_status = 'Pending'"
+        );
+        $paymentStmt->bind_param("si", $rejectionReason, $paymentId);
+        $paymentStmt->execute();
+        if ($paymentStmt->affected_rows !== 1) {
+            $paymentStmt->close();
+            http_response_code(409);
+            throw new RuntimeException("This payment is no longer pending.");
+        }
+        $paymentStmt->close();
+
+        $bookingStatus = $current["booking_status"] === "pending"
+            ? "pending_payment"
+            : $current["booking_status"];
+        $bookingStmt = $conn->prepare(
+            "UPDATE bookings
+             SET status = ?, payment_status = 'rejected',
+                 hold_expires_at = CASE
+                     WHEN ? = 'pending_payment' AND ? = 'pending'
+                         THEN DATE_ADD(NOW(), INTERVAL 24 HOUR)
+                     ELSE hold_expires_at
+                 END
+             WHERE booking_id = ?"
+        );
+        $bookingStmt->bind_param(
+            "sssi",
+            $bookingStatus,
+            $bookingStatus,
+            $current["booking_status"],
+            $current["booking_id"]
+        );
+        $bookingStmt->execute();
+        $bookingStmt->close();
+
+        if ($current["booking_status"] === "pending"
+            && $current["schedule_status"] === "Held"
+            && (int) $current["hold_seconds"] > 0) {
+            $scheduleStmt = $conn->prepare(
+                "UPDATE court_schedule
+                 SET hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+                 WHERE schedule_id = ? AND schedule_status = 'Held' AND hold_expires_at > NOW()"
+            );
+            $scheduleStmt->bind_param("i", $current["schedule_id"]);
+            $scheduleStmt->execute();
+            $scheduleStmt->close();
+        }
+
+        $conn->commit();
+        echo json_encode(["success" => true, "message" => "Payment rejected."]);
+    } catch (RuntimeException $error) {
+        $conn->rollback();
+        if (http_response_code() < 400) {
+            http_response_code(409);
+        }
+        echo json_encode(["success" => false, "message" => $error->getMessage()]);
+    } catch (Throwable $error) {
+        $conn->rollback();
+        http_response_code(500);
+        error_log("Payment rejection failed for payment " . $paymentId . ": " . $error->getMessage());
+        echo json_encode(["success" => false, "message" => "Unable to reject this payment."]);
+    }
+    exit();
+}
+
 if ($action === "update") {
     $paymentMethod = $data["payment_method"] ?? "";
     $referenceNumber = trim($data["reference_number"] ?? "");
     $paymentStatus = $data["payment_status"] ?? "";
     if (!in_array($paymentMethod, ["Gcash", "Cash"], true) ||
-        !in_array($paymentStatus, ["Pending", "Rejected", "Paid"], true) || strlen($referenceNumber) > 50) {
+        !in_array($paymentStatus, ["Pending", "Paid"], true) || strlen($referenceNumber) > 50) {
         http_response_code(400);
         echo json_encode(["success" => false, "message" => "Choose a payment method and a valid status."]);
         exit();
@@ -112,10 +226,14 @@ if ($action === "update") {
     try {
         $conn->begin_transaction();
         $currentStmt = $conn->prepare(
-            "SELECT b.booking_id, p.receipt_image
+                    "SELECT b.booking_id, b.status AS booking_status, b.schedule_id,
+                        cs.schedule_status, cs.hold_expires_at,
+                        TIMESTAMPDIFF(SECOND, NOW(), cs.hold_expires_at) AS hold_seconds,
+                        p.receipt_image, p.payment_status
              FROM payments p
              INNER JOIN bookings b ON b.booking_id = p.booking_id
              INNER JOIN court_details cd ON cd.court_id = b.court_id
+                 INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
              WHERE p.payments_id = ? AND cd.facility_id = ?
              FOR UPDATE"
         );
@@ -126,6 +244,18 @@ if ($action === "update") {
         if (!$current) {
             throw new RuntimeException("Payment was not found for this facility.");
         }
+        if ($current["payment_status"] === "Rejected") {
+            throw new RuntimeException("Rejected payment attempts cannot be edited.");
+        }
+        if (in_array($current["booking_status"], ["cancelled", "completed"], true)) {
+            throw new RuntimeException("A cancelled or completed booking cannot be approved.");
+        }
+        $awaitingPlayerBooking = $current["booking_status"] === "pending_payment"
+            || ($current["booking_status"] === "pending" && $current["schedule_status"] === "Held");
+        if ($paymentStatus === "Paid" && $awaitingPlayerBooking
+            && ($current["schedule_status"] !== "Held" || (int) $current["hold_seconds"] <= 0)) {
+            throw new RuntimeException("This booking hold has expired and cannot be approved.");
+        }
         if ($paymentStatus === "Paid" && $paymentMethod === "Gcash" && empty($current["receipt_image"])) {
             throw new RuntimeException("Upload a GCash receipt before marking this payment paid.");
         }
@@ -133,19 +263,35 @@ if ($action === "update") {
         $paidAtSql = $paymentStatus === "Paid" ? "NOW()" : "NULL";
         $paymentStmt = $conn->prepare(
             "UPDATE payments
-             SET payment_method = ?, reference_number = ?, payment_status = ?, paid_at = " . $paidAtSql . "
+             SET payment_method = ?, reference_number = ?, payment_status = ?,
+                 rejection_reason = NULL, paid_at = " . $paidAtSql . "
              WHERE payments_id = ?"
         );
         $paymentStmt->bind_param("sssi", $paymentMethod, $referenceNumber, $paymentStatus, $paymentId);
         $paymentStmt->execute();
         $paymentStmt->close();
-        $bookingPaymentStatus = $paymentStatus === "Paid"
-            ? "paid"
-            : ($paymentStatus === "Rejected" ? "rejected" : "unpaid");
-        $bookingStmt = $conn->prepare("UPDATE bookings SET payment_status = ? WHERE booking_id = ?");
-        $bookingStmt->bind_param("si", $bookingPaymentStatus, $current["booking_id"]);
+        $bookingPaymentStatus = $paymentStatus === "Paid" ? "paid" : "unpaid";
+        $nextBookingStatus = $current["booking_status"];
+        if ($paymentStatus === "Paid" && $awaitingPlayerBooking) {
+            $nextBookingStatus = "confirmed";
+        }
+        $bookingStmt = $conn->prepare("UPDATE bookings SET status = ?, payment_status = ? WHERE booking_id = ?");
+        $bookingStmt->bind_param("ssi", $nextBookingStatus, $bookingPaymentStatus, $current["booking_id"]);
         $bookingStmt->execute();
         $bookingStmt->close();
+        if ($paymentStatus === "Paid" && $awaitingPlayerBooking) {
+            $scheduleStmt = $conn->prepare(
+                "UPDATE court_schedule SET schedule_status = 'Booked', hold_expires_at = NULL
+                 WHERE schedule_id = ? AND schedule_status = 'Held' AND hold_expires_at > NOW()"
+            );
+            $scheduleStmt->bind_param("i", $current["schedule_id"]);
+            $scheduleStmt->execute();
+            if ($scheduleStmt->affected_rows !== 1) {
+                $scheduleStmt->close();
+                throw new RuntimeException("This booking hold expired and cannot be approved.");
+            }
+            $scheduleStmt->close();
+        }
         $conn->commit();
         echo json_encode([
             "success" => true,
@@ -169,24 +315,80 @@ if ($action !== "mark_paid") {
     exit();
 }
 
-$stmt = $conn->prepare(
-    "UPDATE payments p
-     INNER JOIN bookings b ON b.booking_id = p.booking_id
-     INNER JOIN court_details cd ON cd.court_id = b.court_id
-     SET p.payment_status = 'Paid', p.paid_at = NOW(), b.payment_status = 'paid'
-     WHERE p.payments_id = ? AND cd.facility_id = ?
-         AND p.payment_status = 'Pending'
-         AND (p.payment_method = 'Cash' OR p.receipt_image IS NOT NULL)"
-);
-$stmt->bind_param("ii", $paymentId, $facilityId);
-$stmt->execute();
-$updated = $stmt->affected_rows > 0;
-$stmt->close();
+$conn->begin_transaction();
+try {
+    $currentStmt = $conn->prepare(
+        "SELECT b.booking_id, b.status AS booking_status, b.schedule_id,
+                cs.schedule_status, p.receipt_image,
+                TIMESTAMPDIFF(SECOND, NOW(), cs.hold_expires_at) AS hold_seconds,
+                p.payment_method
+         FROM payments p
+         INNER JOIN bookings b ON b.booking_id = p.booking_id
+         INNER JOIN court_details cd ON cd.court_id = b.court_id
+         INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
+         WHERE p.payments_id = ? AND cd.facility_id = ? AND p.payment_status = 'Pending'
+         FOR UPDATE"
+    );
+    $currentStmt->bind_param("ii", $paymentId, $facilityId);
+    $currentStmt->execute();
+    $current = $currentStmt->get_result()->fetch_assoc();
+    $currentStmt->close();
+    if (!$current || in_array($current["booking_status"], ["cancelled", "completed"], true)) {
+        throw new RuntimeException("Pending payment was not found or its booking is no longer active.");
+    }
+    if ($current["payment_method"] === "Gcash" && empty($current["receipt_image"])) {
+        throw new RuntimeException("Upload a GCash receipt before marking this payment paid.");
+    }
 
-if (!$updated) {
-    echo json_encode(["success" => false, "message" => "Pending payment was not found or requires a GCash receipt."]);
-    exit();
+    $awaitingPlayerBooking = $current["booking_status"] === "pending_payment"
+        || ($current["booking_status"] === "pending" && $current["schedule_status"] === "Held");
+    if ($awaitingPlayerBooking
+        && ($current["schedule_status"] !== "Held" || (int) $current["hold_seconds"] <= 0)) {
+        throw new RuntimeException("This booking hold expired and cannot be approved.");
+    }
+
+    $paymentStmt = $conn->prepare(
+        "UPDATE payments SET payment_status = 'Paid', paid_at = NOW()
+         WHERE payments_id = ? AND payment_status = 'Pending'"
+    );
+    $paymentStmt->bind_param("i", $paymentId);
+    $paymentStmt->execute();
+    if ($paymentStmt->affected_rows !== 1) {
+        $paymentStmt->close();
+        throw new RuntimeException("This payment is no longer pending.");
+    }
+    $paymentStmt->close();
+
+    $bookingStatus = $awaitingPlayerBooking ? "confirmed" : $current["booking_status"];
+    $bookingStmt = $conn->prepare("UPDATE bookings SET status = ?, payment_status = 'paid' WHERE booking_id = ?");
+    $bookingStmt->bind_param("si", $bookingStatus, $current["booking_id"]);
+    $bookingStmt->execute();
+    $bookingStmt->close();
+
+    if ($awaitingPlayerBooking) {
+        $scheduleStmt = $conn->prepare(
+            "UPDATE court_schedule SET schedule_status = 'Booked', hold_expires_at = NULL
+             WHERE schedule_id = ? AND schedule_status = 'Held' AND hold_expires_at > NOW()"
+        );
+        $scheduleStmt->bind_param("i", $current["schedule_id"]);
+        $scheduleStmt->execute();
+        if ($scheduleStmt->affected_rows !== 1) {
+            $scheduleStmt->close();
+            throw new RuntimeException("This booking hold expired and cannot be approved.");
+        }
+        $scheduleStmt->close();
+    }
+
+    $conn->commit();
+    echo json_encode(["success" => true, "message" => "Payment marked as paid."]);
+} catch (RuntimeException $error) {
+    $conn->rollback();
+    http_response_code(409);
+    echo json_encode(["success" => false, "message" => $error->getMessage()]);
+} catch (Throwable $error) {
+    $conn->rollback();
+    http_response_code(500);
+    error_log("Payment approval failed: " . $error->getMessage());
+    echo json_encode(["success" => false, "message" => "Unable to mark this payment paid."]);
 }
-
-echo json_encode(["success" => true, "message" => "Payment marked as paid."]);
 $conn->close();

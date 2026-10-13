@@ -24,16 +24,21 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
     if (result.requires_verification) {
+      const userId = result.user_id ?? result.user?.user_id;
+      const redirectUrl = new URL("register.php", window.location.href);
+      redirectUrl.searchParams.set("resumeVerification", "1");
+      if (userId) {
+        redirectUrl.searchParams.set("user_id", String(userId));
+      }
       if (result.is_facility_owner) {
-        window.location.href = "adminregister.php?resumeVerification=1";
+        window.location.href = new URL("adminregister.php", window.location.href) + "?resumeVerification=1" + (userId ? `&user_id=${encodeURIComponent(userId)}` : "");
         return;
       }
-      alert("Your account is not yet verified. Please verify your email.");
-      window.location.href = `verify.html?user_id=${result.user_id}`;
+      window.location.href = redirectUrl.toString();
       return;
     }
 
-    alert(result.message);
+    window.showToast("Sign-in failed", result.message || "Check your details and try again.", "error");
     return;
   }
 
@@ -46,6 +51,24 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   } else if (result.user.admin_id || result.user.role_name === "facility_owner") {
     destination = "Admin dashboard/admindex.php";
     destinationLabel = "your facility dashboard.";
+  } else {
+    const returnTo = new URLSearchParams(window.location.search).get("return_to");
+    if (returnTo) {
+      try {
+        const returnUrl = new URL(returnTo, window.location.href);
+        const appDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
+        const returnRoute = returnUrl.pathname.slice(appDirectory.length);
+        const allowedRoutes = ["courts.php", "mybookings.php", "checkout.php"];
+        if (returnUrl.origin === window.location.origin
+          && returnUrl.pathname.startsWith(appDirectory)
+          && allowedRoutes.includes(returnRoute)) {
+          destination = `${returnUrl.pathname}${returnUrl.search}${returnUrl.hash}`;
+          destinationLabel = "your requested page.";
+        }
+      } catch {
+        destination = "index.php";
+      }
+    }
   }
 
   const notification = document.createElement("div");

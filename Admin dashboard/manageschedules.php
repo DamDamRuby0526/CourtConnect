@@ -11,7 +11,7 @@ if (!$ownerId || !$facilityId || !$courtId || (int) ($_SESSION["role_id"] ?? 0) 
 }
 
 $courtStmt = $conn->prepare(
-    "SELECT cd.court_no, f.facility_name
+    "SELECT cd.court_no, f.facility_name, f.facility_img
      FROM court_details cd
      INNER JOIN facilities f ON f.facility_id = cd.facility_id
      INNER JOIN admins a ON a.facility_id = f.facility_id
@@ -33,6 +33,7 @@ if (!$court) {
 $ownerDashboardLayout = true;
 $ownerNavPage = "facility";
 $facilityName = $court["facility_name"];
+$facilityLogo = $court["facility_img"];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,6 +47,7 @@ $facilityName = $court["facility_name"];
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="../includes/js/toast.js" defer></script>
     <script src="../includes/js/admin_manageschedules.js" defer></script>
 </head>
 
@@ -59,9 +61,16 @@ $facilityName = $court["facility_name"];
                     <h1>Court schedule</h1>
                     <p>Manage reservation times for <?= htmlspecialchars($facilityName, ENT_QUOTES, "UTF-8") ?>.</p>
                 </div>
-                <button type="button" id="add-btn" class="owner-primary-button">Add time slot</button>
+                <div class="owner-page-actions">
+                    <button type="button" id="add-btn" class="owner-primary-button">Add time slot</button>
+                    <button type="button" id="generate-btn" class="owner-secondary-button" data-today="<?= date('Y-m-d') ?>">Generate Schedule</button>
+                </div>
             </header>
             <span id="court-id" class="owner-court-count">Court <?= (int) $court["court_no"] ?></span>
+            <div class="schedule-legend" aria-label="Schedule status legend">
+                <span><i class="schedule-legend-swatch is-available" aria-hidden="true"></i>Available</span>
+                <span><i class="schedule-legend-swatch is-booked" aria-hidden="true"></i>Booked</span>
+            </div>
             <div class="owner-schedule-grid" id="grid-container" aria-live="polite"></div>
 
     <!-- MODAL -->
@@ -91,6 +100,31 @@ $facilityName = $court["facility_name"];
 
         </div>
 
+    </div>
+
+    <div class="modal-container owner-modal" id="generate_modal" aria-hidden="true">
+        <div class="modal owner-modal-panel" role="dialog" aria-modal="true" aria-labelledby="generateDialogTitle">
+            <form id="generateForm">
+                <h2 id="generateDialogTitle">Generate schedule</h2>
+
+                <label for="generate_start_date">Start date</label>
+                <input type="date" id="generate_start_date" name="start_date" required>
+
+                <label for="generate_end_date">End date</label>
+                <input type="date" id="generate_end_date" name="end_date" required>
+
+                <label for="generate_scope">Courts</label>
+                <select id="generate_scope" name="scope">
+                    <option value="court">This court only</option>
+                    <option value="facility">All courts in this facility</option>
+                </select>
+
+                <div class="owner-modal-actions">
+                    <button type="button" class="owner-secondary-button generate-cancel-btn">Cancel</button>
+                    <button type="submit" class="owner-primary-button" id="generate-submit-btn">Generate</button>
+                </div>
+            </form>
+        </div>
     </div>
 
         </main>

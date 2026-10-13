@@ -8,7 +8,7 @@ async function loadFacilities() {
     const data = await res.json();
 
     if (!data.success) {
-      alert("Failed to load facilities.");
+      window.showDialog({ type: "error", title: "Unable to load facilities", message: data.message || "Failed to load facilities." });
       return;       
     }
 
@@ -88,7 +88,7 @@ document.addEventListener("click", async (e) => {
 
 
   if (!result.success) {
-    alert(result.message);
+    window.showDialog({ type: "error", title: "Unable to load facility", message: result.message || "Failed to load this facility." });
     return;
   }
 
@@ -150,11 +150,12 @@ document.addEventListener("click", async (e) => {
     const result = await res.json();
 
     if (!result.success) {
-      alert(result.message);
+      window.showDialog({ type: "error", title: "Unable to save facility", message: result.message || "Unable to save this facility." });
       return;
     }
 
     modal_container.classList.remove("show");
+    window.showDialog({ type: "success", title: "Facility saved", message: result.message || "Facility saved successfully." });
     loadFacilities();
   }
 });

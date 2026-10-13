@@ -5,6 +5,9 @@ const editPaymentModal = document.getElementById("editPaymentModal");
 const editPaymentForm = document.getElementById("editPaymentForm");
 const paymentReceiptModal = document.getElementById("paymentReceiptModal");
 const paymentReceiptImage = document.getElementById("paymentReceiptImage");
+const rejectPaymentModal = document.getElementById("rejectPaymentModal");
+const rejectPaymentForm = document.getElementById("rejectPaymentForm");
+const rejectionReasonInput = document.getElementById("rejectionReason");
 const pesoFormatter = new Intl.NumberFormat("en-PH", {
   style: "currency",
   currency: "PHP",
@@ -37,6 +40,23 @@ function setEditPaymentModalOpen(open) {
   editPaymentModal.classList.toggle("show", open);
   editPaymentModal.setAttribute("aria-hidden", String(!open));
   if (open) document.getElementById("editPaymentMethod").focus();
+}
+
+function setRejectPaymentModalOpen(open) {
+  rejectPaymentModal.classList.toggle("show", open);
+  rejectPaymentModal.setAttribute("aria-hidden", String(!open));
+  if (open) rejectionReasonInput.focus();
+}
+
+function openRejectPayment(payment) {
+  document.getElementById("rejectPaymentId").value = payment.payments_id;
+  document.getElementById("rejectPaymentDetails").textContent =
+    `Booking #${payment.booking_id} · ${payment.customer_name || "Customer"}${payment.customer_phone ? ` · ${payment.customer_phone}` : ""} · Court ${payment.court_no} · ${formatPaymentDate(payment.court_date, payment.court_time)}`;
+  rejectionReasonInput.value = "";
+  const feedback = document.getElementById("rejectPaymentFeedback");
+  feedback.textContent = "";
+  feedback.classList.remove("is-error");
+  setRejectPaymentModalOpen(true);
 }
 
 function openEditPayment(payment) {
@@ -151,6 +171,13 @@ function renderPayments() {
     editButton.className = "owner-secondary-button payment-edit-button";
     editButton.textContent = "Edit";
     editButton.dataset.editPaymentId = payment.payments_id;
+    editButton.disabled = payment.payment_status === "Rejected";
+    const rejectButton = document.createElement("button");
+    rejectButton.type = "button";
+    rejectButton.className = "owner-secondary-button payment-reject-button";
+    rejectButton.textContent = "Reject";
+    rejectButton.dataset.rejectPaymentId = payment.payments_id;
+    rejectButton.disabled = payment.payment_status !== "Pending";
     let receipt;
     if (payment.has_receipt) {
       receipt = document.createElement("button");
@@ -170,7 +197,7 @@ function renderPayments() {
       paymentCell("Amount", pesoFormatter.format(Number(payment.total_amount))),
       paymentCell("Receipt", receipt),
       paymentCell("Status", status),
-      paymentCell("Action", [editButton, action]),
+      paymentCell("Action", [editButton, action, rejectButton]),
     );
     paymentRows.append(row);
   }
@@ -206,6 +233,12 @@ paymentRows.addEventListener("click", (event) => {
     if (payment) openEditPayment(payment);
     return;
   }
+  const rejectButton = event.target.closest("button[data-reject-payment-id]");
+  if (rejectButton) {
+    const payment = payments.find((item) => String(item.payments_id) === rejectButton.dataset.rejectPaymentId);
+    if (payment) openRejectPayment(payment);
+    return;
+  }
   const button = event.target.closest("button[data-payment-id]");
   if (!button) return;
   pendingPaymentId = button.dataset.paymentId;
@@ -239,6 +272,7 @@ async function markPaymentPaid() {
 document.getElementById("confirmMarkPaid").addEventListener("click", markPaymentPaid);
 document.getElementById("cancelMarkPaid").addEventListener("click", () => setMarkPaidModalOpen(false));
 document.getElementById("cancelEditPayment").addEventListener("click", () => setEditPaymentModalOpen(false));
+document.getElementById("cancelRejectPayment").addEventListener("click", () => setRejectPaymentModalOpen(false));
 document.getElementById("closePaymentReceipt").addEventListener("click", () => setPaymentReceiptOpen(false));
 markPaidModal.addEventListener("click", (event) => {
   if (event.target === markPaidModal) setMarkPaidModalOpen(false);
@@ -246,16 +280,80 @@ markPaidModal.addEventListener("click", (event) => {
 editPaymentModal.addEventListener("click", (event) => {
   if (event.target === editPaymentModal) setEditPaymentModalOpen(false);
 });
+rejectPaymentModal.addEventListener("click", (event) => {
+  if (event.target === rejectPaymentModal) setRejectPaymentModalOpen(false);
+});
 paymentReceiptModal.addEventListener("click", (event) => {
   if (event.target === paymentReceiptModal) setPaymentReceiptOpen(false);
 });
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && markPaidModal.classList.contains("show")) setMarkPaidModalOpen(false);
   if (event.key === "Escape" && editPaymentModal.classList.contains("show")) setEditPaymentModalOpen(false);
+  if (event.key === "Escape" && rejectPaymentModal.classList.contains("show")) setRejectPaymentModalOpen(false);
   if (event.key === "Escape" && paymentReceiptModal.classList.contains("show")) setPaymentReceiptOpen(false);
 });
 
 document.getElementById("editPaymentMethod").addEventListener("change", updateReferenceField);
+
+rejectPaymentForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const reason = rejectionReasonInput.value.trim();
+  const feedback = document.getElementById("rejectPaymentFeedback");
+  const submitButton = document.getElementById("confirmRejectPayment");
+  const cancelButton = document.getElementById("cancelRejectPayment");
+  if (!reason) {
+    feedback.textContent = "Enter a reason for rejecting this payment.";
+    feedback.classList.add("is-error");
+    rejectionReasonInput.focus();
+    return;
+  }
+  if (reason.length > 500) {
+    feedback.textContent = "The rejection reason must be 500 characters or fewer.";
+    feedback.classList.add("is-error");
+    rejectionReasonInput.focus();
+    return;
+  }
+
+  submitButton.disabled = true;
+  cancelButton.disabled = true;
+  submitButton.textContent = "Rejecting...";
+  feedback.textContent = "Saving rejection...";
+  feedback.classList.remove("is-error");
+  try {
+    const response = await fetch("../includes/admin-php/manage_payments.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "reject",
+        payment_id: document.getElementById("rejectPaymentId").value,
+        rejection_reason: reason,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Unable to reject this payment.");
+    }
+    setRejectPaymentModalOpen(false);
+    await loadPayments();
+    await window.showDialog({
+      type: "success",
+      title: "Payment rejected",
+      message: result.message,
+    });
+  } catch (error) {
+    feedback.textContent = error.message || "Unable to reject this payment.";
+    feedback.classList.add("is-error");
+    await window.showDialog({
+      type: "error",
+      title: "Unable to reject payment",
+      message: error.message || "Unable to reject this payment. Please try again.",
+    });
+  } finally {
+    submitButton.disabled = false;
+    cancelButton.disabled = false;
+    submitButton.textContent = "Confirm rejection";
+  }
+});
 
 editPaymentForm.addEventListener("submit", async (event) => {
   event.preventDefault();

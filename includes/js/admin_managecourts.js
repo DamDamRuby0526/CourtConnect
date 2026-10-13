@@ -104,6 +104,161 @@ async function loadCourts() {
     loadCourts();
     document.getElementById("add-btn").addEventListener("click", () => openCourtModal());
 
+    const brandingForm = document.getElementById("facilityBrandingForm");
+    const logoInput = document.getElementById("facilityLogoInput");
+    const logoPreview = document.getElementById("facilityLogoPreview");
+    const qrInput = document.getElementById("gcashQrInput");
+    const qrPreview = document.getElementById("gcashQrPreview");
+    const qrPlaceholder = document.getElementById("gcashQrPlaceholder");
+    const removeLogoInput = document.getElementById("removeFacilityLogo");
+    const uploadLogoButton = document.getElementById("uploadFacilityLogo");
+    const uploadQrButton = document.getElementById("uploadGcashQr");
+    const removeLogoButton = document.getElementById("clearFacilityLogo");
+    const facilityNameInput = document.getElementById("facilityNameInput");
+    const brandingStatus = document.getElementById("facilityBrandingStatus");
+    const saveBrandingButton = document.getElementById("saveFacilityBranding");
+    let initialFacilityName = facilityNameInput.value;
+    const placeholderLogo = "../uploads/badminton-pickleball-court.svg";
+    let previewObjectUrl = null;
+    let qrPreviewObjectUrl = null;
+
+    function updateBrandingSaveState() {
+      const changed = facilityNameInput.value.trim() !== initialFacilityName
+        || logoInput.files.length > 0
+        || qrInput.files.length > 0
+        || removeLogoInput.value === "1";
+      saveBrandingButton.disabled = !changed;
+    }
+
+    function setLogoPreview(source, hasLogo) {
+      if (previewObjectUrl) {
+        URL.revokeObjectURL(previewObjectUrl);
+        previewObjectUrl = null;
+      }
+      logoPreview.src = source || placeholderLogo;
+      logoPreview.dataset.currentLogo = hasLogo ? "1" : "0";
+      removeLogoButton.disabled = !hasLogo;
+    }
+
+    function setQrPreview(source) {
+      if (qrPreviewObjectUrl && qrPreviewObjectUrl !== source) {
+        URL.revokeObjectURL(qrPreviewObjectUrl);
+      }
+      qrPreviewObjectUrl = source && source.startsWith("blob:") ? source : null;
+      qrPreview.hidden = !source;
+      qrPlaceholder.hidden = !!source;
+      if (source) qrPreview.src = source;
+      else qrPreview.removeAttribute("src");
+    }
+
+    function validateImageFile(file, label) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        window.showDialog({ type: "error", title: `Unsupported ${label} format`, message: "Choose a JPG, PNG, or WebP image." });
+        return false;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        window.showDialog({ type: "error", title: `${label} is too large`, message: `${label} images must be 2 MB or smaller.` });
+        return false;
+      }
+      return true;
+    }
+
+    uploadLogoButton.addEventListener("click", () => logoInput.click());
+    uploadQrButton.addEventListener("click", () => qrInput.click());
+    logoInput.addEventListener("change", () => {
+      const file = logoInput.files[0];
+      if (!file) return;
+
+      if (!validateImageFile(file, "Logo")) {
+        logoInput.value = "";
+        return;
+      }
+
+      removeLogoInput.value = "0";
+      previewObjectUrl = URL.createObjectURL(file);
+      logoPreview.src = previewObjectUrl;
+      logoPreview.dataset.currentLogo = "1";
+      removeLogoButton.disabled = false;
+      brandingStatus.textContent = "Previewing selected logo. Save changes to publish it.";
+      brandingStatus.classList.remove("is-error");
+      updateBrandingSaveState();
+    });
+
+    qrInput.addEventListener("change", () => {
+      const file = qrInput.files[0];
+      if (!file) return;
+      if (!validateImageFile(file, "GCash QR")) {
+        qrInput.value = "";
+        return;
+      }
+
+      setQrPreview(URL.createObjectURL(file));
+      brandingStatus.textContent = "Previewing selected GCash QR. Save changes to publish it.";
+      brandingStatus.classList.remove("is-error");
+      updateBrandingSaveState();
+    });
+
+    removeLogoButton.addEventListener("click", () => {
+      logoInput.value = "";
+      removeLogoInput.value = "1";
+      setLogoPreview(placeholderLogo, false);
+      brandingStatus.textContent = "Logo removal is pending. Save changes to publish it.";
+      brandingStatus.classList.remove("is-error");
+      updateBrandingSaveState();
+    });
+
+    facilityNameInput.addEventListener("input", updateBrandingSaveState);
+
+    brandingForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!brandingForm.reportValidity()) return;
+
+      saveBrandingButton.disabled = true;
+      saveBrandingButton.textContent = "Saving...";
+      brandingStatus.textContent = "Saving facility branding...";
+      brandingStatus.classList.remove("is-error");
+
+      try {
+        const response = await fetch("../includes/admin-php/update_facility_branding.php", {
+          method: "POST",
+          body: new FormData(brandingForm),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Unable to save facility branding.");
+        }
+
+        facilityNameInput.value = result.facility_name;
+        initialFacilityName = result.facility_name;
+        document.querySelectorAll(".owner-brand small, .admin-brand-copy small").forEach((label) => {
+          label.textContent = result.facility_name;
+        });
+        if (result.facility_img) {
+          setLogoPreview(`../uploads/facility/${encodeURIComponent(result.facility_img)}`, true);
+        } else {
+          setLogoPreview(placeholderLogo, false);
+        }
+        if (result.qr_img) {
+          setQrPreview(`../uploads/qr/${encodeURIComponent(result.qr_img)}`);
+        } else {
+          setQrPreview("");
+        }
+        logoInput.value = "";
+        qrInput.value = "";
+        removeLogoInput.value = "0";
+        brandingStatus.textContent = result.message;
+        updateBrandingSaveState();
+        window.showDialog({ type: "success", title: "Facility settings saved", message: result.message });
+      } catch (error) {
+        brandingStatus.textContent = error.message || "Unable to save facility branding.";
+        brandingStatus.classList.add("is-error");
+        window.showDialog({ type: "error", title: "Unable to save facility settings", message: brandingStatus.textContent });
+        updateBrandingSaveState();
+      } finally {
+        saveBrandingButton.textContent = "Save Changes";
+      }
+    });
+
     document.getElementById("facilityHoursForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const status = document.getElementById("hoursStatus");
@@ -130,7 +285,7 @@ async function loadCourts() {
         const result = await response.json();
         const court = result.courts?.find((item) => String(item.court_id) === editButton.dataset.courtId);
         if (!result.success || !court) {
-          window.alert(result.message || "Could not load this court.");
+          window.showDialog({ type: "error", title: "Unable to load court", message: result.message || "Could not load this court." });
           return;
         }
         openCourtModal(court);
@@ -157,10 +312,12 @@ async function loadCourts() {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.message || "Could not save court details.");
         closeCourtModal();
+        window.showDialog({ type: "success", title: "Court saved", message: result.message || "Court details saved." });
         await loadCourts();
       } catch (error) {
         status.textContent = error.message;
         status.classList.add("is-error");
+        window.showDialog({ type: "error", title: "Unable to save court", message: error.message || "Could not save court details." });
       } finally {
         saveButton.disabled = false;
       }

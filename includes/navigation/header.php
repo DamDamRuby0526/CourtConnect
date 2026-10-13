@@ -4,8 +4,14 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $isLoggedIn = !empty($_SESSION["logged_in"]);
+$isPlayer = $isLoggedIn && (int) ($_SESSION["role_id"] ?? 0) === 1;
 $displayName = trim($_SESSION["first_name"] ?? "");
 ?>
+<script src="includes/js/toast.js" defer></script>
+<script src="includes/js/admin_dialog.js" defer></script>
+<?php if ($isPlayer): ?>
+    <script src="includes/js/expiry_notifications.js" defer></script>
+<?php endif; ?>
 <header class="site-header">
     <nav class="navigation" aria-label="Main navigation">
         <a class="brand" href="index.php" aria-label="CourtConnect home">

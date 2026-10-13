@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const data = await response.json();
 
     if (!data.success) {
-      alert("Failed to load users.");
+      window.showDialog({ type: "error", title: "Unable to load users", message: data.message || "Failed to load users." });
       return;
     }
 
@@ -61,7 +61,7 @@ document.addEventListener("click", async (e) => {
     const result = await res.json();
 
     if (!result.success) {
-      alert(result.message);
+      window.showDialog({ type: "error", title: "Unable to load user", message: result.message || "Unable to load this user." });
       return;
     }
 
@@ -100,11 +100,12 @@ document.addEventListener("click", async (e) => {
     const result = await res.json();
 
     if (!result.success) {
-      alert(result.message);
+      window.showDialog({ type: "error", title: "Unable to update user", message: result.message || "Unable to update this user." });
       return;
     }
 
     modal_container.classList.remove("show");
+    window.showDialog({ type: "success", title: "User updated", message: result.message || "User details updated successfully." });
     location.reload(); // refresh table to show updated data
   }
 });

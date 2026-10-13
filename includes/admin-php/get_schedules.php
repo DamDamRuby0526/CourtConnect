@@ -27,7 +27,10 @@ if (!$court) {
     exit();
 }
 
-$sql = "SELECT schedule_id, court_id, court_date, court_time, schedule_status
+$sql = "SELECT schedule_id, court_id, court_date, court_time,
+           CASE WHEN schedule_status = 'Held'
+                    AND (hold_expires_at IS NULL OR hold_expires_at <= NOW())
+            THEN 'Available' ELSE schedule_status END AS schedule_status
         FROM court_schedule
         WHERE court_id = ?
         ORDER BY court_date ASC, court_time ASC";

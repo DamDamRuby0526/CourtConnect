@@ -1,6 +1,9 @@
 <?php
 
 header("Content-Type: application/json");
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require "config.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -138,10 +141,11 @@ if (!$stmt->execute()) {
 
 $stmt->close();
 
-// Get the user information needed by the Android session
-$sql = "SELECT user_id, first_name, last_name, email, phone_number
-        FROM users
-        WHERE user_id = ?
+// Get the user information needed by the session
+$sql = "SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone_number, u.role_id, r.role_name
+        FROM users u
+        LEFT JOIN roles r ON r.role_id = u.role_id
+        WHERE u.user_id = ?
         LIMIT 1";
 
 $stmt = $conn->prepare($sql);
@@ -172,6 +176,15 @@ if ($result->num_rows === 0) {
 $user = $result->fetch_assoc();
 $stmt->close();
 
+$_SESSION["user_id"] = (int) $user["user_id"];
+$_SESSION["first_name"] = $user["first_name"];
+$_SESSION["last_name"] = $user["last_name"];
+$_SESSION["email"] = $user["email"];
+$_SESSION["phone_number"] = $user["phone_number"];
+$_SESSION["logged_in"] = true;
+$_SESSION["role_id"] = (int) ($user["role_id"] ?? 0);
+$_SESSION["role_name"] = $user["role_name"] ?? "player";
+
 // If verified, OTP is deleted
 $sql = "DELETE FROM otp_codes
         WHERE user_id = ?";
@@ -192,7 +205,8 @@ echo json_encode([
         "first_name" => $user["first_name"],
         "last_name" => $user["last_name"],
         "email" => $user["email"],
-        "phone_number" => $user["phone_number"]
+        "phone_number" => $user["phone_number"],
+        "role_name" => $user["role_name"] ?? "player"
     ]
 ]);
 
