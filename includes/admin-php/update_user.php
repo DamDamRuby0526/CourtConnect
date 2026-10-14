@@ -1,8 +1,27 @@
 <?php
 // update single user in a form
 header("Content-Type: application/json");
-// require_once __DIR__ . "/admin_auth_guard.php";
 require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/courtconnect_auth_guard.php";
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    http_response_code(405);
+    header("Allow: POST");
+    echo json_encode(["success" => false, "message" => "Use POST to update a user."]);
+    exit();
+}
+
+$csrfToken = $_SERVER["HTTP_X_CSRF_TOKEN"] ?? "";
+$sessionCsrfToken = $_SESSION["csrf_token"] ?? "";
+if (
+    !is_string($csrfToken) || $csrfToken === ""
+    || !is_string($sessionCsrfToken) || $sessionCsrfToken === ""
+    || !hash_equals($sessionCsrfToken, $csrfToken)
+) {
+    http_response_code(403);
+    echo json_encode(["success" => false, "message" => "Your session has expired. Refresh the page and try again."]);
+    exit();
+}
 
 $data = json_decode(file_get_contents("php://input"), true);
 

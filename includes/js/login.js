@@ -38,14 +38,21 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
 
-    window.showToast("Sign-in failed", result.message || "Check your details and try again.", "error");
+    window.showDialog({
+      type: "error",
+      title: "Sign-in failed",
+      message: result.message || "Check your details and try again.",
+    });
     return;
   }
 
   let destination = "index.php";
   let destinationLabel = "your CourtConnect home.";
 
-  if (result.user.role_name === "courtconnect") {
+  if (result.owner_application) {
+    destination = "owner_application.php";
+    destinationLabel = "your application status.";
+  } else if (result.user.role_name === "courtconnect") {
     destination = "Admin dashboard/reviewregistrations.php";
     destinationLabel = "the developer review dashboard.";
   } else if (result.user.admin_id || result.user.role_name === "facility_owner") {

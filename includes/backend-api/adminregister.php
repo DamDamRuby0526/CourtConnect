@@ -2,6 +2,7 @@
 
 header("Content-Type: application/json");
 require_once __DIR__ . "/config.php";
+require_once __DIR__ . "/facility_document_storage.php";
 
 function saveRegistrationUpload(array $file, string $directory, array $allowedMimeTypes, array &$uploadedPaths): string
 {
@@ -79,7 +80,6 @@ $allowedDocuments = [
     "image/jpeg" => "jpg",
     "image/png" => "png",
     "image/webp" => "webp",
-    "image/gif" => "gif",
     "application/pdf" => "pdf"
 ];
 $allowedImages = array_diff_key($allowedDocuments, ["application/pdf" => true]);
@@ -100,10 +100,14 @@ try {
     $stmt->close();
 
     $uploadRoot = __DIR__ . "/../uploads";
-    $validId = saveRegistrationUpload($_FILES["valid_id"] ?? [], $uploadRoot . "/verification", $allowedDocuments, $uploadedPaths);
-    $businessRegistration = saveRegistrationUpload($_FILES["business_registration"] ?? [], $uploadRoot . "/verification", $allowedDocuments, $uploadedPaths);
-    $businessPermit = saveRegistrationUpload($_FILES["business_permit"] ?? [], $uploadRoot . "/verification", $allowedDocuments, $uploadedPaths);
-    $proofOfOccupancy = saveRegistrationUpload($_FILES["proof_of_occupancy"] ?? [], $uploadRoot . "/verification", $allowedDocuments, $uploadedPaths);
+    $validId = saveFacilityDocumentUpload($_FILES["valid_id"] ?? []);
+    $uploadedPaths[] = facilityPrivateDocumentDirectory() . DIRECTORY_SEPARATOR . $validId;
+    $businessRegistration = saveFacilityDocumentUpload($_FILES["business_registration"] ?? []);
+    $uploadedPaths[] = facilityPrivateDocumentDirectory() . DIRECTORY_SEPARATOR . $businessRegistration;
+    $businessPermit = saveFacilityDocumentUpload($_FILES["business_permit"] ?? []);
+    $uploadedPaths[] = facilityPrivateDocumentDirectory() . DIRECTORY_SEPARATOR . $businessPermit;
+    $proofOfOccupancy = saveFacilityDocumentUpload($_FILES["proof_of_occupancy"] ?? []);
+    $uploadedPaths[] = facilityPrivateDocumentDirectory() . DIRECTORY_SEPARATOR . $proofOfOccupancy;
 
     $photoUpload = $_FILES["facility_photos"] ?? [];
     if (isset($photoUpload["name"]) && is_array($photoUpload["name"])) {

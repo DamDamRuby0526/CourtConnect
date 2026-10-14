@@ -286,8 +286,8 @@ if (session_status() === PHP_SESSION_NONE) {
           </div>
 
           <p class="auth-section-hint">
-            Upload documents that can verify your identity and
-            your authority to operate the facility.
+            Upload JPG, PNG, WEBP, or PDF documents (maximum 5 MB each) that
+            verify your identity and authority to operate the facility.
           </p>
 
 
@@ -301,7 +301,7 @@ if (session_status() === PHP_SESSION_NONE) {
               type="file"
               id="valid_id"
               name="valid_id"
-              accept="image/*,.pdf"
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
               required>
 
           </div>
@@ -317,7 +317,7 @@ if (session_status() === PHP_SESSION_NONE) {
               type="file"
               id="business_registration"
               name="business_registration"
-              accept="image/*,.pdf"
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
               required>
 
           </div>
@@ -333,7 +333,7 @@ if (session_status() === PHP_SESSION_NONE) {
               type="file"
               id="business_permit"
               name="business_permit"
-              accept="image/*,.pdf"
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
               required>
 
           </div>
@@ -349,7 +349,7 @@ if (session_status() === PHP_SESSION_NONE) {
               type="file"
               id="proof_of_occupancy"
               name="proof_of_occupancy"
-              accept="image/*,.pdf"
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
               required>
 
           </div>

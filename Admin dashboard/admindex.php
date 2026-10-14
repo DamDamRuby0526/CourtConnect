@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../includes/backend-api/config.php";
+require_once __DIR__ . "/../includes/admin-php/facility_owner_page_guard.php";
 
 $adminDashboardLayout = true;
 $adminNavPage = "upcoming";

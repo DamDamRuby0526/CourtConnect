@@ -66,6 +66,29 @@ if (!password_verify($password, $user["password"])) {
     exit();
 }
 
+if (
+    (int) $user["role_id"] === 3
+    && in_array($user["admin_status"], ["Pending", "Rejected"], true)
+) {
+    session_regenerate_id(true);
+    $_SESSION["user_id"] = (int) $user["user_id"];
+    $_SESSION["first_name"] = $user["first_name"];
+    $_SESSION["last_name"] = $user["last_name"];
+    $_SESSION["email"] = $user["email"];
+    $_SESSION["logged_in"] = true;
+    $_SESSION["role_id"] = 3;
+    $_SESSION["role_name"] = "facility_owner";
+    $_SESSION["admin_id"] = (int) $user["admin_id"];
+    $_SESSION["facility_id"] = (int) $user["facility_id"];
+    $_SESSION["role"] = "admin";
+    echo json_encode([
+        "success" => true,
+        "owner_application" => true,
+        "user" => ["first_name" => $user["first_name"]]
+    ]);
+    exit();
+}
+
 if ($user["admin_status"] === "Pending") {
     $_SESSION["pending_facility_user_id"] = (int) $user["user_id"];
     echo json_encode([

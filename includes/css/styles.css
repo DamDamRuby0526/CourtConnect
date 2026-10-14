@@ -713,6 +713,24 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .owner-account-actions { display: flex; align-items: center; gap: 7px; }
 .owner-account-actions button { min-height: 30px; font-size: 9px; }
 .owner-account-row button:disabled { cursor: wait; opacity: .55; }
+.staff-users-section { padding: 21px 0 25px; border-top: 1px solid #dce4dd; }
+.staff-users-heading { margin-bottom: 18px; }
+.staff-users-tools { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.staff-users-tools label { color: #546a72; font-size: 10px; font-weight: 600; }
+.staff-users-tools input { width: min(360px, 100%); height: 36px; padding: 0 11px; border: 1px solid #d5dfd8; border-radius: 3px; background: #fff; color: #28475a; font: inherit; font-size: 10px; }
+.staff-users-tools input:focus { border-color: #5f9639; outline: 2px solid rgba(111, 166, 66, .18); }
+.staff-users-status { min-height: 16px; margin: 0 0 8px; color: #728187; font-size: 9px; }
+.staff-users-status.is-error { color: #ad4640; }
+.staff-users-table-wrap { overflow-x: auto; border-top: 1px solid #dce4dd; }
+.staff-users-table { width: 100%; border-collapse: collapse; text-align: left; }
+.staff-users-table th { padding: 10px 9px; border: 0; border-bottom: 1px solid #dce4dd; color: #728187; font-size: 8px; font-weight: 600; letter-spacing: .45px; text-transform: uppercase; }
+.staff-users-table td { padding: 12px 9px; border: 0; border-bottom: 1px solid #e5ebe5; color: #4e6872; font-size: 9px; }
+.staff-users-table tbody tr:hover { background: rgba(233, 241, 229, .42); }
+.staff-user-identity { display: flex; min-width: 150px; align-items: center; gap: 9px; }
+.staff-user-identity strong { overflow: hidden; color: #193e59; font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.staff-user-avatar { display: grid; width: 29px; height: 29px; flex: 0 0 29px; place-items: center; border-radius: 50%; background: #e7f3df; color: #4a7f2b; font-size: 9px; font-weight: 700; }
+.staff-user-edit { min-height: 28px; padding: 0 10px; font-size: 9px; }
+.staff-users-empty { padding: 28px 12px !important; color: #728187 !important; text-align: center; }
 .owner-modal { z-index: 1100; padding: 18px; background: rgba(8, 32, 52, .48); }
 .compact-modal-overlay { padding: 0; }
 .owner-modal-panel { width: min(960px, 100%); max-height: min(96vh, 1230px); overflow-y: auto; padding: 44px; border: 1px solid #dce4dd; border-top: 3px solid var(--green); border-radius: 3px; background: #fff; box-shadow: 0 24px 80px rgba(9, 43, 69, .2); }
@@ -798,12 +816,285 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .attendance-status-upcoming, .attendance-status-cancelled { background: #eef1f2; color: #62757c; }
 .attendance-status-awaiting { background: #fff2d2; color: #94701f; }
 
+.staff-pending-badge { display: inline-flex; min-width: 18px; height: 18px; align-items: center; justify-content: center; margin-left: auto; padding: 0 5px; border-radius: 999px; background: #bd5148; color: #fff; font-size: 9px; font-weight: 700; }
+.application-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.application-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
+.application-tabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 13px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.application-tabs button.is-active { border-color: var(--line); background: #fff; color: var(--navy); font-weight: 600; box-shadow: 0 1px 4px rgba(13,49,87,.08); }
+.application-tabs button span { min-width: 18px; padding: 1px 5px; border-radius: 999px; background: #edf1ee; font-size: 10px; text-align: center; }
+.application-search-sort { display: flex; align-items: center; gap: 8px; }
+.application-search-label, .application-sort-label { color: var(--muted); font-size: 10px; }
+.application-search-sort input, .application-search-sort select { height: 36px; margin: 0; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--navy); font: inherit; font-size: 11px; }
+.application-search-sort input { width: min(260px, 32vw); }
+.application-search-sort select { min-width: 118px; }
+.application-load-status { min-height: 18px; margin: 0 0 10px; color: var(--muted); font-size: 10px; }
+.application-list { display: grid; gap: 11px; }
+.application-card { display: grid; grid-template-columns: minmax(140px, .9fr) minmax(150px, 1.1fr) minmax(250px, 1.7fr) minmax(110px, .65fr) auto; align-items: center; gap: 16px; padding: 17px 19px; border: 1px solid var(--line); border-radius: 6px; background: #fff; box-shadow: 0 2px 7px rgba(13,49,87,.035); }
+.application-card-identity, .application-card-facility { min-width: 0; }
+.application-card-identity h2, .application-card-facility h3 { overflow: hidden; margin: 0 0 5px; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.application-contact, .application-card-facility p, .application-card-facility small { display: block; overflow: hidden; margin: 2px 0 0; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.application-card-documents { display: flex; flex-wrap: wrap; gap: 5px; }
+.application-document-chip { display: inline-flex; max-width: 100%; align-items: center; gap: 4px; padding: 5px 7px; border: 1px solid #d5e3cd; border-radius: 999px; background: #f5faef; color: #416c2b; font: inherit; font-size: 8px; text-align: left; cursor: pointer; }
+.application-document-chip:hover { border-color: var(--green); background: #ebf5e3; }
+.application-document-chip.is-missing { border-color: #efc9c4; background: #fff4f2; color: #a64039; }
+.application-document-icon { flex: 0 0 auto; font-weight: 700; }
+.application-status-badge { display: inline-flex; width: fit-content; padding: 4px 7px; border-radius: 999px; background: #fff0d5; color: #86621a; font-size: 8px; font-weight: 700; }
+.application-status-badge.is-active { background: #e8f3df; color: #477a2d; }
+.application-status-badge.is-rejected { background: #fbe9e6; color: #a33f38; }
+.application-card-meta { display: grid; gap: 7px; }
+.application-submitted { color: var(--muted); font-size: 8px; line-height: 1.45; }
+.application-review-button { min-height: 31px; padding: 0 12px; font-size: 9px; }
+.application-empty-state { display: grid; min-height: 190px; align-content: center; justify-items: center; gap: 7px; padding: 30px; border: 1px dashed var(--line); border-radius: 6px; background: #fff; text-align: center; }
+.application-empty-state h2 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 15px; font-weight: 600; }
+.application-empty-state p { color: var(--muted); font-size: 10px; }
+.application-review-overlay { position: fixed; inset: 0; z-index: 1200; display: none; align-items: center; justify-content: center; padding: 24px 16px; background: rgba(9,31,50,.65); }
+.application-review-overlay.show { display: flex; }
+.application-review-modal { display: flex; width: min(1100px, 100%); max-height: calc(100vh - 48px); flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-top: 3px solid var(--green); border-radius: 7px; background: var(--cream); box-shadow: 0 24px 80px rgba(9,31,50,.32); }
+.application-review-modal:focus-visible, .application-review-modal button:focus-visible, .application-review-modal a:focus-visible, .application-review-modal input:focus-visible, .application-review-modal textarea:focus-visible { outline: 3px solid #54a6bc; outline-offset: 2px; }
+.review-modal-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--line); background: #fff; }
+.review-modal-header h2, .review-details-column h3 { margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 16px; font-weight: 600; }
+.review-modal-close { width: 32px; height: 32px; border: 0; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; }
+.review-modal-columns { display: grid; min-height: 0; grid-template-columns: minmax(0, 1.75fr) minmax(290px, .95fr); overflow: auto; }
+.review-document-column { display: flex; min-width: 0; flex-direction: column; padding: 17px 20px; }
+.review-document-toolbar { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; align-items: center; gap: 8px; margin-bottom: 10px; }
+.review-document-toolbar h3 { overflow: hidden; margin: 0; color: var(--navy); font: 600 12px "Poppins", sans-serif; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.review-document-toolbar button, .review-document-controls button { min-width: 32px; min-height: 30px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--navy); font: inherit; cursor: pointer; }
+.review-document-toolbar button:disabled { opacity: .5; cursor: not-allowed; }
+.review-document-viewer { display: grid; min-height: 330px; max-height: min(55vh, 600px); place-items: center; overflow: hidden; border: 1px solid #d6dfd8; border-radius: 5px; background: #e8ece8; touch-action: none; }
+.review-document-viewer img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center center; user-select: none; }
+.review-document-viewer img.is-zoomed { max-width: none; max-height: none; cursor: grab; }
+.review-document-viewer img.is-zoomed:active { cursor: grabbing; }
+.review-document-viewer object { width: 100%; height: min(55vh, 600px); border: 0; }
+.review-document-placeholder { padding: 20px; color: var(--muted); font-size: 13px; text-align: center; }
+.review-document-placeholder.is-missing { color: #a64039; font-weight: 600; }
+.review-document-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.review-document-controls[hidden] { display: none; }
+.review-document-controls button { padding: 0 10px; font-size: 10px; }
+.review-document-controls a { margin-left: auto; color: var(--court-blue); font-size: 10px; }
+.review-document-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 11px; }
+.review-document-step { display: flex; min-width: 0; min-height: 37px; align-items: center; gap: 6px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--muted); font: inherit; font-size: 8px; text-align: left; cursor: pointer; }
+.review-document-step.is-current { border-color: var(--court-blue); color: var(--navy); }
+.review-document-step.is-viewed .review-document-step-check { background: var(--green); color: #173c27; }
+.review-document-step-check { display: grid; width: 19px; height: 19px; flex: 0 0 19px; place-items: center; border-radius: 50%; background: #eef1ed; font-size: 9px; font-weight: 700; }
+.review-document-step > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.review-details-column { display: flex; min-width: 0; flex-direction: column; padding: 18px; border-left: 1px solid var(--line); background: #fff; }
+.review-details-column h3 { margin-bottom: 11px; font-size: 13px; }
+.review-details-column dl { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 7px 10px; margin: 0 0 13px; }
+.review-details-column dt { color: var(--muted); font-size: 9px; font-weight: 600; }
+.review-details-column dd { overflow-wrap: anywhere; color: var(--navy); font-size: 9px; }
+.review-readonly-state { margin-bottom: 10px; padding: 8px; border-radius: 4px; background: #fff3dd; color: #725615; font-size: 9px; line-height: 1.45; }
+.review-readonly-state[hidden] { display: none; }
+.review-decision-area { position: sticky; bottom: 0; display: grid; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); background: #fff; }
+.review-decision-help { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.review-approve-button, .review-reject-toggle, .review-send-rejection { min-height: 36px; border: 1px solid var(--green); border-radius: 4px; background: var(--green); color: #173c27; font: 600 10px "Poppins", sans-serif; cursor: pointer; }
+.review-approve-button:disabled, .review-send-rejection:disabled { opacity: .5; cursor: not-allowed; }
+.review-reject-toggle { border-color: #b7413e; background: #fff; color: #a33f38; }
+.review-decision-area form { display: grid; width: 100%; gap: 7px; margin: 0; padding: 0; background: transparent; box-shadow: none; }
+.review-decision-area form[hidden] { display: none; }
+.review-decision-area form > label, .review-decision-area legend { color: var(--navy); font-size: 9px; font-weight: 600; }
+.rejection-reason-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.rejection-reason-chips button { padding: 4px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--cream); color: var(--navy); font: inherit; font-size: 8px; cursor: pointer; }
+.review-decision-area textarea { width: 100%; min-height: 70px; margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; font-size: 10px; resize: vertical; }
+.rejection-character-count { color: var(--muted); font-size: 8px; text-align: right; }
+.review-decision-area fieldset { display: grid; gap: 5px; margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 4px; }
+.review-decision-area fieldset label { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--navy); font-size: 9px; }
+.review-decision-area fieldset input { width: auto; margin: 0; }
+.review-validation-message { margin: 0; color: #a64039; font-size: 9px; }
+.review-send-rejection { border-color: #b7413e; background: #b7413e; color: #fff; }
+.owner-application-body { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: var(--cream); }
+.owner-application-card { width: min(700px, 100%); padding: clamp(24px, 5vw, 48px); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 8px; background: #fff; box-shadow: 0 18px 55px rgba(13,49,87,.1); }
+.owner-application-card > h1 { margin: 4px 0 18px; color: var(--navy); font: 700 25px "Poppins", sans-serif; letter-spacing: 0; }
+.owner-application-status { display: inline-flex; margin-bottom: 8px; padding: 5px 9px; border-radius: 999px; background: #fff0d5; color: #86621a; font-size: 10px; font-weight: 700; }
+.owner-application-banner h1 { margin: 4px 0 8px; color: var(--navy); font: 700 23px "Poppins", sans-serif; }
+.owner-application-banner p { margin: 0; color: #4e6872; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.owner-application-banner small { display: block; margin-top: 12px; color: var(--muted); font-size: 10px; }
+.owner-application-banner.is-rejected { margin: 16px 0; padding: 18px; border: 1px solid #efc9c4; border-radius: 6px; background: #fff6f4; }
+.owner-application-banner.is-rejected .owner-application-status { background: #fbe9e6; color: #a33f38; }
+.owner-application-section { display: grid; justify-items: start; gap: 13px; }
+.owner-application-section h2 { margin: 0; color: var(--navy); font: 600 14px "Poppins", sans-serif; }
+.owner-application-section ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.owner-application-stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 25px 0; padding: 0; list-style: none; }
+.owner-application-stepper li { padding-top: 10px; border-top: 3px solid var(--line); color: var(--muted); font-size: 9px; }
+.owner-application-stepper li.is-complete { border-color: var(--green); color: #477a2d; }
+.owner-application-stepper li.is-current { border-color: #e3aa35; color: #86621a; font-weight: 700; }
+.owner-application-logout { display: inline-block; margin-top: 28px; color: var(--muted); font-size: 10px; }
+.owner-resubmit-card { width: min(780px, 100%); }
+.owner-resubmit-intro { margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+.owner-resubmit-card form { display: grid; width: 100%; gap: 9px; margin: 0; padding: 0; background: transparent; box-shadow: none; }
+.owner-resubmit-document { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px 18px; padding: 13px; border: 1px solid var(--line); border-radius: 5px; }
+.owner-resubmit-document h2 { margin: 0 0 5px; color: var(--navy); font: 600 12px "Poppins", sans-serif; }
+.owner-resubmit-document a { margin-left: 8px; color: var(--court-blue); font-size: 9px; }
+.owner-resubmit-document input[type="file"] { grid-column: 1 / -1; width: 100%; margin: 0; padding: 8px; font-size: 10px; }
+.owner-resubmit-document input[hidden] { display: none; }
+.owner-document-tag { display: inline-flex; padding: 3px 6px; border-radius: 999px; font-size: 8px; font-weight: 700; }
+.owner-document-tag.is-rejected { background: #fbe9e6; color: #a33f38; }
+.owner-document-tag.is-unchanged { background: #edf1f2; color: #536b73; }
+.owner-resubmit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 9px; }
+.owner-resubmit-actions .owner-secondary-button { min-height: 38px; text-decoration: none; }
+.owner-resubmit-actions .owner-primary-button { min-height: 38px; font-size: 10px; }
+
+/* Rejected application and resubmission pages */
+.owner-status-page {
+  width: min(720px, 100%);
+  padding: 40px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--green);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 15px;
+  line-height: 1.6;
+  font-family: "Poppins", "Trebuchet MS", sans-serif;
+  box-shadow: 0 18px 55px rgba(13,49,87,.1);
+}
+.owner-status-page h1,
+.owner-status-page h2,
+.owner-status-page h3 { color: var(--navy); font-family: "Poppins", "Trebuchet MS", sans-serif; letter-spacing: normal; }
+.owner-status-page button,
+.owner-status-page input,
+.owner-status-page select,
+.owner-status-page textarea { font-family: inherit; }
+.owner-status-page > .owner-breadcrumb { margin: 0 0 22px; color: var(--muted); font: 600 11px/1.4 "Poppins", "Trebuchet MS", sans-serif; letter-spacing: .8px; }
+.owner-status-page > .owner-breadcrumb span { padding: 0 6px; color: #99a8a9; }
+.owner-status-page .status-page-heading { margin-bottom: 22px; }
+.owner-status-page .status-page-heading h1,
+.owner-status-page > h1 { margin: 7px 0 8px; color: var(--navy); font: 700 26px/1.2 "Poppins", "Trebuchet MS", sans-serif; letter-spacing: normal; }
+.owner-status-page .status-page-heading > p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+.owner-status-page .owner-application-status { margin: 0; }
+.owner-status-page .status-rejected-badge { gap: 6px; background: #fbe9e6; color: #982e2a; }
+.owner-status-page .status-rejected-badge > span { display: inline-grid; width: 16px; height: 16px; place-items: center; border-radius: 50%; background: #a33f38; color: white; font-size: 11px; }
+.owner-status-page .owner-application-stepper { margin: 25px 0; padding: 0; list-style: none; }
+.owner-status-page .status-rejected-stepper li { display: flex; min-width: 0; align-items: center; gap: 7px; padding: 10px 7px 0 0; border-top: 3px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.3; }
+.owner-status-page .status-rejected-stepper li.is-complete { border-color: var(--green); color: #477a2d; }
+.owner-status-page .status-rejected-stepper li.is-current { border-color: #a33f38; color: #982e2a; }
+.owner-status-page .status-step-icon { display: inline-grid; width: 20px; height: 20px; flex: 0 0 20px; place-items: center; border-radius: 50%; background: #e8f3df; color: #477a2d; font-size: 12px; font-weight: 700; }
+.owner-status-page .is-rejected-step .status-step-icon { background: #fbe9e6; color: #982e2a; }
+.owner-status-page .status-reason-callout { margin: 23px 0; padding: 17px 18px; border-left: 4px solid #b7413e; border-radius: 4px; background: #fff6f4; }
+.owner-status-page .status-reason-callout h2 { margin: 0 0 8px; color: #8f3430; font: 700 10px/1.4 "Poppins", "Trebuchet MS", sans-serif; letter-spacing: .9px; }
+.owner-status-page .status-reason-callout p { color: var(--navy); font-size: 15px; font-weight: 400; line-height: 1.6; overflow-wrap: anywhere; }
+.owner-status-page .status-reason-callout small { display: block; margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.owner-status-page .status-documents-section { gap: 12px; }
+.owner-status-page .status-documents-section h2,
+.owner-status-page .resubmit-applicant-summary h2,
+.owner-status-page .resubmit-document-heading h2 { margin: 0; color: var(--navy); font: 600 16px/1.35 "Poppins", "Trebuchet MS", sans-serif; }
+.owner-status-page .status-document-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.owner-status-page .status-document-list li { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #efc9c4; border-radius: 999px; background: #fff6f4; color: #762e2a; font-size: 13px; line-height: 1.3; }
+.owner-status-page .status-document-list li > span { display: inline-grid; width: 17px; height: 17px; place-items: center; border-radius: 50%; background: #a33f38; color: #fff; font-size: 11px; font-weight: 700; }
+.owner-status-page .status-page-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 28px; }
+.owner-status-page .owner-primary-button,
+.owner-status-page .owner-secondary-button,
+.owner-status-page button {
+  display: inline-flex;
+  width: auto;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 20px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: var(--green);
+  color: var(--navy);
+  font: 600 14px/1.2 "Poppins", "Trebuchet MS", sans-serif;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .16s, border-color .16s, box-shadow .16s;
+}
+.owner-status-page .owner-primary-button:hover,
+.owner-status-page button.owner-primary-button:hover { border-color: #68a52f; background: #87c44a; }
+.owner-status-page .owner-secondary-button,
+.owner-status-page .status-logout-button { border-color: var(--line); background: #fff; color: var(--navy); }
+.owner-status-page .owner-secondary-button:hover,
+.owner-status-page .status-logout-button:hover { border-color: #a9c39a; background: #f7faf4; }
+.owner-status-page .resubmit-text-action { min-height: auto; padding: 4px 0; border: 0; background: transparent; color: #28668a; text-decoration: underline; text-underline-offset: 3px; }
+.owner-status-page .resubmit-text-action:hover { background: transparent; color: #16486a; }
+.owner-status-page :is(a, button, input, label):focus-visible { outline: 3px solid rgba(61,128,168,.55); outline-offset: 3px; }
+.owner-status-page .status-logout-button { margin-left: 0; }
+.owner-status-page .resubmit-applicant-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 20px; margin: 18px 0; padding: 18px; border: 1px solid #eee8d5; border-radius: 8px; background: #faf9f4; }
+.owner-status-page .resubmit-applicant-summary > div { display: grid; min-width: 0; gap: 4px; }
+.owner-status-page .resubmit-applicant-summary span { color: var(--muted); font-size: 11px; font-weight: 600; }
+.owner-status-page .resubmit-applicant-summary strong { color: var(--navy); font-size: 15px; font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
+.owner-status-page .resubmit-applicant-summary > div:first-child strong { font-weight: 600; }
+.owner-status-page .owner-resubmit-intro { margin: 20px 0 4px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.owner-status-page form#resubmit-form { display: grid; width: 100%; gap: 12px; margin: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.owner-status-page .resubmit-required-count { color: var(--muted); font-size: 13px; font-weight: 600; }
+.owner-status-page .owner-resubmit-document { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.owner-status-page .owner-resubmit-document.is-required { border-color: #efc9c4; }
+.owner-status-page .resubmit-document-heading { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.owner-status-page .resubmit-document-heading h2 { font-size: 15px; }
+.owner-status-page .owner-document-tag { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 999px; font: 700 11px/1.2 "Poppins", "Trebuchet MS", sans-serif; white-space: nowrap; }
+.owner-status-page .owner-document-tag.is-rejected { background: #fbe9e6; color: #982e2a; }
+.owner-status-page .owner-document-tag.is-accepted { background: #e8f3df; color: #35691e; }
+.owner-status-page .owner-resubmit-document > .view-current-button { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.owner-status-page .resubmit-file-zone { position: relative; grid-column: 1 / -1; min-width: 0; }
+.owner-status-page .resubmit-file-zone[hidden] { display: none; }
+.owner-status-page .resubmit-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
+.owner-status-page .resubmit-drop-area { display: flex; min-height: 82px; align-items: center; gap: 12px; padding: 12px 15px; border: 1.5px dashed #aabbb0; border-radius: 8px; background: #fbfcf8; color: var(--navy); cursor: pointer; }
+.owner-status-page .resubmit-drop-area:hover,
+.owner-status-page .resubmit-drop-area.is-dragging { border-color: #5f9639; background: #f2f8eb; }
+.owner-status-page .resubmit-upload-icon { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 50%; background: #e8f3df; color: #35691e; font-size: 20px; font-weight: 700; }
+.owner-status-page .resubmit-drop-area > span:nth-child(2) { display: grid; gap: 3px; }
+.owner-status-page .resubmit-drop-area strong { color: #28668a; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
+.owner-status-page .resubmit-drop-area small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.owner-status-page .resubmit-drop-area > small { margin-left: auto; text-align: right; }
+.owner-status-page .resubmit-file-input:focus-visible + .resubmit-drop-area { outline: 3px solid rgba(61,128,168,.55); outline-offset: 3px; }
+.owner-status-page .resubmit-file-preview { display: flex; min-width: 0; align-items: center; gap: 11px; margin-top: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.owner-status-page .resubmit-file-preview[hidden] { display: none; }
+.owner-status-page .resubmit-preview-image,
+.owner-status-page .resubmit-preview-pdf { display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center; border-radius: 4px; background: #f0f4ed; color: #8f3430; font-size: 12px; font-weight: 700; object-fit: cover; }
+.owner-status-page .resubmit-preview-metadata { display: grid; min-width: 0; gap: 3px; }
+.owner-status-page .resubmit-preview-metadata strong { overflow: hidden; color: var(--navy); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.owner-status-page .resubmit-preview-metadata small { color: var(--muted); font-size: 12px; }
+.owner-status-page .resubmit-file-preview .resubmit-remove-file { flex: 0 0 auto; margin-left: auto; font-size: 13px; }
+.owner-status-page .resubmit-file-error { margin-top: 6px; color: #982e2a; font-size: 13px; line-height: 1.4; }
+.owner-status-page .resubmit-file-error[hidden] { display: none; }
+.owner-status-page .owner-resubmit-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.owner-status-page .owner-resubmit-actions .owner-secondary-button,
+.owner-status-page .owner-resubmit-actions .owner-primary-button { min-height: 44px; font-size: 14px; }
+.owner-status-page .owner-primary-button:disabled { border-color: #cbd6cd; background: #e6ebe5; color: #63726a; cursor: not-allowed; }
+.owner-status-page .resubmit-submit-spinner { width: 15px; height: 15px; border: 2px solid rgba(13,49,87,.25); border-top-color: var(--navy); border-radius: 50%; animation: resubmit-spin .7s linear infinite; }
+.owner-status-page .resubmit-submit-spinner[hidden] { display: none; }
+@keyframes resubmit-spin { to { transform: rotate(360deg); } }
+.resubmit-viewer-overlay { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; padding: 20px; background: rgba(8,32,52,.72); }
+.resubmit-viewer-overlay.is-open { display: grid; }
+.resubmit-viewer-dialog { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(1000px, 100%); max-height: calc(100vh - 40px); overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-family: "Poppins", "Trebuchet MS", sans-serif; box-shadow: 0 24px 80px rgba(0,0,0,.3); }
+.resubmit-viewer-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px; border-bottom: 1px solid var(--line); }
+.resubmit-viewer-dialog > header h2 { color: var(--navy); font: 600 16px/1.3 "Poppins", "Trebuchet MS", sans-serif; }
+.resubmit-viewer-dialog button { min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--navy); font: 600 14px "Poppins", "Trebuchet MS", sans-serif; cursor: pointer; }
+.resubmit-viewer-dialog button:hover { background: #f7faf4; }
+.resubmit-viewer-dialog :focus-visible { outline: 3px solid rgba(61,128,168,.55); outline-offset: 3px; }
+.resubmit-viewer-dialog .resubmit-viewer-close { width: 38px; min-height: 38px; padding: 0; border: 0; background: transparent; color: var(--navy); font-size: 25px; }
+.resubmit-viewer-content { display: grid; min-height: 220px; overflow: auto; place-items: center; padding: 20px; background: #f1f3f1; }
+.resubmit-viewer-content img { max-width: 100%; max-height: 68vh; transform-origin: center; }
+.resubmit-viewer-content object { width: 100%; height: 68vh; background: white; }
+.resubmit-viewer-content p { color: var(--muted); font-size: 14px; }
+.resubmit-viewer-controls { display: flex; justify-content: center; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+.resubmit-viewer-controls[hidden] { display: none; }
+.resubmit-viewer-controls button { min-height: 38px; padding: 0 14px; }
+
 @media (max-width: 900px) {
   .owner-layout { grid-template-columns: 205px minmax(0, 1fr); }
   .owner-content { padding: 30px 22px 22px; }
   .owner-court-row { grid-template-columns: 72px minmax(150px, 1fr) auto; gap: 12px; }
   .owner-court-image { width: 72px; height: 52px; }
   .owner-court-actions { grid-column: 2 / -1; justify-self: end; }
+}
+@media (max-width: 760px) {
+  .application-card { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .application-card-identity, .application-card-facility, .application-card-documents { grid-column: 1 / -1; }
+  .application-card-meta { grid-column: 1; }
+  .application-review-button { grid-column: 2; grid-row: 4; }
+  .application-search-sort { width: 100%; flex-wrap: wrap; }
+  .application-search-sort input { width: min(100%, 320px); flex: 1 1 180px; }
+  .application-review-modal { max-height: calc(100vh - 24px); }
+  .review-modal-columns { grid-template-columns: 1fr; }
+  .review-document-viewer { min-height: 260px; max-height: 44vh; }
+  .review-document-viewer object { height: 44vh; }
+  .review-details-column { border-top: 1px solid var(--line); border-left: 0; }
+  .review-decision-area { position: static; }
 }
 @media (max-width: 650px) {
   .owner-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
@@ -830,6 +1121,38 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .owner-form-grid { grid-template-columns: 1fr; }
   .owner-wide-field { grid-column: auto; }
   .owner-modal-panel { padding: 29px; }
+  .owner-status-page { padding: 24px; }
+  .owner-status-page .status-rejected-stepper { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .owner-status-page .status-rejected-stepper li { min-height: 42px; padding: 8px 0 8px 10px; border-top: 0; border-left: 3px solid var(--line); }
+  .owner-status-page .status-rejected-stepper li.is-complete { border-color: var(--green); }
+  .owner-status-page .status-rejected-stepper li.is-current { border-color: #a33f38; }
+  .owner-status-page .resubmit-applicant-summary { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .owner-status-page .owner-resubmit-document { grid-template-columns: minmax(0, 1fr) auto; }
+  .owner-status-page .resubmit-document-heading { grid-column: 1 / -1; }
+  .owner-status-page .owner-resubmit-document > .view-current-button,
+  .owner-status-page .owner-resubmit-document > .replace-document-button { grid-column: 1 / -1; justify-self: stretch; width: 100%; }
+  .owner-status-page .resubmit-file-preview .resubmit-remove-file { width: auto; }
+  .owner-status-page .resubmit-drop-area { flex-wrap: wrap; }
+  .owner-status-page .resubmit-drop-area > small { width: 100%; margin-left: 48px; text-align: left; }
+  .owner-status-page .owner-resubmit-actions,
+  .owner-status-page .status-page-actions { align-items: stretch; flex-direction: column; }
+  .owner-status-page .owner-resubmit-actions > *,
+  .owner-status-page .status-page-actions > * { width: 100%; }
+  .owner-status-page .owner-resubmit-actions > .owner-primary-button,
+  .owner-status-page .status-page-actions > .owner-primary-button { order: -1; }
+  .staff-users-tools { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .staff-users-tools input { width: 100%; }
+  .staff-users-table-wrap { overflow: visible; border-top: 0; }
+  .staff-users-table, .staff-users-table tbody { display: block; width: 100%; }
+  .staff-users-table thead { display: none; }
+  .staff-users-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 10px; border: 1px solid #e5ebe5; background: #fff; }
+  .staff-users-table td { display: block; min-width: 0; overflow-wrap: anywhere; padding: 9px; border: 0; font-size: 9px; }
+  .staff-users-table td::before { display: block; margin-bottom: 4px; color: #728187; content: attr(data-label); font-size: 7px; font-weight: 600; letter-spacing: .35px; text-transform: uppercase; }
+  .staff-users-table td:first-child, .staff-users-table td:last-child { grid-column: 1 / -1; }
+  .staff-users-table td:first-child { border-bottom: 1px solid #eef1ec; }
+  .staff-users-table td:last-child { justify-self: start; }
+  .staff-users-table td:last-child::before { display: none; }
+  .staff-users-table tbody tr:hover { background: #fff; }
   .modal--compact { width: min(440px, calc(100% - 32px)); padding: 20px; }
   .modal--compact .owner-modal-actions { gap: 6px; }
   .modal--compact .owner-modal-actions .owner-primary-button,
@@ -841,6 +1164,13 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
   .owner-account-details { grid-column: 1 / -1; }
   .owner-account-status { grid-column: 1; }
   .owner-account-actions { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 600px) {
+  .owner-status-page { padding: 20px; }
+  .owner-status-page .status-page-heading h1,
+  .owner-status-page > h1 { font-size: 24px; }
+  .resubmit-viewer-overlay { padding: 10px; }
+  .resubmit-viewer-dialog { max-height: calc(100vh - 20px); }
 }
 @media (max-width: 650px) {
   .payment-table thead { display: none; }

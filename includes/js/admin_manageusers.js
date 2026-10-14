@@ -1,122 +1,186 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  // define display table
+document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("usersTable");
+  const status = document.getElementById("usersStatus");
+  const count = document.getElementById("userCount");
+  const search = document.getElementById("userSearch");
+  const overlay = document.getElementById("modal_container");
+  const form = document.getElementById("registerForm");
+  const formStatus = document.getElementById("userFormStatus");
+  const saveButton = form.querySelector(".save-btn");
+  const csrfToken = document.querySelector(".staff-users-content").dataset.csrfToken;
+  let users = [];
+  let activeUser = null;
 
-  try {
-    const response = await fetch("../includes/admin-php/get_users.php");
-    const data = await response.json();
+  function setFormStatus(message, isError = false) {
+    formStatus.textContent = message;
+    formStatus.classList.toggle("is-error", isError);
+  }
 
-    if (!data.success) {
-      window.showDialog({ type: "error", title: "Unable to load users", message: data.message || "Failed to load users." });
-      return;
-    }
+  function closeModal() {
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+    activeUser = null;
+  }
 
+  function openModal(user) {
+    activeUser = user;
+    form.elements.first_name.value = user.first_name || "";
+    form.elements.last_name.value = user.last_name || "";
+    form.elements.email.value = user.email || "";
+    form.elements.phone_number.value = user.phone_number || "";
+    setFormStatus("");
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden", "false");
+    form.elements.first_name.focus();
+  }
+
+  function renderUsers() {
+    const query = search.value.trim().toLocaleLowerCase();
+    const filteredUsers = users.filter((user) =>
+      [user.first_name, user.last_name, user.email, user.phone_number, user.user_id]
+        .some((value) => String(value ?? "").toLocaleLowerCase().includes(query)),
+    );
+
+    count.textContent = query
+      ? `${filteredUsers.length} of ${users.length} users`
+      : `${users.length} ${users.length === 1 ? "user" : "users"}`;
     tbody.replaceChildren();
 
-    // populate table with user data
-    for (const user of data.users) {
-      const newTr = document.createElement("tr");
-
-      const values = [
-        user.user_id,
-        user.first_name,
-        user.last_name,
-        user.email,
-        user.phone_number,
-      ];
-
-      // User data columns
-      for (const value of values) {
-        const newTd = document.createElement("td");
-        newTd.textContent = value;
-        newTr.append(newTd);
-      }
-
-      // add one more column for edit button
-      const actionTd = document.createElement("td");
-      const editBtn = document.createElement("button");
-
-      editBtn.textContent = "Update";
-      editBtn.className = "update-btn";
-      editBtn.dataset.userId = user.user_id;
-
-      // append update button to the last column
-      actionTd.append(editBtn);
-      newTr.append(actionTd);
-      tbody.append(newTr);
-    }
-  } catch (error) {
-    console.error("Error loading users:", error);
-  }
-});
-
-// open edit modal form
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("update-btn")) {
-    const userId = e.target.dataset.userId;
-
-    const res = await fetch(
-      `../includes/admin-php/update_users.php?user_id=${userId}`,
-    );
-    const result = await res.json();
-
-    if (!result.success) {
-      window.showDialog({ type: "error", title: "Unable to load user", message: result.message || "Unable to load this user." });
+    if (!filteredUsers.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.className = "staff-users-empty";
+      cell.textContent = query ? "No users match your search." : "No user accounts found.";
+      row.append(cell);
+      tbody.append(row);
       return;
     }
 
-    const user = result.user;
+    for (const user of filteredUsers) {
+      const row = document.createElement("tr");
+      const userCell = document.createElement("td");
+      userCell.dataset.label = "User";
+      const identity = document.createElement("div");
+      identity.className = "staff-user-identity";
+      const avatar = document.createElement("span");
+      avatar.className = "staff-user-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      avatar.textContent = `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toLocaleUpperCase();
+      const name = document.createElement("strong");
+      name.textContent = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Unnamed user";
+      identity.append(avatar, name);
+      userCell.append(identity);
 
-    document.getElementById("registerForm").dataset.userId = user.user_id;
-    document.getElementById("first_name").value = user.first_name;
-    document.getElementById("last_name").value = user.last_name;
-    document.getElementById("email").value = user.email;
-    document.getElementById("phone_number").value = user.phone_number;
+      const emailCell = document.createElement("td");
+      emailCell.dataset.label = "Email";
+      emailCell.textContent = user.email || "—";
 
-    modal_container.classList.add("show");
-    modal_container.setAttribute("aria-hidden", "false");
-    document.getElementById("first_name").focus();
+      const phoneCell = document.createElement("td");
+      phoneCell.dataset.label = "Contact number";
+      phoneCell.textContent = user.phone_number || "—";
+
+      const idCell = document.createElement("td");
+      idCell.dataset.label = "User ID";
+      idCell.textContent = `#${user.user_id}`;
+
+      const actionCell = document.createElement("td");
+      actionCell.dataset.label = "Action";
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "owner-secondary-button staff-user-edit";
+      editButton.textContent = "Edit";
+      editButton.setAttribute("aria-label", `Edit ${name.textContent}`);
+      editButton.addEventListener("click", () => openModal(user));
+      actionCell.append(editButton);
+
+      row.append(userCell, emailCell, phoneCell, idCell, actionCell);
+      tbody.append(row);
+    }
   }
-});
 
-//save button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("save-btn")) {
-    const form = document.getElementById("registerForm");
-    const userId = form.dataset.userId;
+  async function readJson(response) {
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "The request could not be completed.");
+    }
+    return data;
+  }
 
+  async function loadUsers() {
+    status.textContent = "Loading users...";
+    try {
+      const response = await fetch("../includes/admin-php/get_users.php", {
+        headers: { Accept: "application/json" },
+      });
+      const data = await readJson(response);
+      users = data.users;
+      renderUsers();
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = error.message || "Unable to load users.";
+      status.classList.add("is-error");
+      count.textContent = "Users unavailable";
+      window.showDialog({
+        type: "error",
+        title: "Unable to load users",
+        message: error.message || "Please refresh the page and try again.",
+      });
+    }
+  }
+
+  search.addEventListener("input", renderUsers);
+
+  document.querySelectorAll(".cancel-btn").forEach((button) => {
+    button.addEventListener("click", closeModal);
+  });
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && overlay.classList.contains("show")) closeModal();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!activeUser || !form.reportValidity()) return;
+
+    saveButton.disabled = true;
+    setFormStatus("Saving changes...");
     const payload = {
-      user_id: userId,
-      first_name: document.getElementById("first_name").value,
-      last_name: document.getElementById("last_name").value,
-      email: document.getElementById("email").value,
-      phone_number: document.getElementById("phone_number").value,
+      user_id: activeUser.user_id,
+      first_name: form.elements.first_name.value.trim(),
+      last_name: form.elements.last_name.value.trim(),
+      email: form.elements.email.value.trim(),
+      phone_number: form.elements.phone_number.value.trim(),
     };
 
-    const res = await fetch("../includes/admin-php/update_user.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await res.json();
-
-    if (!result.success) {
-      window.showDialog({ type: "error", title: "Unable to update user", message: result.message || "Unable to update this user." });
-      return;
+    try {
+      const response = await fetch("../includes/admin-php/update_user.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await readJson(response);
+      users = users.map((user) => Number(user.user_id) === Number(payload.user_id)
+        ? { ...user, ...payload }
+        : user);
+      renderUsers();
+      closeModal();
+      window.showDialog({
+        type: "success",
+        title: "User updated",
+        message: data.message || "User details updated successfully.",
+      });
+    } catch (error) {
+      setFormStatus(error.message || "Unable to save changes.", true);
+    } finally {
+      saveButton.disabled = false;
     }
+  });
 
-    modal_container.classList.remove("show");
-    modal_container.setAttribute("aria-hidden", "true");
-    window.showDialog({ type: "success", title: "User updated", message: result.message || "User details updated successfully." });
-    location.reload(); // refresh table to show updated data
-  }
-});
-
-//cancel button
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("cancel-btn")) {
-    modal_container.classList.remove("show");
-    modal_container.setAttribute("aria-hidden", "true");
-  }
+  loadUsers();
 });

@@ -21,7 +21,7 @@ $displayName = trim($_SESSION["first_name"] ?? "");
             <a href="about.php">About us</a>
             <?php if ($isLoggedIn): ?>
                 <span class="nav-user">Hi, <?php echo htmlspecialchars($displayName ?: "Player", ENT_QUOTES, "UTF-8"); ?></span>
-                <a class="nav-signin" href="logout.php" onclick="return confirm('Are you sure you want to log out?');">Log out <span aria-hidden="true">&rarr;</span></a>
+                <a class="nav-signin" href="logout.php" data-confirm-logout>Log out <span aria-hidden="true">&rarr;</span></a>
             <?php else: ?>
                 <a class="nav-signin" href="signin.php">Sign in <span aria-hidden="true">&rarr;</span></a>
             <?php endif; ?>

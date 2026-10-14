@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../includes/backend-api/config.php";
+require_once __DIR__ . "/../includes/admin-php/facility_owner_page_guard.php";
 
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $roleId = (int) ($_SESSION["role_id"] ?? 0);

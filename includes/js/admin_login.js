@@ -33,7 +33,16 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       window.location.href = redirectUrl.toString();
       return;
     }
-    alert(result.message);
+    window.showDialog({
+      type: "error",
+      title: "Sign-in failed",
+      message: result.message || "Check your details and try again.",
+    });
+    return;
+  }
+
+  if (result.owner_application) {
+    window.location.href = "owner_application.php";
     return;
   }
 

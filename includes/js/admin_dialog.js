@@ -93,19 +93,32 @@
     } else {
       const closeButton = document.createElement("button");
       closeButton.type = "button";
-      closeButton.className = "admin-dialog-button admin-dialog-button-primary";
-      closeButton.textContent = "Close";
+      closeButton.className = "admin-dialog-button admin-dialog-button-secondary";
+      closeButton.textContent = config.closeText || "Close";
       closeButton.addEventListener("click", () => closeActiveDialog(false));
 
-      actions.append(closeButton);
+      if (config.actionText) {
+        const actionButton = document.createElement("button");
+        actionButton.type = "button";
+        actionButton.className = "admin-dialog-button admin-dialog-button-primary";
+        actionButton.textContent = config.actionText;
+        actionButton.addEventListener("click", () => closeActiveDialog("action"));
+        actions.append(closeButton, actionButton);
+        actionButton.focus();
+      } else {
+        closeButton.className = "admin-dialog-button admin-dialog-button-primary";
+        actions.append(closeButton);
+        closeButton.focus();
+      }
       card.append(icon, title, message, actions);
-      closeButton.focus();
 
-      window.setTimeout(() => {
-        if (activeDialog && activeDialog.overlay === overlay) {
-          closeActiveDialog(false);
-        }
-      }, 2500);
+      if (!config.actionText) {
+        window.setTimeout(() => {
+          if (activeDialog && activeDialog.overlay === overlay) {
+            closeActiveDialog(false);
+          }
+        }, 2500);
+      }
     }
 
     overlay.addEventListener("click", (event) => {
@@ -168,4 +181,32 @@
     if (primary) primary.disabled = !!isLoading;
     if (secondary) secondary.disabled = !!isLoading;
   };
+
+  let logoutConfirmationPending = false;
+  document.addEventListener("click", async (event) => {
+    const link = event.target instanceof Element
+      ? event.target.closest("a[data-confirm-logout]")
+      : null;
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (logoutConfirmationPending) return;
+    logoutConfirmationPending = true;
+    try {
+      const confirmed = await window.showDialog({
+        type: "confirm",
+        title: "Log out?",
+        message: "Are you sure you want to log out?",
+        confirmText: "Log out",
+        cancelText: "Stay logged in",
+      });
+      if (confirmed) {
+        window.location.assign(link.href);
+      }
+    } finally {
+      logoutConfirmationPending = false;
+    }
+  });
 })();

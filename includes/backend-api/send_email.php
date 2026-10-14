@@ -62,6 +62,9 @@ function sendOtpEmail(
     ];
 
     $curl = curl_init(BREVO_API_URL);
+    if ($curl === false) {
+        return ["success" => false, "message" => "Unable to initialize the email service connection."];
+    }
 
     curl_setopt_array($curl, [
         CURLOPT_POST => true,
@@ -112,6 +115,85 @@ function sendOtpEmail(
         "success" => false,
         "message" => "Unable to send the verification email."
     ];
+}
+
+function sendFacilityApplicationDecisionEmail(
+    string $recipientEmail,
+    string $recipientName,
+    string $decision,
+    string $reason,
+    array $rejectedDocuments
+): array {
+    $safeName = htmlspecialchars($recipientName !== "" ? $recipientName : "facility owner", ENT_QUOTES, "UTF-8");
+    $approved = $decision === "Approved";
+    $baseUrl = getenv("COURTCONNECT_BASE_URL");
+    if (!is_string($baseUrl) || $baseUrl === "") {
+        $host = $_SERVER["HTTP_HOST"] ?? "localhost";
+        if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/i', $host)) {
+            $host = "localhost";
+        }
+        $scheme = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ? "https" : "http";
+        $baseUrl = $scheme . "://" . $host;
+        $scriptDirectory = str_replace("\\", "/", dirname($_SERVER["SCRIPT_NAME"] ?? "/"));
+        $baseUrl .= rtrim($scriptDirectory, "/");
+        $baseUrl = preg_replace('~/includes/admin-php$~', "", $baseUrl);
+    }
+    $baseUrl = rtrim($baseUrl, "/");
+
+    $subject = $approved ? "Your CourtConnect facility application is approved" : "Changes required for your CourtConnect application";
+    $documentLabels = [
+        "gov_id" => "Government ID",
+        "business_registration" => "Business registration",
+        "mayors_permit" => "Mayor's permit",
+        "proof_of_property" => "Proof of property",
+    ];
+    $rejectedLabels = array_map(
+        static fn($key) => $documentLabels[$key] ?? "Document",
+        $rejectedDocuments
+    );
+    $text = $approved
+        ? "Your facility application has been approved. You can now sign in and add your facility."
+        : "Your facility application needs changes.\n\nReason: {$reason}\nDocuments to replace: "
+            . implode(", ", $rejectedLabels)
+            . "\nResubmit your documents: {$baseUrl}/adminregisterdocuments.php";
+    $safeBody = nl2br(htmlspecialchars($text, ENT_QUOTES, "UTF-8"));
+    $payload = [
+        "sender" => ["name" => COURTCONNECT_SENDER_NAME, "email" => COURTCONNECT_SENDER_EMAIL],
+        "to" => [["email" => $recipientEmail, "name" => $recipientName]],
+        "subject" => $subject,
+        "htmlContent" => "<!doctype html><html><body style=\"font-family:Arial,sans-serif;background:#f7f4ea;padding:24px;\"><div style=\"max-width:560px;margin:auto;background:#fff;padding:32px;border-radius:12px;\"><p>Hello {$safeName},</p><p>{$safeBody}</p></div></body></html>",
+        "textContent" => "Hello {$recipientName},\n\n{$text}",
+    ];
+
+    $curl = curl_init(BREVO_API_URL);
+    if ($curl === false) {
+        return ["success" => false, "message" => "Unable to initialize the email service connection."];
+    }
+    curl_setopt_array($curl, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => [
+            "accept: application/json",
+            "api-key: " . BREVO_API_KEY,
+            "content-type: application/json",
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload),
+    ]);
+    $responseBody = curl_exec($curl);
+    $curlError = curl_error($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($responseBody === false || $curlError !== "") {
+        return ["success" => false, "message" => "Email service connection failed: " . $curlError];
+    }
+    $responseData = json_decode($responseBody, true);
+    if ($httpCode >= 200 && $httpCode < 300 && isset($responseData["messageId"])) {
+        return ["success" => true, "message" => "Decision email sent."];
+    }
+    return ["success" => false, "message" => "Email service returned HTTP {$httpCode}."];
 }
 
 ?>

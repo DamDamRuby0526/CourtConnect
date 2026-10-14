@@ -1,7 +1,7 @@
 <?php
 header("Content-Type: application/json");
-// require_once __DIR__ . "/admin_auth_guard.php";
 require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/courtconnect_auth_guard.php";
 
 $userId = $_GET['user_id'] ?? null;
 
