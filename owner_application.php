@@ -58,14 +58,15 @@ $rejectedDocuments = $application["rejected_documents"]
     <script src="includes/js/admin_dialog.js" defer></script>
     <title>Application status | CourtConnect</title>
 </head>
-<body class="owner-application-body owner-status-page">
-    <main class="owner-application-card owner-status-card">
+<body class="owner-application-body">
+    <main class="owner-application-card owner-status-card owner-status-page">
         <p class="owner-breadcrumb">COURTCONNECT <span>/</span> FACILITY APPLICATION</p>
         <?php if ($application["status"] === "Rejected"): ?>
             <header class="status-page-heading">
                 <span class="owner-application-status status-rejected-badge"><span aria-hidden="true">!</span> Rejected</span>
                 <h1>Your application needs changes</h1>
                 <p>We couldn't approve some of your documents. Replace the ones listed below and submit them again.</p>
+                <p class="status-facility-name">Facility: <?= htmlspecialchars((string) ($application["facility_name"] ?: "Facility"), ENT_QUOTES, "UTF-8") ?></p>
             </header>
             <ol class="owner-application-stepper status-rejected-stepper" aria-label="Application progress">
                 <li class="is-complete"><span class="status-step-icon" aria-hidden="true">✓</span>Account created</li>
