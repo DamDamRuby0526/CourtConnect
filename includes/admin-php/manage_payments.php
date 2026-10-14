@@ -59,7 +59,9 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
     $paidTotal = 0.0;
     while ($payment = $result->fetch_assoc()) {
         $payment["total_amount"] = (float) $payment["total_amount"];
-        $payment["has_receipt"] = !empty($payment["receipt_image"]);
+        $payment["has_receipt"] = $payment["payment_method"] === "Gcash"
+            && !empty($payment["receipt_image"])
+            && $payment["receipt_image"] !== "N/A";
         unset($payment["receipt_image"]);
         if ($payment["payment_status"] === "Pending") {
             $pendingCount++;
@@ -220,7 +222,7 @@ if ($action === "update") {
         exit();
     }
     if ($paymentMethod === "Cash") {
-        $referenceNumber = null;
+        $referenceNumber = "N/A";
     }
 
     try {
@@ -256,18 +258,20 @@ if ($action === "update") {
             && ($current["schedule_status"] !== "Held" || (int) $current["hold_seconds"] <= 0)) {
             throw new RuntimeException("This booking hold has expired and cannot be approved.");
         }
-        if ($paymentStatus === "Paid" && $paymentMethod === "Gcash" && empty($current["receipt_image"])) {
+        if ($paymentStatus === "Paid" && $paymentMethod === "Gcash"
+            && (empty($current["receipt_image"]) || $current["receipt_image"] === "N/A")) {
             throw new RuntimeException("Upload a GCash receipt before marking this payment paid.");
         }
 
+        $receiptImage = $paymentMethod === "Cash" ? "N/A" : $current["receipt_image"];
         $paidAtSql = $paymentStatus === "Paid" ? "NOW()" : "NULL";
         $paymentStmt = $conn->prepare(
             "UPDATE payments
-             SET payment_method = ?, reference_number = ?, payment_status = ?,
+             SET payment_method = ?, reference_number = ?, receipt_image = ?, payment_status = ?,
                  rejection_reason = NULL, paid_at = " . $paidAtSql . "
              WHERE payments_id = ?"
         );
-        $paymentStmt->bind_param("sssi", $paymentMethod, $referenceNumber, $paymentStatus, $paymentId);
+        $paymentStmt->bind_param("ssssi", $paymentMethod, $referenceNumber, $receiptImage, $paymentStatus, $paymentId);
         $paymentStmt->execute();
         $paymentStmt->close();
         $bookingPaymentStatus = $paymentStatus === "Paid" ? "paid" : "unpaid";
@@ -336,7 +340,8 @@ try {
     if (!$current || in_array($current["booking_status"], ["cancelled", "completed"], true)) {
         throw new RuntimeException("Pending payment was not found or its booking is no longer active.");
     }
-    if ($current["payment_method"] === "Gcash" && empty($current["receipt_image"])) {
+    if ($current["payment_method"] === "Gcash"
+        && (empty($current["receipt_image"]) || $current["receipt_image"] === "N/A")) {
         throw new RuntimeException("Upload a GCash receipt before marking this payment paid.");
     }
 

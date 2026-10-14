@@ -193,9 +193,9 @@ function renderPayments() {
       paymentCell("Court", `Court ${payment.court_no}`),
       paymentCell("Customer", customerDetails(payment)),
       paymentCell("Method", payment.payment_method === "Gcash" ? "GCash" : "Cash"),
-      paymentCell("Reference", payment.reference_number || "Not provided"),
+      paymentCell("Reference", payment.payment_method === "Cash" ? "N/A" : payment.reference_number || "Not provided"),
       paymentCell("Amount", pesoFormatter.format(Number(payment.total_amount))),
-      paymentCell("Receipt", receipt),
+      paymentCell("Receipt", payment.payment_method === "Cash" ? "N/A" : receipt),
       paymentCell("Status", status),
       paymentCell("Action", [editButton, action, rejectButton]),
     );

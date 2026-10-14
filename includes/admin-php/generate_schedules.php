@@ -133,7 +133,7 @@ try {
 
         while ($date <= $endDate) {
             $slotStart = $court["opening_datetime"];
-            while ($slotStart->modify("+{$court["slot_duration"]} minutes") <= $court["closing_datetime"]) {
+            while ($slotStart <= $court["closing_datetime"]) {
                 $courtDate = $date->format("Y-m-d");
                 $courtTime = $slotStart->format("H:i:s");
                 $courtIdForInsert = (int) $court["court_id"];

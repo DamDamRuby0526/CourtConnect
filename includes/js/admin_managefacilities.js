@@ -74,6 +74,8 @@ document.getElementById("add-btn").addEventListener("click", () => {
   document.getElementById("facilityForm").dataset.facilityId = "";
   resetImagePreviews();
   modal_container.classList.add("show");
+  modal_container.setAttribute("aria-hidden", "false");
+  document.getElementById("facility_name").focus();
 });
 
 // open modal for EDIT (Manage Facility)
@@ -124,6 +126,8 @@ document.addEventListener("click", async (e) => {
     document.getElementById("facilityForm").dataset.facilityId = f.facility_id;
 
     modal_container.classList.add("show");
+    modal_container.setAttribute("aria-hidden", "false");
+    document.getElementById("facility_name").focus();
   }
 });
 
@@ -155,6 +159,7 @@ document.addEventListener("click", async (e) => {
     }
 
     modal_container.classList.remove("show");
+    modal_container.setAttribute("aria-hidden", "true");
     window.showDialog({ type: "success", title: "Facility saved", message: result.message || "Facility saved successfully." });
     loadFacilities();
   }
@@ -164,5 +169,6 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("cancel-btn")) {
     modal_container.classList.remove("show");
+    modal_container.setAttribute("aria-hidden", "true");
   }
 });

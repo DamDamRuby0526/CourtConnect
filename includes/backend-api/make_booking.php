@@ -105,7 +105,7 @@ try {
 
     $holdStmt = $conn->prepare(
         "UPDATE court_schedule
-         SET schedule_status = 'Held', hold_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+         SET schedule_status = 'Held', hold_expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE)
          WHERE schedule_id = ? AND schedule_status = 'Available'"
     );
     $holdStmt->bind_param("i", $scheduleId);
@@ -123,7 +123,7 @@ try {
             (user_id, booking_type, customer_name, customer_phone, court_id, schedule_id, total_amount, status, payment_status, hold_expires_at)
          SELECT u.user_id, 'online',
                 CONCAT_WS(' ', NULLIF(u.first_name, ''), NULLIF(u.last_name, '')),
-                u.phone_number, ?, ?, ?, 'pending_payment', 'unpaid', DATE_ADD(NOW(), INTERVAL 10 MINUTE)
+                u.phone_number, ?, ?, ?, 'pending_payment', 'unpaid', DATE_ADD(NOW(), INTERVAL 5 MINUTE)
          FROM users u
          WHERE u.user_id = ?"
     );

@@ -50,33 +50,8 @@ if ($booking && $booking["booking_status"] === "pending_payment"
     $booking = checkoutFindBooking($conn, $bookingId, $userId);
 }
 
-$expiryNoticeStmt = $conn->prepare(
-    "SELECT court_no, court_date, court_time
-     FROM booking_expiry_notifications
-     WHERE booking_id = ? AND user_id = ?
-     LIMIT 1"
-);
-$expiryNoticeStmt->bind_param("ii", $bookingId, $userId);
-$expiryNoticeStmt->execute();
-$expiryNotice = $expiryNoticeStmt->get_result()->fetch_assoc();
-$expiryNoticeStmt->close();
-
-if (!$booking && !$expiryNotice) {
-    $conn->close();
-    http_response_code(404);
-    exit("Booking not found.");
-}
 if (!$booking) {
     $booking = ["booking_id" => $bookingId, "booking_status" => "Expired"];
-}
-if ($expiryNotice) {
-    $consumeNoticeStmt = $conn->prepare(
-        "UPDATE booking_expiry_notifications SET consumed_at = COALESCE(consumed_at, NOW())
-         WHERE booking_id = ? AND user_id = ?"
-    );
-    $consumeNoticeStmt->bind_param("ii", $bookingId, $userId);
-    $consumeNoticeStmt->execute();
-    $consumeNoticeStmt->close();
 }
 $conn->close();
 
@@ -86,12 +61,10 @@ function checkoutEscape($value)
 }
 
 $isExpired = in_array($booking["booking_status"], ["Expired", "cancelled"], true)
-    || $expiryNotice !== null
     || ($booking["booking_status"] === "pending_payment"
         && empty($booking["payments_id"])
         && ($booking["schedule_status"] !== "Held" || (int) $booking["hold_expired"] === 1));
-    $isFacilityCancelled = $booking["booking_status"] === "cancelled" && $expiryNotice === null;
-    $isExpired = $isExpired && !$isFacilityCancelled;
+$isFacilityCancelled = $booking["booking_status"] === "cancelled";
 $isAwaitingConfirmation = in_array($booking["booking_status"], ["pending", "pending_payment"], true)
     && $booking["payment_status"] === "Pending"
     && !empty($booking["receipt_image"]);
@@ -105,9 +78,7 @@ $isRejectedExpired = $booking["booking_status"] === "pending_payment"
     && (int) $booking["hold_expired"] === 1;
 $courtDate = isset($booking["court_date"]) ? date("D, M j, Y", strtotime($booking["court_date"])) : "";
 $courtTime = isset($booking["court_time"]) ? date("g:i A", strtotime($booking["court_time"])) : "";
-$expiredMessage = $expiryNotice
-    ? "Your booking for Court " . $expiryNotice["court_no"] . " at " . date("g:i A", strtotime($expiryNotice["court_time"])) . " expired because payment wasn't completed. The slot was released."
-    : "Your booking expired and the slot was released.";
+$expiredMessage = "Your booking expired and the slot was released.";
 ?>
 <!doctype html>
 <html lang="en">

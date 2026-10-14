@@ -139,11 +139,12 @@ if ($paymentMethod === "Gcash" && ($referenceNumber === "" || strlen($referenceN
     echo json_encode(["success" => false, "message" => "Enter a valid GCash reference number (up to 50 characters)."]);
     exit();
 }
+$qrImage = null;
 if ($paymentMethod === "Cash") {
-    $referenceNumber = "";
+    $referenceNumber = "N/A";
+    $qrImage = "N/A";
 }
 
-$qrImage = null;
 $transactionStarted = false;
 try {
     if ($paymentMethod === "Gcash") {

@@ -32,6 +32,10 @@ $stmt = $conn->prepare(
             (TIMESTAMP(cs.court_date, cs.court_time) <= NOW()) AS is_past,
             (b.status = 'pending_payment' AND p.payments_id IS NULL
                 AND cs.schedule_status = 'Held' AND b.hold_expires_at > NOW()) AS can_checkout,
+            (b.status = 'pending_payment'
+                AND cs.schedule_status = 'Held'
+                AND b.hold_expires_at > NOW()
+                AND cs.hold_expires_at > NOW()) AS active_hold,
             (p.payment_status = 'Rejected'
                 AND b.status IN ('pending', 'pending_payment')
                 AND cs.schedule_status = 'Held'
@@ -98,9 +102,8 @@ while ($row = $result->fetch_assoc()) {
         "can_resubmit_payment" => (bool) $row["can_resubmit_payment"],
         "resubmission_message" => $row["resubmission_message"],
         "can_cancel" => !in_array(strtolower((string) $row["booking_status"]), ["cancelled", "completed", "expired"], true)
-            && ($row["booking_status"] === "pending_payment"
-                || $row["booking_status"] === "confirmed"
-                || !empty($row["payment_id"])),
+            && ($row["display_payment_status"] === "Rejected"
+                || (bool) $row["active_hold"]),
         "can_delete_on_cancel" => $row["booking_status"] === "pending_payment"
             && strtolower((string) $row["booking_payment_status"]) === "unpaid"
             && empty($row["payment_id"]),

@@ -74,6 +74,8 @@ document.addEventListener("click", async (e) => {
     document.getElementById("phone_number").value = user.phone_number;
 
     modal_container.classList.add("show");
+    modal_container.setAttribute("aria-hidden", "false");
+    document.getElementById("first_name").focus();
   }
 });
 
@@ -105,6 +107,7 @@ document.addEventListener("click", async (e) => {
     }
 
     modal_container.classList.remove("show");
+    modal_container.setAttribute("aria-hidden", "true");
     window.showDialog({ type: "success", title: "User updated", message: result.message || "User details updated successfully." });
     location.reload(); // refresh table to show updated data
   }
@@ -114,5 +117,6 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("cancel-btn")) {
     modal_container.classList.remove("show");
+    modal_container.setAttribute("aria-hidden", "true");
   }
 });

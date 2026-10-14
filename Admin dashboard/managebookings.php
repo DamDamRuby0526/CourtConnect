@@ -298,7 +298,13 @@ function bookingsPageEscape($value)
                                         ];
                                         $attendanceStatus = $booking["attendance_status"];
                                         $slotHasStarted = (bool) $booking["slot_has_started"];
-                                        $availableFromTitle = $slotHasStarted ? "" : "Available from " . date("g:i A", strtotime($booking["court_date"] . " " . $booking["court_time"]));
+                                        $slotStart = strtotime($booking["court_date"] . " " . $booking["court_time"]);
+                                        $arrivalAvailableFromTitle = $slotHasStarted
+                                            ? ""
+                                            : "Mark arrival from " . date("g:i A", $slotStart - 30 * 60);
+                                        $noShowAvailableFromTitle = $slotHasStarted
+                                            ? ""
+                                            : "Available from " . date("g:i A", $slotStart);
                                     ?>
                                     <tr class="booking-row">
                                         <td data-label="Date"><?= bookingsPageEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
@@ -313,8 +319,8 @@ function bookingsPageEscape($value)
                                         <td data-label="Actions">
                                             <?php if ($booking["can_mark_attendance"]): ?>
                                                 <div class="booking-attendance-actions">
-                                                    <button type="button" class="dashboard-arrived-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="arrived" title="<?= $availableFromTitle !== "" ? bookingsPageEscape($availableFromTitle) : "" ?>">Mark arrived</button>
-                                                    <button type="button" class="dashboard-cancel-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="no_show" title="<?= $availableFromTitle !== "" ? bookingsPageEscape($availableFromTitle) : "" ?>">Did not arrive</button>
+                                                    <button type="button" class="dashboard-arrived-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="arrived" title="<?= $arrivalAvailableFromTitle !== "" ? bookingsPageEscape($arrivalAvailableFromTitle) : "" ?>">Mark arrived</button>
+                                                    <button type="button" class="dashboard-cancel-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="no_show" title="<?= $noShowAvailableFromTitle !== "" ? bookingsPageEscape($noShowAvailableFromTitle) : "" ?>">Did not arrive</button>
                                                 </div>
                                             <?php else: ?>
                                                 <span class="booking-no-action">&mdash;</span>

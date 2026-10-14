@@ -27,10 +27,17 @@ if (!$court) {
     exit();
 }
 
-$sql = "SELECT schedule_id, court_id, court_date, court_time,
+$sql = "SELECT schedule_id, court_id, court_date, court_time, hold_expires_at,
            CASE WHEN schedule_status = 'Held'
                     AND (hold_expires_at IS NULL OR hold_expires_at <= NOW())
-            THEN 'Available' ELSE schedule_status END AS schedule_status
+            THEN 'Available' ELSE schedule_status END AS schedule_status,
+            (schedule_status = 'Held' AND hold_expires_at > NOW()) AS has_live_hold,
+            EXISTS (SELECT 1 FROM bookings b WHERE b.schedule_id = court_schedule.schedule_id) AS has_booking,
+            ((schedule_status = 'Available'
+                OR (schedule_status = 'Held' AND hold_expires_at < NOW()))
+                AND NOT EXISTS (
+                    SELECT 1 FROM bookings b WHERE b.schedule_id = court_schedule.schedule_id
+                )) AS can_remove
         FROM court_schedule
         WHERE court_id = ?
         ORDER BY court_date ASC, court_time ASC";

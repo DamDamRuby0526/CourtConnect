@@ -147,8 +147,8 @@ function ownerEscape($value)
         </main>
     </div>
 
-    <div class="modal-container owner-modal" id="modal_container" aria-hidden="true">
-        <div class="modal owner-modal-panel" role="dialog" aria-modal="true" aria-labelledby="courtDialogTitle">
+    <div class="modal-container owner-modal compact-modal-overlay" id="modal_container" aria-hidden="true">
+        <div class="modal owner-modal-panel modal--compact" role="dialog" aria-modal="true" aria-labelledby="courtDialogTitle">
             <form id="courtForm" enctype="multipart/form-data">
                 <div class="owner-modal-heading">
                     <div>

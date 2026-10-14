@@ -23,7 +23,13 @@ function cancelBookingForUser(int $bookingId, int $userId): array
         $bookingStmt = $conn->prepare(
             "SELECT b.*,
                     (SELECT COUNT(*) FROM payments p WHERE p.booking_id = b.booking_id) AS payment_rows,
+                    (SELECT p.payment_status FROM payments p WHERE p.booking_id = b.booking_id
+                        ORDER BY p.payments_id DESC LIMIT 1) AS latest_payment_status,
                     cs.schedule_status, cs.court_date, cs.court_time,
+                    (b.status IN ('pending_payment', 'pending')
+                        AND cs.schedule_status = 'Held'
+                        AND b.hold_expires_at > NOW()
+                        AND cs.hold_expires_at > NOW()) AS active_hold,
                     cd.facility_id,
                     $cancellationHoursExpression AS cancellation_hours,
                     UNIX_TIMESTAMP(TIMESTAMP(cs.court_date, cs.court_time)) AS slot_start_epoch,
@@ -68,8 +74,16 @@ function cancelBookingForUser(int $bookingId, int $userId): array
             && $bookingStatus === "cancelled"
             && $paymentStatus === "unpaid";
         $isPaidOrSubmitted = $paymentRows > 0 || $bookingStatus === "confirmed";
+        $isPaymentRejected = $paymentRows > 0
+            ? strtolower((string) $booking["latest_payment_status"]) === "rejected"
+            : $paymentStatus === "rejected";
+        $hasActiveHold = (int) $booking["active_hold"] === 1;
 
         if ($isUnpaidWaiting || $isLegacyUnpaidCancellation) {
+            if (!$hasActiveHold) {
+                $conn->rollback();
+                return ["success" => false, "code" => "not_cancellable", "message" => "This booking can no longer be cancelled.", "http_status" => 409];
+            }
             if ($booking["schedule_status"] === "Held") {
                 $scheduleId = (int) $booking["schedule_id"];
                 $releaseStmt = $conn->prepare(
@@ -131,6 +145,11 @@ function cancelBookingForUser(int $bookingId, int $userId): array
                 "facility_id" => (int) $booking["facility_id"],
                 "http_status" => 200,
             ];
+        }
+
+        if (!$isPaymentRejected && !$hasActiveHold) {
+            $conn->rollback();
+            return ["success" => false, "code" => "not_cancellable", "message" => "This booking can no longer be cancelled.", "http_status" => 409];
         }
 
         if (!$isPaidOrSubmitted) {

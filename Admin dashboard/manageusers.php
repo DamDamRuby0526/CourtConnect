@@ -41,24 +41,29 @@
     </div>
 
     <!-- modal open user edit form -->
-    <div class="modal-container" id="modal_container">
-        <div class="modal">
+    <div class="modal-container compact-modal-overlay" id="modal_container" aria-hidden="true">
+        <div class="modal modal--compact" role="dialog" aria-modal="true" aria-labelledby="userDialogTitle">
             <form id="registerForm">
-
-                <p>First Name</p>
-                <input type="text" id="first_name" name="first_name" required><br>
-
-                <p>Last Name</p>
-                <input type="text" id="last_name" name="last_name" required><br>
-
-                <p>Email</p>
-                <input type="email" id="email" name="email" required><br>
-
-                <p>Contact Number (09 format)</p>
-                <input type="text" id="phone_number" name="phone_number" required><br>
-
-                <button type="button" class="save-btn">Save</button>
-                <button type="button" class="cancel-btn">Cancel</button>
+                <div class="compact-modal-header">
+                    <h2 id="userDialogTitle">User details</h2>
+                    <button type="button" class="owner-close-button cancel-btn" aria-label="Close">&times;</button>
+                </div>
+                <label for="first_name">First name
+                    <input type="text" id="first_name" name="first_name" required>
+                </label>
+                <label for="last_name">Last name
+                    <input type="text" id="last_name" name="last_name" required>
+                </label>
+                <label for="email">Email
+                    <input type="email" id="email" name="email" required>
+                </label>
+                <label for="phone_number">Contact number (09 format)
+                    <input type="text" id="phone_number" name="phone_number" required>
+                </label>
+                <div class="owner-modal-actions compact-modal-actions">
+                    <button type="button" class="owner-secondary-button cancel-btn">Cancel</button>
+                    <button type="button" class="owner-primary-button save-btn">Save</button>
+                </div>
             </form>
 
         </div>

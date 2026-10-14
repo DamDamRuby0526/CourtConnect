@@ -55,42 +55,11 @@ if ($booking && $booking["status"] === "pending_payment"
     $bookingStmt->close();
 }
 
-$noticeStmt = $conn->prepare(
-    "SELECT notification_id, court_no, court_time
-     FROM booking_expiry_notifications
-     WHERE booking_id = ? AND user_id = ?
-     LIMIT 1"
-);
-$noticeStmt->bind_param("ii", $bookingId, $userId);
-$noticeStmt->execute();
-$notice = $noticeStmt->get_result()->fetch_assoc();
-$noticeStmt->close();
-
-if (!$booking && !$notice) {
-    $conn->close();
-    http_response_code(404);
-    echo json_encode(["success" => false, "message" => "Booking not found."]);
-    exit();
-}
-
 $isExpired = !$booking || $booking["status"] === "Expired"
     || $booking["status"] === "cancelled"
     || ($booking["status"] === "pending_payment"
         && empty($booking["has_payment"]) && (int) $booking["hold_expired"] === 1);
-$message = $notice
-    ? "Your booking for Court " . $notice["court_no"] . " at " . date("g:i A", strtotime($notice["court_time"])) . " expired because payment wasn't completed. The slot was released."
-    : "Your booking expired and the slot was released.";
-
-if ($isExpired && $notice) {
-    $notificationId = (int) $notice["notification_id"];
-    $consumeStmt = $conn->prepare(
-        "UPDATE booking_expiry_notifications SET consumed_at = COALESCE(consumed_at, NOW())
-         WHERE notification_id = ? AND user_id = ?"
-    );
-    $consumeStmt->bind_param("ii", $notificationId, $userId);
-    $consumeStmt->execute();
-    $consumeStmt->close();
-}
+$message = "Your booking expired and the slot was released.";
 $conn->close();
 
 echo json_encode([

@@ -67,28 +67,6 @@ function expireUnpaidBookings(mysqli $conn)
             }
 
             $releasedThisBooking = false;
-            if ($booking["user_id"] !== null) {
-                $notificationUserId = (int) $booking["user_id"];
-                $courtNo = (int) $booking["court_no"];
-                $courtDate = (string) $booking["court_date"];
-                $courtTime = (string) $booking["court_time"];
-                $notificationStmt = $conn->prepare(
-                    "INSERT IGNORE INTO booking_expiry_notifications
-                        (booking_id, user_id, court_no, court_date, court_time)
-                     VALUES (?, ?, ?, ?, ?)"
-                );
-                $notificationStmt->bind_param(
-                    "iiiss",
-                    $bookingId,
-                    $notificationUserId,
-                    $courtNo,
-                    $courtDate,
-                    $courtTime
-                );
-                $notificationStmt->execute();
-                $notificationStmt->close();
-            }
-
             if ($booking["schedule_status"] === "Held") {
                 $scheduleId = (int) $booking["schedule_id"];
                 $releaseStmt = $conn->prepare(

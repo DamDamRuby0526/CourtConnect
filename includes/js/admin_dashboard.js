@@ -34,6 +34,13 @@ function getBookingAvailabilityTooltip(booking) {
   return `Available from ${slotStart.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
+function getBookingArrivalTooltip(booking) {
+  const slotStart = getBookingSlotStart(booking);
+  if (!slotStart) return "";
+  const arrivalStart = new Date(slotStart.getTime() - 30 * 60 * 1000);
+  return `Mark arrival from ${arrivalStart.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
 function updateBookingAttendanceState(bookingId, attendanceState) {
   const booking = todayBookings.find((item) => String(item.booking_id) === String(bookingId));
   if (!booking) return;
@@ -150,7 +157,7 @@ function renderTodayBookings() {
         arrived.dataset.bookingId = booking.booking_id;
         const slotStart = getBookingSlotStart(booking);
         if (slotStart && slotStart > new Date()) {
-          arrived.title = getBookingAvailabilityTooltip(booking);
+          arrived.title = getBookingArrivalTooltip(booking);
         }
         actions.append(arrived);
       }

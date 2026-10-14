@@ -1,6 +1,4 @@
 <?php
-const ALLOW_EARLY_ARRIVAL = false;
-
 header("Content-Type: application/json");
 require_once __DIR__ . "/../backend-api/config.php";
 
@@ -17,11 +15,20 @@ function respondJsonError(int $statusCode, string $code, string $message, ?array
     exit();
 }
 
-function buildNotStartedMessage(string $courtDate, string $courtTime): string
+function buildNotStartedMessage(string $courtDate, string $courtTime, string $attendance): string
 {
     $slotTime = strtotime($courtDate . " " . $courtTime);
     if ($slotTime === false) {
         return "This booking hasn't started yet.";
+    }
+
+    if ($attendance === "arrived") {
+        $slotTime -= 30 * 60;
+        return sprintf(
+            "You can mark arrival from %s on %s.",
+            date("g:i A", $slotTime),
+            date("D, M j", $slotTime)
+        );
     }
 
     return sprintf(
@@ -75,6 +82,7 @@ try {
         "SELECT b.booking_id, b.status, b.arrived_at, b.did_not_arrive_at,
                 cs.court_date, cs.court_time,
                 TIMESTAMP(cs.court_date, cs.court_time) AS slot_start_ts,
+                DATE_SUB(TIMESTAMP(cs.court_date, cs.court_time), INTERVAL 30 MINUTE) AS arrival_window_start_ts,
                 NOW() AS mysql_now
          FROM bookings b
          INNER JOIN court_details cd ON cd.court_id = b.court_id
@@ -113,12 +121,17 @@ try {
     }
 
     $slotStartTs = $booking["slot_start_ts"] ?? null;
+    $arrivalWindowStartTs = $booking["arrival_window_start_ts"] ?? null;
     $mysqlNow = $booking["mysql_now"] ?? null;
     $slotHasStarted = $slotStartTs !== null && $mysqlNow !== null && $slotStartTs <= $mysqlNow;
+    $arrivalWindowOpen = $arrivalWindowStartTs !== null
+        && $mysqlNow !== null
+        && $arrivalWindowStartTs <= $mysqlNow;
 
-    if (!$slotHasStarted && (!ALLOW_EARLY_ARRIVAL || $attendance === "no_show")) {
+    if (($attendance === "arrived" && !$arrivalWindowOpen)
+        || ($attendance === "no_show" && !$slotHasStarted)) {
         $conn->rollback();
-        respondJsonError(409, "not_started", buildNotStartedMessage($booking["court_date"], $booking["court_time"]));
+        respondJsonError(409, "not_started", buildNotStartedMessage($booking["court_date"], $booking["court_time"], $attendance));
     }
 
     $updateStmt = $conn->prepare(
