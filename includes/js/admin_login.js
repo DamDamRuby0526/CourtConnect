@@ -25,12 +25,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     }
     if (result.requires_verification) {
       const userId = result.user?.user_id ?? result.user_id;
-      const redirectUrl = new URL("adminregister.php", window.location.href);
-      redirectUrl.searchParams.set("resumeVerification", "1");
-      if (userId) {
-        redirectUrl.searchParams.set("user_id", String(userId));
-      }
-      window.location.href = redirectUrl.toString();
+      await window.showFacilityOtp(userId);
       return;
     }
     window.showDialog({

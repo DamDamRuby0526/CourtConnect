@@ -112,36 +112,7 @@ if (!hash_equals((string) $otpRecord["otp_code"], $otp)) {
     exit();
 }
 
-// If OTP is correct, then verify the user
-$sql = "UPDATE users
-        SET is_verified = 1
-        WHERE user_id = ?";
-
-$stmt = $conn->prepare($sql);
-
-if (!$stmt) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Unable to prepare account verification."
-    ]);
-    exit();
-}
-
-$stmt->bind_param("i", $userId);
-
-if (!$stmt->execute()) {
-    $stmt->close();
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Failed to verify account."
-    ]);
-    exit();
-}
-
-$stmt->close();
-
-// Get the user information needed by the session
+// Get the user information needed by the session.
 $sql = "SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone_number, u.role_id, r.role_name
         FROM users u
         LEFT JOIN roles r ON r.role_id = u.role_id
@@ -153,7 +124,7 @@ $stmt = $conn->prepare($sql);
 if (!$stmt) {
     echo json_encode([
         "success" => false,
-        "message" => "Account was verified, but user information could not be retrieved."
+        "message" => "Unable to retrieve account information."
     ]);
     exit();
 }
@@ -168,7 +139,7 @@ if ($result->num_rows === 0) {
 
     echo json_encode([
         "success" => false,
-        "message" => "Account was verified, but the user was not found."
+        "message" => "Account was not found."
     ]);
     exit();
 }
@@ -176,6 +147,51 @@ if ($result->num_rows === 0) {
 $user = $result->fetch_assoc();
 $stmt->close();
 
+if (in_array((int) $user["role_id"], [2, 3], true)) {
+    $facilityStmt = $conn->prepare("SELECT admin_id, facility_id, status FROM admins WHERE user_id = ? LIMIT 1");
+    if (!$facilityStmt) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to verify the facility application."
+        ]);
+        exit();
+    }
+    $facilityStmt->bind_param("i", $userId);
+    $facilityStmt->execute();
+    $facilityAdmin = $facilityStmt->get_result()->fetch_assoc();
+    $facilityStmt->close();
+
+    if ((int) $user["role_id"] === 3 && (!$facilityAdmin || $facilityAdmin["status"] !== "Active")) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Your facility application must be approved before email verification."
+        ]);
+        exit();
+    }
+} else {
+    $facilityAdmin = null;
+}
+
+$verifyStmt = $conn->prepare("UPDATE users SET is_verified = 1 WHERE user_id = ?");
+if (!$verifyStmt) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to prepare account verification."
+    ]);
+    exit();
+}
+$verifyStmt->bind_param("i", $userId);
+if (!$verifyStmt->execute()) {
+    $verifyStmt->close();
+    echo json_encode([
+        "success" => false,
+        "message" => "Failed to verify account."
+    ]);
+    exit();
+}
+$verifyStmt->close();
+
+session_regenerate_id(true);
 $_SESSION["user_id"] = (int) $user["user_id"];
 $_SESSION["first_name"] = $user["first_name"];
 $_SESSION["last_name"] = $user["last_name"];
@@ -184,6 +200,13 @@ $_SESSION["phone_number"] = $user["phone_number"];
 $_SESSION["logged_in"] = true;
 $_SESSION["role_id"] = (int) ($user["role_id"] ?? 0);
 $_SESSION["role_name"] = $user["role_name"] ?? "player";
+if ($facilityAdmin) {
+    $_SESSION["admin_id"] = (int) $facilityAdmin["admin_id"];
+    $_SESSION["facility_id"] = (int) $facilityAdmin["facility_id"];
+    $_SESSION["role"] = "admin";
+} else {
+    unset($_SESSION["admin_id"], $_SESSION["facility_id"], $_SESSION["role"]);
+}
 
 // If verified, OTP is deleted
 $sql = "DELETE FROM otp_codes

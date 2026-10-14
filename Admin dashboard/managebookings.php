@@ -79,16 +79,17 @@ while ($court = $courtsResult->fetch_assoc()) {
 }
 $courtsStmt->close();
 
+$paymentStatus = "COALESCE(p.payment_status, IF(LOWER(b.payment_status) = 'paid', 'Paid', 'Pending'))";
 $where = [
     "cd.facility_id = ?",
     "b.status NOT IN ('pending_payment', 'Expired')",
+    "LOWER($paymentStatus) = 'paid'",
     "NOT (LOWER(b.status) = 'cancelled' AND LOWER(b.payment_status) = 'unpaid'
         AND NOT EXISTS (SELECT 1 FROM payments unpaid_cancel_payment WHERE unpaid_cancel_payment.booking_id = b.booking_id))",
 ];
 $params = [$facilityId];
 $paramTypes = "i";
 $startedSlot = "TIMESTAMP(cs.court_date, cs.court_time) <= NOW()";
-$paymentStatus = "COALESCE(p.payment_status, IF(LOWER(b.payment_status) = 'paid', 'Paid', 'Pending'))";
 
 if ($attendanceFilter === "upcoming") {
     $where[] = "LOWER(b.status) <> 'cancelled' AND b.arrived_at IS NULL AND b.did_not_arrive_at IS NULL AND NOT ($startedSlot)";

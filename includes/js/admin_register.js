@@ -1,453 +1,531 @@
 document.addEventListener("DOMContentLoaded", () => {
-
-  // =========================================================
-  // REGISTRATION STEPS
-  // =========================================================
-
-  const registerForm = document.getElementById("registerForm");
-
+  const form = document.getElementById("registerForm");
   const accountStep = document.getElementById("accountStep");
   const verificationStep = document.getElementById("verificationStep");
+  const continueButton = document.getElementById("continueToVerification");
+  const backButton = document.getElementById("backToAccount");
+  const progressSteps = [
+    document.getElementById("progressStep1"),
+    document.getElementById("progressStep2"),
+    document.getElementById("progressStep3"),
+  ];
+  const progressLines = [
+    document.getElementById("progressLine"),
+    document.getElementById("progressLine2"),
+  ];
+  const registrationTitle = document.getElementById("registrationTitle");
+  const registrationSubtitle = document.getElementById("registrationSubtitle");
+  const panelEyebrow = document.getElementById("ownerPanelEyebrow");
+  const panelTitle = document.getElementById("ownerPanelTitle");
+  const panelCopy = document.getElementById("ownerPanelCopy");
+  const panelChecklist = document.getElementById("ownerPanelChecklist");
+  const panelFooter = document.getElementById("ownerPanelFooter");
+  const submitButton = document.getElementById("registrationSubmit");
+  const submitLabel = document.getElementById("registrationSubmitLabel");
+  const submitSpinner = document.getElementById("registrationSpinner");
+  const submitHelp = document.getElementById("registrationSubmitHelp");
+  const requiredUploadCount = document.getElementById("requiredUploadCount");
+  const photoInput = document.getElementById("facility_photos");
+  const photoPreview = document.getElementById("facilityPhotosPreview");
+  const photoCount = document.getElementById("facilityPhotosCount");
+  const photoUrls = new Map();
+  let isSubmitting = false;
 
-  const continueButton =
-    document.getElementById("continueToVerification");
-
-  const backButton =
-    document.getElementById("backToAccount");
-
-  const progressStep1 =
-    document.getElementById("progressStep1");
-
-  const progressStep2 =
-    document.getElementById("progressStep2");
-
-  const progressLine =
-    document.getElementById("progressLine");
-
-  const pendingReview = document.getElementById("pendingReview");
-  const pendingReviewTitle = document.getElementById("pendingReviewTitle");
-  const pendingReviewMessage = document.getElementById("pendingReviewMessage");
-  const backToHomeButton = document.getElementById("backToHome");
-  const queryParams = new URLSearchParams(window.location.search);
-  const resumeVerification = queryParams.get("resumeVerification") === "1";
-  const resumeUserId = queryParams.get("user_id");
-  let reviewPollingInterval = null;
-  let otpRequestInProgress = false;
-
-  function beginReviewWait(userId) {
-    registerForm.hidden = true;
-    pendingReview.hidden = false;
-    document.getElementById("otpForm").dataset.userId = userId;
-    checkReviewStatus();
-    reviewPollingInterval = window.setInterval(checkReviewStatus, 15000);
+  function setProgress(step) {
+    progressSteps.forEach((element, index) => {
+      const completed = index + 1 < step;
+      const current = index + 1 === step;
+      element.classList.toggle("completed", completed);
+      element.classList.toggle("active", current);
+      element.toggleAttribute("aria-current", current);
+      element.querySelector(".progress-circle").textContent = completed ? "✓" : String(index + 1);
+    });
+    progressLines.forEach((line, index) => line.classList.toggle("active", index + 1 < step));
   }
 
-  async function checkReviewStatus() {
-    try {
-      const statusUrl = resumeUserId
-        ? `includes/backend-api/registration_status.php?user_id=${encodeURIComponent(resumeUserId)}`
-        : "includes/backend-api/registration_status.php";
-      const response = await fetch(statusUrl);
-      const result = await response.json();
+  function showAccountStep() {
+    accountStep.hidden = false;
+    verificationStep.hidden = true;
+    registrationTitle.textContent = "Create your facility account";
+    registrationSubtitle.textContent = "Start with your account details. You'll add your facility and documents next.";
+    panelEyebrow.textContent = "FOR FACILITY OWNERS";
+    panelTitle.textContent = "List your courts. Start earning bookings.";
+    panelCopy.textContent = "Manage court schedules and bookings in one place.";
+    panelChecklist.hidden = false;
+    panelFooter.hidden = true;
+    setProgress(1);
+    document.getElementById("first_name").focus();
+  }
 
-      if (!result.success) return;
+  function showFacilityStep() {
+    accountStep.hidden = true;
+    verificationStep.hidden = false;
+    registrationTitle.textContent = "Tell us about your facility";
+    registrationSubtitle.textContent = "Add your facility details and upload your documents. Our team will review them before your facility goes live.";
+    panelEyebrow.textContent = "BEFORE YOU SUBMIT";
+    panelTitle.textContent = "What you'll need";
+    panelCopy.textContent = "";
+    panelChecklist.innerHTML = `
+      <li data-document-check="valid_id"><span aria-hidden="true">✓</span>Valid government ID</li>
+      <li data-document-check="business_registration"><span aria-hidden="true">✓</span>DTI / SEC registration</li>
+      <li data-document-check="business_permit"><span aria-hidden="true">✓</span>Business / Mayor's permit</li>
+      <li data-document-check="proof_of_occupancy"><span aria-hidden="true">✓</span>Proof of ownership or lease</li>
+      <li data-document-check="facility_photos"><span aria-hidden="true">✓</span>Photos of your courts</li>`;
+    panelFooter.hidden = false;
+    setProgress(2);
+    document.getElementById("facility_name").focus();
+    updateSubmissionState();
+  }
 
-      const activeUserId = resumeUserId || result.user_id;
-      document.getElementById("otpForm").dataset.userId = activeUserId;
+  function setFieldError(input, message) {
+    const error = document.getElementById(`${input.id}_error`);
+    if (!error) return;
+    error.textContent = message;
+    error.hidden = !message;
+    input.setAttribute("aria-invalid", String(Boolean(message)));
+  }
 
-      if (result.status === "Active") {
-        window.clearInterval(reviewPollingInterval);
-
-        if (!resumeVerification) {
-          pendingReviewTitle.textContent = "Account is Verified";
-          pendingReviewMessage.textContent = "Your facility application is approved. Log in to verify your email and access your account.";
-          return;
-        }
-
-        if (otpRequestInProgress) return;
-        otpRequestInProgress = true;
-        pendingReviewMessage.textContent = "Your account is approved. Sending your email verification code...";
-
-        const sendResponse = await fetch("includes/backend-api/sendOTP.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: activeUserId })
-        });
-        const sendResult = await sendResponse.json();
-
-        if (!sendResult.success) {
-          otpRequestInProgress = false;
-          pendingReviewMessage.textContent = sendResult.message;
-          return;
-        }
-
-        pendingReview.hidden = true;
-        document.getElementById("modal_container").classList.add("show");
-        return;
-      }
-
-      if (result.status === "Rejected") {
-        window.clearInterval(reviewPollingInterval);
-        pendingReviewMessage.textContent = result.rejection_reason
-          ? `Your application was not approved: ${result.rejection_reason}`
-          : "Your application was not approved.";
-        return;
-      }
-
-      pendingReviewMessage.textContent = "Your documents are waiting for developer review.";
-    } catch (error) {
-      pendingReviewMessage.textContent = "Unable to check the review status. Please try again.";
+  function validateField(input) {
+    let message = "";
+    if (input.id === "email" && input.value && input.validity.typeMismatch) {
+      message = "Enter a valid email address.";
+    } else if (input.id === "confirm_email" && input.value !== document.getElementById("email").value) {
+      message = "Email addresses do not match.";
+    } else if (input.id === "phone_number" && input.value && !/^09\d{9}$/.test(input.value)) {
+      message = "Enter an 11-digit number starting with 09.";
+    } else if (input.id === "password" && input.value.length < 8) {
+      message = "Use at least 8 characters.";
+    } else if (input.id === "confirm_password" && input.value !== document.getElementById("password").value) {
+      message = "Passwords do not match.";
+    } else if (input.required && !input.value.trim()) {
+      message = "This field is required.";
     }
+    setFieldError(input, message);
+    return !message;
   }
 
-  backToHomeButton.addEventListener("click", () => {
-    window.location.href = "index.php";
+  const accountInputs = [...accountStep.querySelectorAll("input[required]")];
+  accountInputs.forEach((input) => {
+    input.addEventListener("blur", () => validateField(input));
+    input.addEventListener("input", () => {
+      if (!document.getElementById(`${input.id}_error`).hidden) validateField(input);
+    });
   });
 
-  const initialStatusUrl = resumeUserId
-    ? `includes/backend-api/registration_status.php?user_id=${encodeURIComponent(resumeUserId)}`
-    : "includes/backend-api/registration_status.php";
+  document.querySelectorAll(".owner-password-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.passwordTarget);
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    });
+  });
 
-  fetch(initialStatusUrl)
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) beginReviewWait(resumeUserId || result.user_id);
-    })
-    .catch(() => {});
-
-
-  // =========================================================
-  // STEP 1 → STEP 2
-  // =========================================================
+  const password = document.getElementById("password");
+  password.addEventListener("input", () => {
+    const strength = Math.min(100, Math.round((password.value.length / 12) * 100));
+    document.getElementById("passwordStrengthBar").style.width = `${strength}%`;
+  });
 
   continueButton.addEventListener("click", () => {
-
-    // Check required fields in Step 1
-    const accountInputs =
-      accountStep.querySelectorAll("input[required]");
-
-    for (const input of accountInputs) {
-
-      if (!input.checkValidity()) {
-        input.reportValidity();
-        return;
-      }
-
-    }
-
-
-    // Check email
-    const email =
-      document.getElementById("email").value.trim();
-
-    const confirmEmail =
-      document.getElementById("confirm_email").value.trim();
-
-    if (email !== confirmEmail) {
-      alert("Emails do not match.");
+    const valid = accountInputs.map(validateField).every(Boolean);
+    if (!valid) {
+      accountInputs.find((input) => input.getAttribute("aria-invalid") === "true")?.focus();
       return;
     }
-
-
-    // Check password
-    const password =
-      document.getElementById("password").value;
-
-    const confirmPassword =
-      document.getElementById("confirm_password").value;
-
-    if (password !== confirmPassword) {
-      alert("Passwords do not match.");
-      return;
-    }
-
-
-    // Move to Step 2
-    accountStep.style.display = "none";
-    verificationStep.style.display = "block";
-
-
-    // Update progress bar
-    progressStep1.classList.remove("active");
-    progressStep1.classList.add("completed");
-
-    progressStep2.classList.add("active");
-
-    progressLine.classList.add("active");
-
+    showFacilityStep();
   });
 
-
-  // =========================================================
-  // STEP 2 → STEP 1
-  // =========================================================
-
-  backButton.addEventListener("click", () => {
-
-    verificationStep.style.display = "none";
-    accountStep.style.display = "block";
-
-
-    // Reset progress bar
-    progressStep1.classList.remove("completed");
-    progressStep1.classList.add("active");
-
-    progressStep2.classList.remove("active");
-
-    progressLine.classList.remove("active");
-
-  });
-
-
-  // =========================================================
-  // FINAL REGISTRATION SUBMISSION
-  // =========================================================
-
-  registerForm.addEventListener("submit", async (e) => {
-
-    e.preventDefault();
-
-
-    // Make sure Step 2 fields are valid
-    const verificationInputs =
-      verificationStep.querySelectorAll("input[required], select[required]");
-
-    for (const input of verificationInputs) {
-
-      if (!input.checkValidity()) {
-        input.reportValidity();
-        return;
-      }
-
-    }
-
-
-    const form = new FormData(registerForm);
-
-    try {
-
-      const response = await fetch(
-        "includes/backend-api/adminregister.php",
-        {
-          method: "POST",
-          body: form
-        }
-      );
-
-
-      const result = await response.json();
-
-
-      if (!result.success) {
-
-        alert(result.message);
-
-        return;
-
-      }
-
-
-      beginReviewWait(result.user_id);
-
-    } catch (error) {
-
-      console.error("Registration error:", error);
-
-      alert(
-        "Network error. Please check your connection and try again."
-      );
-
-    }
-
-  });
-
-
-  // =========================================================
-  // OTP INPUTS
-  // =========================================================
-
-  const inputs =
-    document.getElementById("inputs");
-
-  const otpInputs =
-    Array.from(
-      inputs.querySelectorAll('input[name="otp"]')
-    );
-
-
-  // Move to next OTP box
-  inputs.addEventListener("input", function (e) {
-
-    const target = e.target;
-
-    const val =
-      target.value
-        .replace(/\D/g, "")
-        .slice(-1);
-
-
-    target.value = val;
-
-
-    if (val !== "") {
-
-      const next =
-        target.nextElementSibling;
-
-      if (next) {
-        next.focus();
-      }
-
-    }
-
-  });
-
-
-  // Move back when pressing Backspace/Delete
-  inputs.addEventListener("keyup", function (e) {
-
-    const target = e.target;
-
-    const key =
-      e.key.toLowerCase();
-
-
-    if (key === "backspace" || key === "delete") {
-
-      target.value = "";
-
-
-      const prev =
-        target.previousElementSibling;
-
-      if (prev) {
-        prev.focus();
-      }
-
-    }
-
-  });
-
-
-  // =========================================================
-  // OTP VERIFICATION
-  // =========================================================
-
-  document
-    .getElementById("otpForm")
-    .addEventListener("submit", async (e) => {
-
-      e.preventDefault();
-
-
-      const otpForm = e.target;
-
-      const userId =
-        otpForm.dataset.userId;
-
-
-      const otp =
-        otpInputs
-          .map(input => input.value)
-          .join("");
-
-
-      const btn =
-        document.getElementById("submitOtpButton");
-
-
-      if (otp.length !== 6) {
-
-        alert(
-          "Please enter all 6 digits of the code sent to your email."
-        );
-
-        return;
-
-      }
-
-
-      // Disable button
-      btn.disabled = true;
-
-      btn.innerText = "Submitting...";
-
-
-      try {
-
-        const response = await fetch(
-          "includes/backend-api/verifyOTP.php",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-              user_id: userId,
-              otp: otp
-            })
-          }
-        );
-
-
-        const result =
-          await response.json();
-
-
-        alert(result.message);
-
-
-        // Redirect if successful
-        if (result.success) {
-
-          window.location.href =
-            "adminsignin.php";
-
-        } else {
-
-          btn.disabled = false;
-
-          btn.innerText =
-            "Submit Code";
-
-        }
-
-
-      } catch (error) {
-
-        console.error("OTP verification error:", error);
-
-        alert(
-          "Network error. Please try again."
-        );
-
-
-        btn.disabled = false;
-
-        btn.innerText =
-          "Submit Code";
-
-      }
-
+  backButton.addEventListener("click", showAccountStep);
+  const documentInputs = [...form.querySelectorAll(".owner-upload-input:not(#facility_photos)")];
+  const uploadZones = new Map();
+  function fileSizeLabel(bytes) {
+    return bytes < 1024 * 1024
+      ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+      : `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  function revokePhotoUrls() {
+    photoUrls.forEach((url) => URL.revokeObjectURL(url));
+    photoUrls.clear();
+  }
+
+  function updatePhotoGrid(files) {
+    revokePhotoUrls();
+    photoPreview.replaceChildren();
+    files.forEach((file, index) => {
+      const url = URL.createObjectURL(file);
+      photoUrls.set(file, url);
+      const tile = document.createElement("figure");
+      tile.className = "owner-photo-tile";
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = `Selected facility photo ${index + 1}: ${file.name}`;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "owner-photo-remove";
+      remove.setAttribute("aria-label", `Remove ${file.name}`);
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        const remaining = [...photoInput.files].filter((selected) => selected !== file);
+        window.setUploadInputFiles(photoInput, remaining);
+      });
+      tile.append(image, remove);
+      photoPreview.append(tile);
+    });
+    photoCount.textContent = `${files.length} ${files.length === 1 ? "photo" : "photos"} added`;
+  }
+
+  function updateSubmissionState() {
+    const docsAdded = documentInputs.filter((input) => {
+      const card = input.closest(".owner-document-upload-card");
+      return input.files.length === 1 && !card.querySelector(".resubmit-file-error:not([hidden])");
+    }).length;
+    requiredUploadCount.textContent = `${docsAdded} of 4 required documents added`;
+    document.querySelectorAll("[data-document-check]").forEach((item) => {
+      const input = document.getElementById(item.dataset.documentCheck);
+      item.classList.toggle("is-added", Boolean(input?.files.length));
     });
 
-  document.getElementById("resendOtpLink").addEventListener("click", async (event) => {
-    event.preventDefault();
-    const userId = document.getElementById("otpForm").dataset.userId;
+    const missing = [];
+    [
+      ["facility_name", "facility name"],
+      ["facility_address", "facility address"],
+      ["municipality", "municipality"],
+      ["facility_type", "facility type"],
+    ].forEach(([id, label]) => {
+      if (!document.getElementById(id).value.trim()) missing.push(`enter your ${label}`);
+    });
+    documentInputs.forEach((input) => {
+      if (!input.files.length) {
+        const title = input.closest(".owner-document-upload-card").querySelector(".owner-upload-heading strong").textContent;
+        missing.push(`add your ${title}`);
+      }
+    });
+    if (!photoInput.files.length) missing.push("add at least one facility photo");
+    submitButton.disabled = isSubmitting || missing.length > 0;
+    submitHelp.textContent = missing.length
+      ? `${missing[0][0].toUpperCase()}${missing[0].slice(1)} to continue.`
+      : "Everything is ready to submit.";
+  }
 
+  documentInputs.forEach((input) => {
+    const card = input.closest(".owner-document-upload-card");
+    const zone = card.querySelector(".resubmit-drop-area");
+    const preview = card.querySelector(".owner-upload-preview");
+    const fileError = card.querySelector(".resubmit-file-error");
+    const upload = window.initializeFileUploadZone({
+      input,
+      zone,
+      error: fileError,
+      allowedTypes: window.facilityUploadTypes.documents,
+      maxFileSize: 5 * 1024 * 1024,
+      onFilesChanged: (files, message) => {
+        if (upload.previewUrl) {
+          URL.revokeObjectURL(upload.previewUrl);
+          upload.previewUrl = null;
+        }
+        preview.replaceChildren();
+        if (!files.length || message) {
+          preview.hidden = true;
+          zone.hidden = false;
+          updateSubmissionState();
+          return;
+        }
+
+        const file = files[0];
+        const extension = file.name.split(".").pop()?.toLowerCase() || "";
+        let fileVisual;
+        if (file.type.startsWith("image/") || ["jpg", "jpeg", "png", "webp"].includes(extension)) {
+          fileVisual = document.createElement("img");
+          fileVisual.className = "resubmit-preview-image";
+          fileVisual.alt = `${card.querySelector(".owner-upload-heading strong").textContent} preview`;
+          const url = URL.createObjectURL(file);
+          fileVisual.src = url;
+          upload.previewUrl = url;
+        } else {
+          fileVisual = document.createElement("span");
+          fileVisual.className = "resubmit-preview-pdf";
+          fileVisual.textContent = extension.toUpperCase();
+          fileVisual.setAttribute("aria-hidden", "true");
+        }
+        const metadata = document.createElement("span");
+        metadata.className = "resubmit-preview-metadata";
+        const name = document.createElement("strong");
+        name.textContent = file.name;
+        const size = document.createElement("small");
+        size.textContent = fileSizeLabel(file.size);
+        metadata.append(name, size);
+
+        const statusTag = document.createElement("span");
+        statusTag.className = "owner-document-tag is-accepted";
+        statusTag.textContent = "✓ Added";
+        const previewButton = document.createElement("button");
+        previewButton.type = "button";
+        previewButton.className = "resubmit-text-action";
+        previewButton.textContent = "Preview";
+        previewButton.addEventListener("click", () => openLocalPreview(file, card.querySelector(".owner-upload-heading strong").textContent));
+        const replaceButton = document.createElement("button");
+        replaceButton.type = "button";
+        replaceButton.className = "resubmit-text-action";
+        replaceButton.textContent = "Replace";
+        replaceButton.addEventListener("click", () => {
+          zone.hidden = false;
+          zone.querySelector("label").focus();
+        });
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "resubmit-text-action";
+        removeButton.textContent = "Remove";
+        removeButton.addEventListener("click", () => upload.clear());
+        preview.append(fileVisual, metadata, statusTag, previewButton, replaceButton, removeButton);
+        preview.hidden = false;
+        zone.hidden = true;
+        updateSubmissionState();
+      },
+    });
+    uploadZones.set(input, upload);
+  });
+
+  const photoZone = photoInput.closest(".resubmit-file-zone").querySelector(".resubmit-drop-area");
+  window.initializeFileUploadZone({
+    input: photoInput,
+    zone: photoZone,
+    error: document.getElementById("facility_photos_error"),
+    multiple: true,
+    maxFiles: 5,
+    maxFileSize: 10 * 1024 * 1024,
+    allowedTypes: window.facilityUploadTypes.images,
+    onFilesChanged: (files) => {
+      updatePhotoGrid(files);
+      updateSubmissionState();
+    },
+  });
+
+  const viewer = document.getElementById("ownerUploadViewer");
+  const viewerDialog = viewer.querySelector('[role="dialog"]');
+  const viewerContent = document.getElementById("ownerUploadViewerContent");
+  const viewerTitle = document.getElementById("ownerUploadViewerTitle");
+  const viewerUrls = new Set();
+  function openLocalPreview(file, title) {
+    viewerTitle.textContent = title;
+    viewerContent.replaceChildren();
+    const url = URL.createObjectURL(file);
+    viewerUrls.add(url);
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+      const object = document.createElement("object");
+      object.data = url;
+      object.type = "application/pdf";
+      object.setAttribute("aria-label", `${title} PDF preview`);
+      object.append("This browser cannot display this PDF.");
+      viewerContent.append(object);
+    } else {
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = `${title} preview`;
+      viewerContent.append(image);
+    }
+    viewer.classList.add("is-open");
+    viewer.setAttribute("aria-hidden", "false");
+    viewerDialog.focus();
+  }
+  function closeLocalPreview() {
+    viewer.classList.remove("is-open");
+    viewer.setAttribute("aria-hidden", "true");
+    viewerContent.replaceChildren();
+    viewerUrls.forEach((url) => URL.revokeObjectURL(url));
+    viewerUrls.clear();
+  }
+  document.getElementById("ownerUploadViewerClose").addEventListener("click", closeLocalPreview);
+  viewer.addEventListener("click", (event) => {
+    if (event.target === viewer) closeLocalPreview();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && viewer.classList.contains("is-open")) closeLocalPreview();
+  });
+
+  [
+    "facility_name",
+    "facility_address",
+    "municipality",
+    "facility_type",
+  ].forEach((id) => {
+    document.getElementById(id).addEventListener("input", updateSubmissionState);
+    document.getElementById(id).addEventListener("change", updateSubmissionState);
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+    const facilityFields = ["facility_name", "facility_address", "municipality", "facility_type"].map((id) => document.getElementById(id));
+    const invalidField = facilityFields.find((input) => !input.value.trim());
+    if (invalidField) {
+      invalidField.focus();
+      await window.showDialog({ type: "error", title: "Complete facility details", message: "Fill in all facility information before submitting." });
+      return;
+    }
+    if (submitButton.disabled || !form.reportValidity()) return;
+
+    isSubmitting = true;
+    updateSubmissionState();
+    backButton.disabled = true;
+    submitSpinner.hidden = false;
+    submitLabel.textContent = "Submitting...";
+    try {
+      const response = await fetch("includes/backend-api/adminregister.php", {
+        method: "POST",
+        body: new FormData(form),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Unable to submit your application.");
+      window.location.assign("owner_application.php");
+    } catch (error) {
+      await window.showDialog({
+        type: "error",
+        title: "Unable to submit application",
+        message: error.message || "Please try again.",
+      });
+    } finally {
+      isSubmitting = false;
+      backButton.disabled = false;
+      submitSpinner.hidden = true;
+      submitLabel.textContent = "Submit for review";
+      updateSubmissionState();
+    }
+  });
+
+  const query = new URLSearchParams(window.location.search);
+  const resumeVerification = query.get("resumeVerification") === "1";
+  if (resumeVerification) {
+    const userId = query.get("user_id");
+    fetch("includes/backend-api/registration_status.php")
+      .then((response) => response.json())
+      .then(async (result) => {
+        if (!result.success) return;
+        const activeUserId = userId || result.user_id;
+        document.getElementById("otpForm").dataset.userId = activeUserId;
+        if (result.status !== "Active") {
+          window.location.assign("owner_application.php");
+          return;
+        }
+        const response = await fetch("includes/backend-api/sendOTP.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: activeUserId }),
+        });
+        const sent = await response.json();
+        if (!sent.success) {
+          await window.showDialog({ type: "error", title: "Unable to send verification code", message: sent.message || "Please try again." });
+          return;
+        }
+        const modal = document.getElementById("modal_container");
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        otpInputs[0].focus();
+        startResendCountdown(30);
+      })
+      .catch(async () => {
+        await window.showDialog({ type: "error", title: "Unable to load application", message: "Please return to sign in and try again." });
+      });
+  }
+
+  const otpInputs = [...document.querySelectorAll('#inputs input[name="otp"]')];
+  const otpError = document.getElementById("ownerOtpError");
+  const otpForm = document.getElementById("otpForm");
+  const resendLink = document.getElementById("resendOtpLink");
+  const resendCountdown = document.getElementById("resendOtpCountdown");
+  let resendTimer = null;
+  function startResendCountdown(seconds) {
+    window.clearInterval(resendTimer);
+    let remaining = seconds;
+    resendLink.setAttribute("aria-disabled", "true");
+    resendCountdown.textContent = `(${remaining}s)`;
+    resendTimer = window.setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        window.clearInterval(resendTimer);
+        resendLink.removeAttribute("aria-disabled");
+        resendCountdown.textContent = "";
+        return;
+      }
+      resendCountdown.textContent = `(${remaining}s)`;
+    }, 1000);
+  }
+  document.getElementById("inputs").addEventListener("input", (event) => {
+    const input = event.target;
+    if (!otpInputs.includes(input)) return;
+    const digits = input.value.replace(/\D/g, "");
+    if (digits.length > 1) {
+      const start = otpInputs.indexOf(input);
+      [...digits].slice(0, 6 - start).forEach((digit, offset) => { otpInputs[start + offset].value = digit; });
+      otpInputs[Math.min(start + digits.length, 5)].focus();
+    } else {
+      input.value = digits;
+      if (digits && input.nextElementSibling) input.nextElementSibling.focus();
+    }
+    otpError.textContent = "";
+  });
+  document.getElementById("inputs").addEventListener("keydown", (event) => {
+    if (event.key === "Backspace" && !event.target.value && event.target.previousElementSibling) {
+      event.target.previousElementSibling.focus();
+    }
+  });
+  document.getElementById("inputs").addEventListener("paste", (event) => {
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    event.preventDefault();
+    pasted.split("").forEach((digit, index) => { otpInputs[index].value = digit; });
+    otpInputs[Math.min(pasted.length, 5)].focus();
+  });
+  otpForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const otp = otpInputs.map((input) => input.value).join("");
+    if (otp.length !== 6) {
+      otpError.textContent = "Enter all six digits of the code.";
+      return;
+    }
+    const button = document.getElementById("submitOtpButton");
+    button.disabled = true;
+    button.textContent = "Verifying...";
+    try {
+      const response = await fetch("includes/backend-api/verifyOTP.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: otpForm.dataset.userId, otp }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Unable to verify this code.");
+      await window.showDialog({ type: "success", title: "Email verified", message: result.message || "Account verified successfully." });
+      window.location.assign("adminsignin.php");
+    } catch (error) {
+      otpError.textContent = error.message || "Unable to verify this code.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Submit Code";
+    }
+  });
+  resendLink.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (resendLink.getAttribute("aria-disabled") === "true") return;
     try {
       const response = await fetch("includes/backend-api/sendOTP.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId })
+        body: JSON.stringify({ user_id: otpForm.dataset.userId }),
       });
       const result = await response.json();
-      alert(result.message);
+      if (!response.ok || !result.success) throw new Error(result.message || "Unable to resend the code.");
+      otpError.textContent = "";
+      startResendCountdown(30);
     } catch (error) {
-      alert("Unable to resend the verification code. Please try again.");
+      otpError.textContent = error.message || "Unable to resend the code.";
     }
   });
 
+  window.addEventListener("beforeunload", () => {
+    photoUrls.forEach((url) => URL.revokeObjectURL(url));
+    viewerUrls.forEach((url) => URL.revokeObjectURL(url));
+    uploadZones.forEach((upload) => { if (upload.previewUrl) URL.revokeObjectURL(upload.previewUrl); });
+  });
+  updateSubmissionState();
 });

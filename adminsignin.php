@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="includes/css/styles.css" />
   <title>CourtConnect Bataan</title>
-  <script src="includes/js/admin_login.js?v=20260929-2" defer></script>
+  <script src="includes/js/admin_login.js?v=20261021-1" defer></script>
 </head>
 
 <body>
@@ -38,6 +38,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 
   </div>
+
+  <?php include 'includes/navigation/facility_otp_modal.php'; ?>
 
 
 

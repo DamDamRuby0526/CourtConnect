@@ -25,14 +25,14 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     }
     if (result.requires_verification) {
       const userId = result.user_id ?? result.user?.user_id;
+      if (result.is_facility_owner) {
+        await window.showFacilityOtp(userId);
+        return;
+      }
       const redirectUrl = new URL("register.php", window.location.href);
       redirectUrl.searchParams.set("resumeVerification", "1");
       if (userId) {
         redirectUrl.searchParams.set("user_id", String(userId));
-      }
-      if (result.is_facility_owner) {
-        window.location.href = new URL("adminregister.php", window.location.href) + "?resumeVerification=1" + (userId ? `&user_id=${encodeURIComponent(userId)}` : "");
-        return;
       }
       window.location.href = redirectUrl.toString();
       return;

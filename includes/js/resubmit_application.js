@@ -35,14 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     card.classList.toggle("has-file-error", Boolean(message));
   }
 
-  function fileTypeError(file) {
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-    const allowedExtensions = ["jpg", "jpeg", "png", "webp", "pdf"];
-    const extension = file.name.split(".").pop()?.toLocaleLowerCase() || "";
-    if (file.type) return allowedMimeTypes.includes(file.type) ? "" : "Choose a JPG, PNG, WEBP, or PDF document.";
-    return allowedExtensions.includes(extension) ? "" : "Choose a JPG, PNG, WEBP, or PDF document.";
-  }
-
   function fileSizeLabel(bytes) {
     return bytes < 1024 * 1024
       ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -58,12 +50,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearSelectedFile(input, shouldFocus = false) {
     const card = input.closest(".owner-resubmit-document");
     removePreviewUrl(input);
-    input.value = "";
-    setFileError(card, "");
-    card.querySelector(".resubmit-file-preview").replaceChildren();
-    card.querySelector(".resubmit-file-preview").hidden = true;
+    window.setUploadInputFiles(input, []);
     if (shouldFocus) card.querySelector(".resubmit-drop-area").focus();
-    updateSubmitState();
   }
 
   function showFilePreview(input, file) {
@@ -102,18 +90,16 @@ document.addEventListener("DOMContentLoaded", () => {
     preview.append(iconOrImage, metadata, removeButton);
   }
 
-  function acceptFile(input, file) {
+  function renderUploadState(input, files, message) {
     const card = input.closest(".owner-resubmit-document");
     removePreviewUrl(input);
-    setFileError(card, "");
-    const error = fileTypeError(file) || (file.size > 5 * 1024 * 1024 ? "The file must be 5 MB or smaller." : "");
-    if (error) {
-      input.value = "";
-      card.querySelector(".resubmit-file-preview").replaceChildren();
-      card.querySelector(".resubmit-file-preview").hidden = true;
-      setFileError(card, error);
+    setFileError(card, message);
+    const preview = card.querySelector(".resubmit-file-preview");
+    if (message || !files.length) {
+      preview.replaceChildren();
+      preview.hidden = true;
     } else {
-      showFilePreview(input, file);
+      showFilePreview(input, files[0]);
     }
     updateSubmitState();
   }
@@ -121,31 +107,15 @@ document.addEventListener("DOMContentLoaded", () => {
   fileInputs.forEach((input) => {
     const card = input.closest(".owner-resubmit-document");
     const zone = card.querySelector(".resubmit-drop-area");
-    input.addEventListener("change", () => {
-      if (input.files[0]) acceptFile(input, input.files[0]);
-      else updateSubmitState();
-    });
-
-    zone.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        input.click();
-      }
-    });
-    zone.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      zone.classList.add("is-dragging");
-    });
-    zone.addEventListener("dragleave", () => zone.classList.remove("is-dragging"));
-    zone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      zone.classList.remove("is-dragging");
-      const file = event.dataTransfer?.files?.[0];
-      if (!file) return;
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      input.files = transfer.files;
-      acceptFile(input, file);
+    window.initializeFileUploadZone({
+      input,
+      zone,
+      error: card.querySelector(".resubmit-file-error"),
+      maxFileSize: 5 * 1024 * 1024,
+      allowedTypes: window.facilityUploadTypes.documents,
+      onFilesChanged: (files, message) => {
+        renderUploadState(input, files, message);
+      },
     });
   });
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/includes/backend-api/config.php";
+$ownerOnboardingHeader = true;
 
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 if (!$userId || $userId < 1 || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
@@ -47,11 +48,12 @@ $documents = [
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="includes/js/admin_dialog.js" defer></script>
-    <script src="includes/js/resubmit_application.js?v=20261014-2" defer></script>
+    <script src="includes/js/file_upload_zone.js?v=20261014-1" defer></script>
+    <script src="includes/js/resubmit_application.js?v=20261014-3" defer></script>
     <title>Resubmit documents | CourtConnect</title>
 </head>
-<body class="owner-application-body">
+<body class="owner-application-body owner-onboarding-page">
+    <?php include 'includes/navigation/header.php'; ?>
     <main class="owner-application-card owner-resubmit-card owner-status-page">
         <p class="owner-breadcrumb">COURTCONNECT <span>/</span> RESUBMIT DOCUMENTS</p>
         <header class="status-page-heading resubmit-page-heading">
@@ -98,14 +100,14 @@ $documents = [
                         <button class="resubmit-text-action replace-document-button" type="button" aria-expanded="false">Replace</button>
                     <?php endif; ?>
                     <div class="resubmit-file-zone"<?= $isRequired ? "" : " hidden" ?>>
-                        <input id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" class="resubmit-file-input" type="file" name="documents[<?= htmlspecialchars($key, ENT_QUOTES, "UTF-8") ?>]" accept=".jpg,.jpeg,.png,.webp,.pdf" aria-label="Upload <?= htmlspecialchars($document["label"], ENT_QUOTES, "UTF-8") ?>"<?= $isRequired ? " required" : "" ?>>
+                        <input id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" class="resubmit-file-input" type="file" name="documents[<?= htmlspecialchars($key, ENT_QUOTES, "UTF-8") ?>]" accept=".jpg,.jpeg,.png,.webp,.pdf" aria-label="Upload <?= htmlspecialchars($document["label"], ENT_QUOTES, "UTF-8") ?>" aria-describedby="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>-error"<?= $isRequired ? " required" : "" ?>>
                         <label class="resubmit-drop-area" for="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" tabindex="0">
                             <span class="resubmit-upload-icon" aria-hidden="true">↑</span>
                             <span><strong>Choose file</strong><small>or drop it here</small></span>
                             <small>JPG, PNG, WEBP or PDF · up to 5 MB</small>
                         </label>
                         <div class="resubmit-file-preview" hidden aria-live="polite"></div>
-                        <p class="resubmit-file-error" role="alert" hidden></p>
+                        <p class="resubmit-file-error" id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>-error" role="alert" hidden></p>
                     </div>
                 </section>
             <?php endforeach; ?>

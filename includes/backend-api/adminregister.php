@@ -145,7 +145,15 @@ try {
 
     $conn->commit();
     $transactionStarted = false;
+    session_regenerate_id(true);
     $_SESSION["pending_facility_user_id"] = $userId;
+    $_SESSION["user_id"] = (int) $userId;
+    $_SESSION["logged_in"] = true;
+    $_SESSION["role_id"] = $roleId;
+    $_SESSION["role_name"] = "facility_owner";
+    $_SESSION["first_name"] = $firstName;
+    $_SESSION["last_name"] = $lastName;
+    $_SESSION["email"] = $email;
 
     echo json_encode([
         "success" => true,
