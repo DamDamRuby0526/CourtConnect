@@ -55,9 +55,10 @@ if ($booking && $booking["status"] === "pending_payment"
     $bookingStmt->close();
 }
 
-$isExpired = !$booking || $booking["status"] === "Expired"
-    || $booking["status"] === "cancelled"
-    || ($booking["status"] === "pending_payment"
+$bookingStatus = strtolower((string) ($booking["status"] ?? ""));
+$isExpired = !$booking || $bookingStatus === "expired"
+    || $bookingStatus === "cancelled"
+    || ($bookingStatus === "pending_payment"
         && empty($booking["has_payment"]) && (int) $booking["hold_expired"] === 1);
 $message = "Your booking expired and the slot was released.";
 $conn->close();

@@ -17,9 +17,9 @@ $stmt = $conn->prepare(
             p.payments_id, p.payment_status AS payment_record_status,
             p.rejection_reason, p.receipt_image,
             CASE
-                WHEN p.payment_status = 'Paid' OR LOWER(b.payment_status) = 'paid' THEN 'Paid'
-                WHEN p.payment_status = 'Rejected' OR LOWER(b.payment_status) = 'rejected' THEN 'Rejected'
-                WHEN LOWER(b.status) = 'cancelled' AND p.payment_status = 'Pending' THEN 'Submitted'
+                WHEN LOWER(COALESCE(p.payment_status, '')) = 'paid' OR LOWER(COALESCE(b.payment_status, '')) = 'paid' THEN 'Paid'
+                WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected' OR LOWER(COALESCE(b.payment_status, '')) = 'rejected' THEN 'Rejected'
+                WHEN LOWER(b.status) = 'cancelled' AND LOWER(COALESCE(p.payment_status, '')) = 'pending' THEN 'Submitted'
                 ELSE 'Pending'
             END AS display_payment_status,
             CASE
@@ -30,24 +30,24 @@ $stmt = $conn->prepare(
                 ELSE 'Upcoming'
             END AS attendance_status,
             (TIMESTAMP(cs.court_date, cs.court_time) <= NOW()) AS is_past,
-            (b.status = 'pending_payment' AND p.payments_id IS NULL
+            (LOWER(b.status) = 'pending_payment' AND p.payments_id IS NULL
                 AND cs.schedule_status = 'Held' AND b.hold_expires_at > NOW()) AS can_checkout,
-            (b.status = 'pending_payment'
+            (LOWER(b.status) = 'pending_payment'
                 AND cs.schedule_status = 'Held'
                 AND b.hold_expires_at > NOW()
                 AND cs.hold_expires_at > NOW()) AS active_hold,
-            (p.payment_status = 'Rejected'
-                AND b.status IN ('pending', 'pending_payment')
+            (LOWER(COALESCE(p.payment_status, '')) = 'rejected'
+                AND LOWER(b.status) IN ('pending', 'pending_payment')
                 AND cs.schedule_status = 'Held'
                 AND b.hold_expires_at > NOW()
                 AND cs.hold_expires_at > NOW()
                 AND TIMESTAMP(cs.court_date, cs.court_time) > NOW()) AS can_resubmit_payment,
             CASE
-                WHEN p.payment_status = 'Rejected'
+                WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected'
                     AND LOWER(b.status) IN ('cancelled', 'completed', 'expired')
                     THEN 'This booking is no longer active and cannot accept another payment.'
-                WHEN p.payment_status = 'Rejected'
-                    AND (b.status NOT IN ('pending', 'pending_payment')
+                WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected'
+                    AND (LOWER(b.status) NOT IN ('pending', 'pending_payment')
                         OR cs.schedule_status <> 'Held'
                         OR b.hold_expires_at IS NULL
                         OR b.hold_expires_at <= NOW()
@@ -70,8 +70,8 @@ $stmt = $conn->prepare(
          GROUP BY booking_id
      ) latest_payment ON latest_payment.booking_id = b.booking_id
      LEFT JOIN payments p ON p.payments_id = latest_payment.payments_id
-    WHERE b.user_id = ? AND b.status <> 'Expired'
-        AND NOT (LOWER(b.status) = 'cancelled' AND LOWER(b.payment_status) = 'unpaid'
+    WHERE b.user_id = ? AND LOWER(b.status) <> 'expired'
+        AND NOT (LOWER(b.status) = 'cancelled' AND LOWER(COALESCE(b.payment_status, '')) = 'unpaid'
             AND NOT EXISTS (SELECT 1 FROM payments unpaid_cancel_payment WHERE unpaid_cancel_payment.booking_id = b.booking_id))
      ORDER BY cs.court_date DESC, cs.court_time DESC"
 );
@@ -104,7 +104,7 @@ while ($row = $result->fetch_assoc()) {
         "can_cancel" => !in_array(strtolower((string) $row["booking_status"]), ["cancelled", "completed", "expired"], true)
             && ($row["display_payment_status"] === "Rejected"
                 || (bool) $row["active_hold"]),
-        "can_delete_on_cancel" => $row["booking_status"] === "pending_payment"
+        "can_delete_on_cancel" => strtolower((string) $row["booking_status"]) === "pending_payment"
             && strtolower((string) $row["booking_payment_status"]) === "unpaid"
             && empty($row["payment_id"]),
         "hold_seconds" => (int) $row["hold_seconds"],

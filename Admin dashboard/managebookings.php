@@ -5,7 +5,7 @@ require_once __DIR__ . "/../includes/admin-php/facility_owner_page_guard.php";
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $roleId = (int) ($_SESSION["role_id"] ?? 0);
 if (!$userId || !in_array($roleId, [2, 3], true)) {
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 
@@ -24,7 +24,7 @@ $accessStmt->close();
 if (!$adminAccess) {
     $_SESSION = [];
     session_destroy();
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 $facilityId = (int) $adminAccess["facility_id"];

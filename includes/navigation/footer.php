@@ -10,7 +10,7 @@
             <section>
                 <strong>Facility owners</strong>
                 <a href="adminregister.php">List your facility</a>
-                <a href="adminsignin.php">Owner sign in</a>
+                <a href="signin.php">Owner sign in</a>
             </section>
             <section>
                 <strong>Support</strong>

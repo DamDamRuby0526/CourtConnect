@@ -2,7 +2,7 @@
 if ((int) ($_SESSION["role_id"] ?? 0) === 3) {
     $ownerUserId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
     if (!$ownerUserId || $ownerUserId < 1) {
-        header("Location: ../adminsignin.php");
+        header("Location: ../signin.php");
         exit();
     }
 
@@ -17,7 +17,7 @@ if ((int) ($_SESSION["role_id"] ?? 0) === 3) {
         exit();
     }
     if (!$ownerStatus || $ownerStatus["status"] !== "Active") {
-        header("Location: ../adminsignin.php");
+        header("Location: ../signin.php");
         exit();
     }
 }

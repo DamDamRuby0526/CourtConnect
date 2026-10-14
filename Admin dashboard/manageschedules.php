@@ -7,7 +7,7 @@ $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
 $courtId = filter_var($_GET["court_id"] ?? null, FILTER_VALIDATE_INT);
 
 if (!$ownerId || !$facilityId || !$courtId || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 

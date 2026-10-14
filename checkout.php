@@ -60,20 +60,21 @@ function checkoutEscape($value)
     return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
 
-$isExpired = in_array($booking["booking_status"], ["Expired", "cancelled"], true)
-    || ($booking["booking_status"] === "pending_payment"
+$bookingStatus = strtolower((string) ($booking["booking_status"] ?? ""));
+$isExpired = in_array($bookingStatus, ["expired", "cancelled"], true)
+    || ($bookingStatus === "pending_payment"
         && empty($booking["payments_id"])
         && ($booking["schedule_status"] !== "Held" || (int) $booking["hold_expired"] === 1));
-$isFacilityCancelled = $booking["booking_status"] === "cancelled";
-$isAwaitingConfirmation = in_array($booking["booking_status"], ["pending", "pending_payment"], true)
-    && $booking["payment_status"] === "Pending"
+$isFacilityCancelled = $bookingStatus === "cancelled";
+$isAwaitingConfirmation = in_array($bookingStatus, ["pending", "pending_payment"], true)
+    && strtolower((string) ($booking["payment_status"] ?? "")) === "pending"
     && !empty($booking["receipt_image"]);
-$canSubmitPayment = $booking["booking_status"] === "pending_payment" && !$isExpired
+$canSubmitPayment = $bookingStatus === "pending_payment" && !$isExpired
     && (int) $booking["hold_expired"] === 0
-    && (empty($booking["payments_id"]) || $booking["payment_status"] === "Rejected");
+    && (empty($booking["payments_id"]) || strtolower((string) ($booking["payment_status"] ?? "")) === "rejected");
 $canCancelCheckout = $canSubmitPayment && empty($booking["payments_id"]);
-$isRejectedExpired = $booking["booking_status"] === "pending_payment"
-    && $booking["payment_status"] === "Rejected"
+$isRejectedExpired = $bookingStatus === "pending_payment"
+    && strtolower((string) ($booking["payment_status"] ?? "")) === "rejected"
     && !empty($booking["payments_id"])
     && (int) $booking["hold_expired"] === 1;
 $courtDate = isset($booking["court_date"]) ? date("D, M j, Y", strtotime($booking["court_date"])) : "";

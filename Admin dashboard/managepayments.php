@@ -6,7 +6,7 @@ $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
 $roleId = (int) ($_SESSION["role_id"] ?? 0);
 if (!$userId || !$facilityId || !in_array($roleId, [2, 3], true)) {
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 
@@ -25,7 +25,7 @@ $accessStmt->close();
 if (!$hasAccess) {
     $_SESSION = [];
     session_destroy();
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 

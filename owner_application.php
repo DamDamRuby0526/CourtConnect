@@ -31,7 +31,7 @@ if ($application["status"] === "Active") {
     exit();
 }
 if (!in_array($application["status"], ["Pending", "Rejected"], true)) {
-    header("Location: adminsignin.php");
+    header("Location: signin.php");
     exit();
 }
 $_SESSION["csrf_token"] ??= bin2hex(random_bytes(32));

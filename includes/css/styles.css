@@ -1,19 +1,46 @@
 :root {
+  /* CourtConnect brand tokens — original navy and green identity preserved */
   --green: #78b936;
+  --green-dark: #5c9228;
+  --green-soft: #edf6e5;
   --navy: #0d3157;
-  --teal: #42b5c2;
+  --navy-deep: #092642;
+  --teal: #328c98;
   --court-blue: #3d80a8;
   --yellow: #f0d319;
   --cream: #faf9f4;
-  --muted: #60717a;
+  --surface: #ffffff;
+  --surface-muted: #f2f5f1;
+  --muted: #586d78;
   --line: #d8e2dc;
+  --danger: #b93832;
+  --danger-soft: #fff0ee;
+  --warning: #946312;
+  --warning-soft: #fff5dc;
+  --success: #397a2b;
+  --success-soft: #eaf5e3;
+  --info: #245f86;
+  --info-soft: #eaf4fb;
   --main-color-1: var(--green);
   --main-color-2: var(--navy);
   --ink: var(--navy);
+  --font-body: "Trebuchet MS", Arial, sans-serif;
+  --font-display: "Trebuchet MS", Arial, sans-serif;
+  --text-xs: 0.875rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 2px 8px rgba(13,49,87,.06);
+  --shadow-md: 0 10px 28px rgba(13,49,87,.09);
+  --shadow-lg: 0 20px 48px rgba(13,49,87,.14);
+  --focus-ring: 0 0 0 3px rgba(120,185,54,.25);
 }
 
 * { margin: 0; box-sizing: border-box; }
-body { background: var(--cream); color: var(--ink); font-family: "Trebuchet MS", Arial, sans-serif; }
+body { background: var(--cream); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 a { color: inherit; }
 
 .site-header { position: relative; z-index: 999; background: rgba(250,249,244,.96); border-bottom: 1px solid var(--line); }
@@ -22,26 +49,26 @@ a { color: inherit; }
 .brand-name strong, .brand-name em { font-style: normal; font-weight: 800; }
 .brand-name em { color: var(--green); }
 .brand-logo { width: 100px; height: 100px; display: block; object-fit: cover; border-radius: 50%; }
-.nav-links { display: flex; align-items: center; gap: 28px; font-size: 13px; font-weight: 700; }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 15px; font-weight: 700; }
 .nav-links a { padding: 10px 0; text-decoration: none; color: var(--muted); }
 .nav-links a:hover, .nav-links .active { color: var(--ink); }
 .nav-links .active { border-bottom: 2px solid var(--green); }
 .nav-links .nav-signin { padding: 11px 17px; border: 1px solid var(--ink); color: var(--ink); border-radius: 3px; }
-.nav-user { color: var(--ink); font-size: 12px; font-weight: 700; }
+.nav-user { color: var(--ink); font-size: 14px; font-weight: 700; }
 .nav-signin span, .button span { margin-left: 12px; font-size: 17px; }
 
 .hero { max-width: 1240px; min-height: 560px; margin: auto; padding: 72px 32px 92px; display: grid; grid-template-columns: 1fr 1fr; gap: 55px; align-items: center; }
-.eyebrow { color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: 2.3px; }
+.eyebrow { color: var(--green-dark); font-size: 13px; font-weight: 800; letter-spacing: 1.8px; }
 h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 h1 { margin: 20px 0 22px; font-size: clamp(48px, 6vw, 82px); line-height: .96; letter-spacing: -3px; }
 h1 span { color: var(--green); }
-.hero-description { max-width: 400px; color: var(--muted); line-height: 1.7; font-size: 15px; }
+.hero-description { max-width: 48ch; color: var(--muted); line-height: 1.75; font-size: 18px; }
 .hero-actions { display: flex; align-items: center; gap: 25px; margin-top: 32px; }
-.button { display: inline-block; padding: 15px 21px; text-decoration: none; font-size: 13px; font-weight: 700; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 13px 22px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 700; transition: background-color .2s ease, color .2s ease, transform .2s ease, box-shadow .2s ease; }
 .button-primary { background: var(--green); color: var(--navy); }
 .button-primary:hover { background: var(--ink); }
 .button-quiet { color: var(--ink); border-bottom: 1px solid var(--ink); padding-left: 0; padding-right: 0; }
-.hero-proof { display: flex; align-items: center; gap: 10px; margin-top: 45px; color: var(--muted); font-size: 11px; }
+.hero-proof { display: flex; align-items: center; gap: 10px; margin-top: 38px; color: var(--muted); font-size: 14px; }
 .proof-icon { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--main-color-1); color: var(--ink); font-weight: 800; }
 
 .hero-art { position: relative; min-height: 395px; overflow: hidden; background: var(--court-blue); border-radius: 4px; box-shadow: 14px 14px 0 var(--green); }
@@ -53,11 +80,11 @@ h2 { margin-top: 14px; font-size: 42px; line-height: 1.1; }
 .benefit-card { border-top: 1px solid #c7c9c5; padding-top: 20px; }
 .benefit-number { color: var(--green); font-size: 11px; font-weight: 800; letter-spacing: 1px; }
 .benefit-card h3 { margin: 40px 0 13px; font-size: 22px; line-height: 1.1; }
-.benefit-card p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.benefit-card p { color: var(--muted); font-size: 16px; line-height: 1.7; }
 .callout { max-width: 1176px; margin: 0 auto 80px; padding: 44px 52px; display: flex; align-items: center; justify-content: space-between; background: var(--ink); color: var(--cream); }
 .callout h2 { margin-top: 8px; font-size: 34px; }
 .button-light { background: var(--main-color-1); color: var(--ink); }
-.site-footer { padding: 24px 32px; display: flex; justify-content: space-between; background: #e8f0e9; color: var(--muted); font-size: 12px; }
+.site-footer { padding: 28px 32px; display: flex; justify-content: space-between; gap: 20px; background: #e8f0e9; color: var(--muted); font-size: 14px; }
 .site-footer a { text-decoration: none; }
 
 /* Existing form and listing pages */
@@ -566,8 +593,8 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
 .toast { display: flex; align-items: flex-start; gap: 10px; min-width: 280px; max-width: 360px; padding: 14px 16px; border-radius: 10px; background: #fff; box-shadow: 0 10px 25px rgba(13,49,87,.18); border-left: 4px solid var(--green); animation: toast-in .25s ease-out; cursor: pointer; }
 .toast.is-error { border-left-color: #c0392b; }
-.toast strong { display: block; font-size: 14px; color: var(--ink); }
-.toast p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.toast strong { display: block; font-size: 16px; color: var(--ink); }
+.toast p { margin: 4px 0 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes toast-out { from { opacity: 1; } to { opacity: 0; transform: translateX(16px); } }
 
@@ -1693,4 +1720,152 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 @media (max-width: 480px) {
   .owner-onboarding-page .owner-registration-progress .progress-step:not(.active) > span:last-child { display: none; }
   .owner-onboarding-page .owner-registration-progress .progress-step.active > span:last-child { display: inline; }
+}
+
+
+/* ======================================================================
+   COURTCONNECT UI POLISH LAYER
+   Compatibility-first improvements: preserves existing classes and flows.
+   ====================================================================== */
+html { scroll-behavior: smooth; }
+body { min-width: 320px; background: var(--cream); color: var(--ink); font-size: 16px; line-height: 1.6; }
+img { max-width: 100%; }
+button, input, select, textarea { font: inherit; }
+button, [type="button"], [type="submit"], [type="reset"] { cursor: pointer; }
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .65; }
+a { text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid rgba(50,140,152,.75); outline-offset: 3px; }
+::selection { background: rgba(120,185,54,.28); color: var(--navy-deep); }
+
+/* Clearer hierarchy and less cramped content */
+h1, h2, h3, h4, h5, h6 { color: var(--navy); text-wrap: balance; }
+h1 { line-height: 1.08; letter-spacing: -.035em; }
+h2 { line-height: 1.2; }
+p, li { text-wrap: pretty; }
+.eyebrow, .breadcrumb, .breadcrumbs { line-height: 1.5; }
+
+/* Header and navigation */
+.site-header { background: rgba(250,249,244,.97); backdrop-filter: blur(12px); }
+.navigation { width: min(100%, 1360px); min-height: 76px; gap: 24px; }
+.brand { font-size: 19px; }
+.brand-logo { width: 52px; height: 52px; object-fit: contain; }
+.nav-links { gap: clamp(14px, 2vw, 28px); font-size: 15px; }
+.nav-links a { transition: color .18s ease; }
+.nav-links .nav-signin { border-radius: 8px; padding: 11px 17px; }
+.nav-links .nav-signin:hover { background: var(--navy); color: #fff; }
+
+/* Homepage sections */
+.hero { width: min(100%, 1360px); gap: clamp(32px, 5vw, 64px); }
+.hero h1 { max-width: 12ch; font-size: clamp(2.75rem, 5.2vw, 4.75rem); }
+.hero-art { border-radius: var(--radius-lg); box-shadow: 10px 10px 0 var(--green); }
+.hero-description { font-size: clamp(1.05rem, 1.25vw, 1.125rem); }
+.benefits { width: min(100%, 1360px); gap: clamp(32px, 5vw, 72px); }
+.benefits > div:first-child > p:not(.eyebrow) { font-size: 16px; line-height: 1.75; }
+.benefit-card { border-top-color: #d4ded7; }
+.benefit-card h3 { line-height: 1.25; }
+.callout { border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+
+/* Buttons: retain all existing class names */
+button, .button, [class*="primary-button"], [class*="secondary-button"], [class*="danger-button"] { transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.button-primary, .button-light { border: 1px solid transparent; border-radius: 8px; box-shadow: 0 2px 0 rgba(13,49,87,.06); }
+.button-primary:hover, .button-light:hover { background: var(--green-dark); color: #fff; box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+button:hover { filter: brightness(.97); }
+button:active, .button:active { transform: translateY(1px); }
+
+/* Inputs and forms. Keep layout classes and field names untouched. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+select, textarea {
+  max-width: 100%;
+  color: var(--navy);
+  font-size: 16px;
+  line-height: 1.45;
+}
+input::placeholder, textarea::placeholder { color: #71828a; opacity: 1; }
+input:focus, select:focus, textarea:focus { border-color: var(--teal); outline: none; box-shadow: var(--focus-ring); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--green-dark); }
+label { line-height: 1.5; }
+form label { color: var(--navy); font-size: 15px; font-weight: 600; }
+
+/* Cards and panels */
+.auth-card, .owner-onboarding-card, .owner-application-card, .login-success-card,
+.card, .dashboard-card, .facility-card, .booking-card, .payment-card {
+  border-radius: var(--radius-md);
+}
+.auth-card, .owner-onboarding-card, .owner-application-card { box-shadow: var(--shadow-md); }
+
+/* Tables: readable text and clearer scanning */
+table { width: 100%; border-collapse: collapse; }
+th { font-weight: 700; text-align: left; }
+th, td { line-height: 1.5; }
+
+/* Existing toast system */
+.toast-container { right: 24px; bottom: 24px; gap: 12px; }
+.toast { min-width: min(320px, calc(100vw - 32px)); max-width: min(420px, calc(100vw - 32px)); padding: 16px 18px; border-radius: 12px; cursor: default; }
+.toast strong { font-size: 16px; }
+.toast p { font-size: 15px; }
+
+/* Improve tiny facility schedule labels without changing schedule structure */
+.owner-court-details p { font-size: 14px; line-height: 1.45; }
+.owner-court-meta { font-size: 13px; line-height: 1.45; }
+.owner-court-status { font-size: 12px; line-height: 1.35; }
+.owner-court-actions .owner-secondary-button { min-height: 36px; font-size: 13px; }
+.owner-schedule-link { font-size: 13px; }
+.owner-empty-state { font-size: 15px; line-height: 1.6; }
+.schedule-legend { font-size: 14px; line-height: 1.5; }
+.schedule-date-count { font-size: 14px; }
+.schedule-day-remove { font-size: 14px; }
+
+/* Compact dialogs remain compact but use readable controls */
+.modal { border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.modal--compact { border-radius: var(--radius-md); font-size: 15px; }
+.modal--compact form > label, .modal--compact .compact-field-row label,
+.modal--compact.owner-modal-panel form:not(#courtForm) label { font-size: 14px; }
+.modal--compact input, .modal--compact select, .modal--compact textarea,
+.modal--compact.owner-modal-panel form:not(#courtForm) input,
+.modal--compact.owner-modal-panel form:not(#courtForm) select { font-size: 15px; }
+.modal--compact input[type="file"] { font-size: 14px; }
+.modal--compact label small { font-size: 13px; }
+
+/* Status colors */
+.is-success, .status-success, .status-paid { color: var(--success); }
+.is-error, .status-error, .status-rejected { color: var(--danger); }
+.is-warning, .status-warning, .status-pending { color: var(--warning); }
+
+/* Respect motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+@media (max-width: 900px) {
+  .navigation { padding-left: 24px; padding-right: 24px; }
+  .hero { gap: 32px; }
+  .hero h1 { font-size: clamp(2.6rem, 6vw, 3.8rem); }
+  .benefits { gap: 32px; }
+  .callout { margin-left: 24px; margin-right: 24px; }
+}
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .navigation { min-height: 68px; padding: 12px 18px; gap: 12px; }
+  .brand { font-size: 17px; }
+  .brand-logo { width: 44px; height: 44px; }
+  .nav-links { gap: 12px; font-size: 14px; }
+  .hero, .benefits { padding: 44px 20px; }
+  .hero h1 { max-width: 15ch; font-size: clamp(2.5rem, 9vw, 3.5rem); letter-spacing: -.03em; }
+  .hero-description { font-size: 17px; }
+  .hero-actions { flex-wrap: wrap; gap: 14px; }
+  .hero-proof { font-size: 14px; }
+  .benefit-list { gap: 22px; }
+  .benefit-card p { font-size: 16px; }
+  .callout { margin: 0 16px 44px; padding: 28px 22px; }
+  .callout h2 { font-size: clamp(1.6rem, 6vw, 2.1rem); }
+  .site-footer { flex-wrap: wrap; padding: 24px 20px; font-size: 14px; }
+  .toast-container { left: 16px; right: 16px; bottom: 16px; }
+  .toast { width: 100%; min-width: 0; max-width: none; }
+}
+@media (max-width: 480px) {
+  .hero h1 { font-size: clamp(2.25rem, 10vw, 3rem); }
+  .button { min-height: 46px; padding: 12px 16px; font-size: 15px; }
+  .modal { max-width: calc(100vw - 24px); padding: 24px 18px; }
+  .modal--compact { padding: 20px 16px; }
+  .inputs { flex-wrap: wrap; }
 }

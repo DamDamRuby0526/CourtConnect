@@ -496,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || "Unable to verify this code.");
       await window.showDialog({ type: "success", title: "Email verified", message: result.message || "Account verified successfully." });
-      window.location.assign("adminsignin.php");
+      window.location.assign("signin.php");
     } catch (error) {
       otpError.textContent = error.message || "Unable to verify this code.";
     } finally {

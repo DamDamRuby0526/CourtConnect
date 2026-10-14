@@ -228,7 +228,7 @@ function homePageIsOpen($openingTime, $closingTime)
                 </ul>
                 <div class="home-owner-actions">
                     <a class="home-primary-button" href="adminregister.php">Register your facility</a>
-                    <a class="home-outline-link home-outline-light" href="adminsignin.php">Sign in as facility</a>
+                    <a class="home-outline-link home-outline-light" href="signin.php">Sign in as facility</a>
                 </div>
             </div>
         </section>

@@ -78,11 +78,12 @@ try {
         http_response_code(404);
         throw new RuntimeException("Booking not found.");
     }
-    if (in_array($booking["status"], ["cancelled", "completed", "Expired"], true)) {
+    $bookingStatus = strtolower((string) ($booking["status"] ?? ""));
+    if (in_array($bookingStatus, ["cancelled", "completed", "expired"], true)) {
         http_response_code(409);
         throw new RuntimeException("This booking is no longer active and cannot accept another payment.");
     }
-    if (!in_array($booking["status"], ["pending", "pending_payment"], true)
+    if (!in_array($bookingStatus, ["pending", "pending_payment"], true)
         || $booking["schedule_status"] !== "Held"
         || (int) $booking["booking_hold_expired"] === 1
         || (int) $booking["schedule_hold_expired"] === 1

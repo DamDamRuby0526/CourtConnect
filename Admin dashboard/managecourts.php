@@ -6,7 +6,7 @@ $ownerId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
 
 if (!$ownerId || !$facilityId || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 
@@ -24,7 +24,7 @@ $facility = $facilityStmt->get_result()->fetch_assoc();
 $facilityStmt->close();
 
 if (!$facility) {
-    header("Location: ../adminsignin.php");
+    header("Location: ../signin.php");
     exit();
 }
 

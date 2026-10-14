@@ -19,9 +19,6 @@ $ownerOnboardingHeader = !empty($ownerOnboardingHeader);
         <?php if ($isLoggedIn): ?>
             <span><?= htmlspecialchars($displayName ?: "Facility owner", ENT_QUOTES, "UTF-8") ?></span>
             <a href="logout.php" data-confirm-logout>Log out</a>
-        <?php else: ?>
-            <span>Already have an account?</span>
-            <a href="adminsignin.php">Sign in</a>
         <?php endif; ?>
     </div>
 </header>

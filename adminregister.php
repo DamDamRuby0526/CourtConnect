@@ -87,7 +87,6 @@ $ownerOnboardingHeader = true;
                         <small class="owner-field-error" id="confirm_password_error" hidden></small>
                     </div>
                     <button type="button" id="continueToVerification" class="auth-submit">Continue</button>
-                    <p class="auth-footer-note">Already have an account? <a href="adminsignin.php">Sign in</a></p>
                 </div>
 
                 <div id="verificationStep" class="owner-registration-step" hidden>
