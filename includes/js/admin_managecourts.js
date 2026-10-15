@@ -11,10 +11,12 @@ async function loadCourts() {
 
     if (!data.success) {
       grid.textContent = data.message || "Failed to load courts.";
+      grid.classList.add("is-error");
       return;
     }
 
     grid.replaceChildren();
+    grid.classList.remove("is-error");
     document.getElementById("courtCount").textContent = `${data.courts.length} ${data.courts.length === 1 ? "court" : "courts"}`;
 
     if (data.courts.length === 0) {
@@ -54,12 +56,12 @@ async function loadCourts() {
       const editButton = document.createElement("button");
       editButton.type = "button";
       editButton.className = "edit-btn owner-secondary-button";
-      editButton.textContent = "Edit details";
+      editButton.textContent = "Edit Court";
       editButton.dataset.courtId = court.court_id;
       const scheduleButton = document.createElement("a");
       scheduleButton.className = "owner-schedule-link";
       scheduleButton.href = `manageschedules.php?court_id=${encodeURIComponent(court.court_id)}`;
-      scheduleButton.textContent = "Court schedule";
+      scheduleButton.textContent = "Manage Schedule";
       actions.append(editButton, scheduleButton);
 
       article.append(image, details, status, actions);
@@ -67,6 +69,8 @@ async function loadCourts() {
     }
   } catch (error) {
     console.error("Error loading courts:", error);
+    grid.textContent = "Unable to load courts. Please refresh the page and try again.";
+    grid.classList.add("is-error");
   }
 }
   const courtForm = document.getElementById("courtForm");
@@ -255,20 +259,34 @@ async function loadCourts() {
         window.showDialog({ type: "error", title: "Unable to save facility settings", message: brandingStatus.textContent });
         updateBrandingSaveState();
       } finally {
-        saveBrandingButton.textContent = "Save Changes";
+        saveBrandingButton.textContent = "Save Profile";
       }
     });
 
     document.getElementById("facilityHoursForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const status = document.getElementById("hoursStatus");
-      const response = await fetch("../includes/admin-php/update_facility_hours.php", {
-        method: "POST",
-        body: new FormData(event.currentTarget),
-      });
-      const result = await response.json();
-      status.textContent = result.message;
-      status.classList.toggle("is-error", !result.success);
+      const saveButton = event.currentTarget.querySelector('button[type="submit"]');
+      saveButton.disabled = true;
+      status.textContent = "Saving operating hours...";
+      status.classList.remove("is-error");
+
+      try {
+        const response = await fetch("../includes/admin-php/update_facility_hours.php", {
+          method: "POST",
+          body: new FormData(event.currentTarget),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Could not update facility hours.");
+        }
+        status.textContent = result.message;
+      } catch (error) {
+        status.textContent = error.message || "Could not update facility hours.";
+        status.classList.add("is-error");
+      } finally {
+        saveButton.disabled = false;
+      }
     });
 
     document.getElementById("court_img").addEventListener("change", (event) => {

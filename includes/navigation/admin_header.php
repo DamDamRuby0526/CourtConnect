@@ -3,7 +3,7 @@
         <a class="owner-brand" href="admindex.php"><span><strong>CourtConnect</strong><small>Staff workspace</small></span></a>
         <nav class="owner-nav" aria-label="Staff workspace">
             <span class="owner-nav-label">COURTCONNECT STAFF</span>
-            <a href="managereports.php"><span aria-hidden="true">&#9633;</span>Reports</a>
+            <a class="<?= ($courtconnectNavPage ?? "") === "reports" ? "active" : "" ?>" href="managereports.php"><span aria-hidden="true">&#9633;</span>Sales Reports</a>
             <a class="<?= ($courtconnectNavPage ?? "") === "users" ? "active" : "" ?>" href="manageusers.php"><span aria-hidden="true">&#9786;</span>Users</a>
             <a class="<?= ($courtconnectNavPage ?? "") === "applications" ? "active" : "" ?>" href="reviewregistrations.php">
                 <span aria-hidden="true">&#10003;</span>Facility Applications
@@ -27,11 +27,12 @@
         <nav class="owner-nav" aria-label="Owner workspace">
             <span class="owner-nav-label">WORKSPACE</span>
             <a class="<?= ($ownerNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
-            <a class="<?= ($ownerNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
+            <a class="<?= ($ownerNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"></path></svg></span>Bookings</a>
             <a class="<?= ($ownerNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
+            <a class="<?= ($ownerNavPage ?? "") === "reports" ? "active" : "" ?>" href="managereports.php"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9M13 17V5M8 17v-3"></path></svg></span>Sales Reports</a>
             <span class="owner-nav-label">OWNER SETTINGS</span>
             <div class="owner-nav-submenu">
-                <a class="<?= ($ownerNavPage ?? "") === "facility" ? "active" : "" ?>" href="managecourts.php"><span aria-hidden="true">&#9638;</span>Facility settings</a>
+                <a class="<?= ($ownerNavPage ?? "") === "facility" ? "active" : "" ?>" href="managecourts.php"><span aria-hidden="true">&#9881;</span>Facility settings</a>
                 <a class="<?= ($ownerNavPage ?? "") === "accounts" ? "active" : "" ?>" href="manageadmins.php"><span aria-hidden="true">&#9786;</span>Admin accounts</a>
             </div>
         </nav>
@@ -52,12 +53,13 @@
         <nav class="admin-nav" aria-label="Admin workspace">
             <span class="admin-nav-label">WORKSPACE</span>
             <a class="<?= ($adminNavPage ?? "") === "upcoming" ? "active" : "" ?>" href="admindex.php"><span aria-hidden="true">&#9719;</span>Upcoming reservations</a>
-            <a class="<?= ($adminNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span aria-hidden="true">&#9633;</span>Bookings</a>
+            <a class="<?= ($adminNavPage ?? "") === "bookings" ? "active" : "" ?>" href="managebookings.php"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"></path></svg></span>Bookings</a>
             <a class="<?= ($adminNavPage ?? "") === "payments" ? "active" : "" ?>" href="managepayments.php"><span aria-hidden="true">&#36;</span>Payments</a>
+            <a class="<?= ($adminNavPage ?? "") === "reports" ? "active" : "" ?>" href="managereports.php"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9M13 17V5M8 17v-3"></path></svg></span>Sales Reports</a>
             <?php if ((int) ($_SESSION["role_id"] ?? 0) === 3): ?>
                 <span class="admin-nav-label">OWNER SETTINGS</span>
                 <div class="admin-nav-submenu">
-                    <a href="managecourts.php"><span aria-hidden="true">&#9638;</span>Facility settings</a>
+                    <a href="managecourts.php"><span aria-hidden="true">&#9881;</span>Facility settings</a>
                     <a href="manageadmins.php"><span aria-hidden="true">&#9786;</span>Admin accounts</a>
                 </div>
             <?php endif; ?>

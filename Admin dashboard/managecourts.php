@@ -50,98 +50,109 @@ function ownerEscape($value)
     <script src="../includes/js/admin_managecourts.js" defer></script>
     <title>Court settings | CourtConnect</title>
 </head>
-<body class="owner-ui">
+<body class="owner-ui owner-facility-settings">
     <div class="owner-layout" id="ownerFacility" data-facility-id="<?= (int) $facilityId ?>">
         <?php include '../includes/navigation/admin_header.php'; ?>
         <main class="owner-content">
             <header class="owner-page-head">
                 <div>
-                    <p class="owner-breadcrumb">FACILITY OWNER <span>/</span> COURTS</p>
-                    <h1>Facility settings</h1>
-                    <p>Update operating hours, court pricing, and the details players see when reserving.</p>
+                    <p class="owner-breadcrumb">FACILITY OWNER <span>/</span> SETTINGS</p>
+                    <h1>Facility Settings</h1>
+                    <p>Manage your facility profile, payment details, operating hours, and courts.</p>
                 </div>
-                <button type="button" id="add-btn" class="owner-primary-button"><span aria-hidden="true">+</span> Add court</button>
             </header>
 
-            <section class="owner-branding-section" aria-labelledby="facilityBrandingHeading">
-                <div class="owner-section-heading">
-                    <div>
-                        <h2 id="facilityBrandingHeading">Facility Logo</h2>
-                        <p>Update the logo and facility name shown to players.</p>
-                    </div>
-                </div>
-                <form id="facilityBrandingForm" class="owner-branding-form" enctype="multipart/form-data">
-                    <div class="owner-branding-upload-section">
-                        <p class="owner-branding-upload-label">Facility Logo</p>
-                        <div class="owner-branding-logo-row">
-                        <img
-                            class="owner-branding-preview"
-                            id="facilityLogoPreview"
-                            src="<?= !empty($facility["facility_img"]) ? "../uploads/facility/" . rawurlencode(basename($facility["facility_img"])) : "../uploads/badminton-pickleball-court.svg" ?>"
-                            alt="Facility logo preview"
-                            data-current-logo="<?= !empty($facility["facility_img"]) ? "1" : "0" ?>">
-                        <div class="owner-branding-controls">
-                            <input id="facilityLogoInput" name="facility_logo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-                            <input id="removeFacilityLogo" name="remove_logo" type="hidden" value="0">
-                            <div class="owner-branding-buttons">
-                                <button type="button" class="owner-secondary-button" id="uploadFacilityLogo">Upload Logo</button>
-                                <button type="button" class="owner-secondary-button" id="clearFacilityLogo" <?= empty($facility["facility_img"]) ? "disabled" : "" ?>>Remove Logo</button>
-                            </div>
-                            <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
-                        </div>
+            <form id="facilityBrandingForm" class="owner-settings-grid" enctype="multipart/form-data">
+                <section class="owner-settings-card" id="facilityProfile" aria-labelledby="facilityBrandingHeading">
+                    <div class="owner-settings-card-heading">
+                        <div>
+                            <h2 id="facilityBrandingHeading">Facility Profile</h2>
+                            <p>Update the facility identity shown to customers.</p>
                         </div>
                     </div>
-                    <div class="owner-branding-upload-section">
-                        <p class="owner-branding-upload-label">GCash QR Code</p>
-                        <div class="owner-branding-logo-row">
-                            <div class="owner-qr-preview-wrap">
-                                <img
-                                    class="owner-branding-preview owner-qr-preview"
-                                    id="gcashQrPreview"
-                                    src="<?= !empty($facility["qr_img"]) ? "../uploads/qr/" . rawurlencode(basename($facility["qr_img"])) : "" ?>"
-                                    alt="GCash QR code preview"
-                                    <?= empty($facility["qr_img"]) ? "hidden" : "" ?>>
-                                <span id="gcashQrPlaceholder" class="owner-qr-placeholder" <?= !empty($facility["qr_img"]) ? "hidden" : "" ?>>No GCash QR uploaded</span>
-                            </div>
+                    <div class="owner-profile-layout">
+                        <div class="owner-profile-logo">
+                            <img
+                                class="owner-branding-preview"
+                                id="facilityLogoPreview"
+                                src="<?= !empty($facility["facility_img"]) ? "../uploads/facility/" . rawurlencode(basename($facility["facility_img"])) : "../uploads/badminton-pickleball-court.svg" ?>"
+                                alt="Facility logo preview"
+                                data-current-logo="<?= !empty($facility["facility_img"]) ? "1" : "0" ?>">
                             <div class="owner-branding-controls">
-                                <input id="gcashQrInput" name="gcash_qr" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-                                <button type="button" class="owner-secondary-button" id="uploadGcashQr">Upload GCash QR</button>
+                                <input id="facilityLogoInput" name="facility_logo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                                <input id="removeFacilityLogo" name="remove_logo" type="hidden" value="0">
+                                <div class="owner-branding-buttons">
+                                    <button type="button" class="owner-secondary-button" id="uploadFacilityLogo">Change Logo</button>
+                                    <button type="button" class="owner-secondary-button" id="clearFacilityLogo" <?= empty($facility["facility_img"]) ? "disabled" : "" ?>>Remove Logo</button>
+                                </div>
                                 <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
                             </div>
                         </div>
+                        <div class="owner-profile-fields">
+                            <label class="owner-branding-name-label" for="facilityNameInput">Facility Name</label>
+                            <input class="owner-branding-name-input" id="facilityNameInput" name="facility_name" type="text" maxlength="250" value="<?= ownerEscape($facility["facility_name"]) ?>" required>
+                            <p id="facilityBrandingStatus" class="owner-form-status" role="status" aria-live="polite"></p>
+                            <button class="owner-primary-button" id="saveFacilityBranding" type="submit">Save Profile</button>
+                            <small class="owner-settings-save-note">Saves profile and payment detail changes.</small>
+                        </div>
                     </div>
-                    <label class="owner-branding-name-label" for="facilityNameInput">Facility Name</label>
-                    <input class="owner-branding-name-input" id="facilityNameInput" name="facility_name" type="text" maxlength="250" value="<?= ownerEscape($facility["facility_name"]) ?>" required>
-                    <p id="facilityBrandingStatus" class="owner-form-status" role="status" aria-live="polite"></p>
-                    <button class="owner-primary-button" id="saveFacilityBranding" type="submit">Save Changes</button>
-                </form>
-            </section>
+                </section>
 
-            <section class="owner-hours-section" aria-labelledby="hoursHeading">
-                <div class="owner-section-heading">
-                    <div>
-                        <h2 id="hoursHeading">Facility hours</h2>
-                        <p>These hours set when your venue is open for reservations.</p>
+                <section class="owner-settings-card owner-payment-card" id="paymentDetails" aria-labelledby="paymentDetailsHeading">
+                    <div class="owner-settings-card-heading">
+                        <div>
+                            <h2 id="paymentDetailsHeading">Payment Details</h2>
+                            <p>Customers use this QR code to pay for reservations.</p>
+                        </div>
                     </div>
-                    <span class="owner-section-icon" aria-hidden="true">&#9719;</span>
+                    <div class="owner-payment-content">
+                        <div class="owner-qr-preview-wrap">
+                            <img
+                                class="owner-branding-preview owner-qr-preview"
+                                id="gcashQrPreview"
+                                src="<?= !empty($facility["qr_img"]) ? "../uploads/qr/" . rawurlencode(basename($facility["qr_img"])) : "" ?>"
+                                alt="GCash QR code preview"
+                                <?= empty($facility["qr_img"]) ? "hidden" : "" ?>>
+                            <span id="gcashQrPlaceholder" class="owner-qr-placeholder" <?= !empty($facility["qr_img"]) ? "hidden" : "" ?>>No GCash QR uploaded</span>
+                        </div>
+                        <div class="owner-branding-controls">
+                            <input id="gcashQrInput" name="gcash_qr" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+                            <button type="button" class="owner-secondary-button" id="uploadGcashQr">Upload / Change QR Code</button>
+                            <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
+                        </div>
+                    </div>
+                </section>
+            </form>
+
+            <section class="owner-settings-card owner-hours-section" id="operatingHours" aria-labelledby="hoursHeading">
+                <div class="owner-settings-card-heading">
+                    <div>
+                        <h2 id="hoursHeading">Operating Hours</h2>
+                        <p>Set the hours when customers can reserve your facility.</p>
+                    </div>
                 </div>
                 <form id="facilityHoursForm" class="owner-hours-form">
-                    <label for="opening_time">Opens</label>
-                    <input type="time" id="opening_time" name="opening_time" value="<?= ownerEscape(substr((string) $facility["opening_time"], 0, 5)) ?>" required>
-                    <label for="closing_time">Closes</label>
-                    <input type="time" id="closing_time" name="closing_time" value="<?= ownerEscape(substr((string) $facility["closing_time"], 0, 5)) ?>" required>
-                    <button type="submit" class="owner-secondary-button">Save hours</button>
+                    <label for="opening_time">Opens at
+                        <input type="time" id="opening_time" name="opening_time" value="<?= ownerEscape(substr((string) $facility["opening_time"], 0, 5)) ?>" required>
+                    </label>
+                    <label for="closing_time">Closes at
+                        <input type="time" id="closing_time" name="closing_time" value="<?= ownerEscape(substr((string) $facility["closing_time"], 0, 5)) ?>" required>
+                    </label>
+                    <button type="submit" class="owner-primary-button">Save Hours</button>
                     <p id="hoursStatus" class="owner-form-status" role="status" aria-live="polite"></p>
                 </form>
             </section>
 
-            <section class="owner-courts-section" aria-labelledby="courtsHeading">
-                <div class="owner-section-heading">
+            <section class="owner-settings-card owner-courts-section" id="courtsSection" aria-labelledby="courtsHeading">
+                <div class="owner-settings-card-heading owner-courts-section-heading">
                     <div>
-                        <h2 id="courtsHeading">Your courts</h2>
-                        <p>Manage rates, play details, availability, and court photos.</p>
+                        <h2 id="courtsHeading">Courts</h2>
+                        <p>Manage court details, pricing, availability, and schedules.</p>
                     </div>
-                    <span class="owner-court-count" id="courtCount">Loading courts</span>
+                    <div class="owner-courts-heading-actions">
+                        <span class="owner-court-count" id="courtCount">Loading courts</span>
+                        <button type="button" id="add-btn" class="owner-primary-button"><span aria-hidden="true">+</span> Add court</button>
+                    </div>
                 </div>
                 <div class="owner-courts-grid" id="grid-container" aria-live="polite"></div>
             </section>
