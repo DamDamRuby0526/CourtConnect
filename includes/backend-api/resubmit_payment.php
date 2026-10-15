@@ -79,6 +79,32 @@ try {
         throw new RuntimeException("Booking not found.");
     }
     $bookingStatus = strtolower((string) ($booking["status"] ?? ""));
+    $bookingSlotIds = [];
+    $bookingSlotsValid = true;
+    if ($booking) {
+        $bookingSlotIds = bookingRangeScheduleIds($conn, (int) $bookingId);
+        if (!$bookingSlotIds) $bookingSlotIds[] = (int) $booking["schedule_id"];
+        $bookingSlotPlaceholders = implode(",", array_fill(0, count($bookingSlotIds), "?"));
+        $bookingSlotTypes = str_repeat("i", count($bookingSlotIds));
+        $bookingSlotsStmt = $conn->prepare(
+            "SELECT cs.schedule_id, cs.schedule_status,
+                    (cs.hold_expires_at IS NOT NULL AND cs.hold_expires_at > NOW()) AS active_hold
+             FROM court_schedule cs
+             WHERE cs.schedule_id IN ($bookingSlotPlaceholders)
+             ORDER BY cs.court_date, cs.court_time
+             FOR UPDATE"
+        );
+        $bookingSlotsStmt->bind_param($bookingSlotTypes, ...$bookingSlotIds);
+        $bookingSlotsStmt->execute();
+        $bookingSlotsResult = $bookingSlotsStmt->get_result();
+        while ($bookingSlot = $bookingSlotsResult->fetch_assoc()) {
+            $bookingSlotIds[] = (int) $bookingSlot["schedule_id"];
+            $bookingSlotsValid = $bookingSlotsValid
+                && $bookingSlot["schedule_status"] === "Held"
+                && (int) $bookingSlot["active_hold"] === 1;
+        }
+        $bookingSlotsStmt->close();
+    }
     if (in_array($bookingStatus, ["cancelled", "completed", "expired"], true)) {
         http_response_code(409);
         throw new RuntimeException("This booking is no longer active and cannot accept another payment.");
@@ -86,6 +112,7 @@ try {
     if (!in_array($bookingStatus, ["pending", "pending_payment"], true)
         || $booking["schedule_status"] !== "Held"
         || (int) $booking["booking_hold_expired"] === 1
+        || !$bookingSlotsValid
         || (int) $booking["schedule_hold_expired"] === 1
         || (int) $booking["slot_started"] === 1) {
         http_response_code(409);
@@ -152,12 +179,14 @@ try {
          SET hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
          WHERE schedule_id = ? AND schedule_status = 'Held' AND hold_expires_at > NOW()"
     );
-    $scheduleStmt->bind_param("i", $booking["schedule_id"]);
-    $scheduleStmt->execute();
-    if ($scheduleStmt->affected_rows !== 1) {
-        $scheduleStmt->close();
-        http_response_code(409);
-        throw new RuntimeException("This reservation is no longer available for payment resubmission.");
+    foreach ($bookingSlotIds as $scheduleId) {
+        $scheduleStmt->bind_param("i", $scheduleId);
+        $scheduleStmt->execute();
+        if ($scheduleStmt->affected_rows !== 1) {
+            $scheduleStmt->close();
+            http_response_code(409);
+            throw new RuntimeException("This reservation is no longer available for payment resubmission.");
+        }
     }
     $scheduleStmt->close();
 

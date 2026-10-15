@@ -1,5 +1,8 @@
 const paymentRows = document.getElementById("paymentRows");
+const paymentFilters = document.getElementById("paymentFilters");
 const paymentStatusFilter = document.getElementById("paymentStatusFilter");
+const paymentSearch = document.getElementById("paymentSearch");
+const paymentDateFilter = document.getElementById("paymentDateFilter");
 const paymentMessage = document.getElementById("paymentMessage");
 const editPaymentModal = document.getElementById("editPaymentModal");
 const editPaymentForm = document.getElementById("editPaymentForm");
@@ -118,6 +121,14 @@ function formatPaymentDate(dateString, timeString) {
   });
 }
 
+function formatPaymentDuration(durationMinutes) {
+  const hours = Number(durationMinutes) / 60;
+  const formattedHours = Number.isInteger(hours)
+    ? String(hours)
+    : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  return `${formattedHours} ${hours === 1 ? "Hour" : "Hours"}`;
+}
+
 function customerDetails(payment) {
   const customer = document.createElement("div");
   customer.className = "payment-customer";
@@ -132,10 +143,36 @@ function customerDetails(payment) {
   return customer;
 }
 
+function paymentDetails(payment) {
+  const details = document.createElement("div");
+  details.className = "payment-detail-stack";
+  const method = document.createElement("strong");
+  method.textContent = payment.payment_method === "Gcash" ? "GCash" : "Cash";
+  const reference = document.createElement("small");
+  reference.textContent = payment.payment_method === "Cash"
+    ? "N/A"
+    : `#${payment.reference_number || "Not provided"}`;
+  details.append(method, reference);
+  return details;
+}
+
 function renderPayments() {
+  const searchTerm = paymentSearch.value.trim().toLocaleLowerCase();
+  const selectedDate = paymentDateFilter.value;
   const visiblePayments = payments.filter((payment) =>
-    !paymentStatusFilter.value || payment.payment_status.toLowerCase() === paymentStatusFilter.value,
+    (!paymentStatusFilter.value || payment.payment_status.toLowerCase() === paymentStatusFilter.value)
+      && (!selectedDate || payment.court_date === selectedDate)
+      && (!searchTerm || [
+        payment.customer_name,
+        payment.customer_phone,
+        payment.booking_id,
+        payment.reference_number,
+      ].some((value) => String(value ?? "").toLocaleLowerCase().includes(searchTerm))),
   );
+  document.getElementById("paymentRecordCount").textContent =
+    visiblePayments.length === payments.length
+      ? `${payments.length} ${payments.length === 1 ? "record" : "records"}`
+      : `${visiblePayments.length} of ${payments.length} records`;
   paymentRows.replaceChildren();
   if (visiblePayments.length === 0) {
     const emptyRow = document.createElement("tr");
@@ -144,7 +181,7 @@ function renderPayments() {
     emptyCell.className = "schedule-empty";
     emptyCell.textContent = payments.length === 0
       ? "No payment records found for this facility."
-      : "No payments match this status.";
+      : "No payments match these filters. Clear the filters to see all payment records.";
     emptyRow.append(emptyCell);
     paymentRows.append(emptyRow);
     return;
@@ -157,27 +194,37 @@ function renderPayments() {
     const status = document.createElement("span");
     status.className = `payment-status payment-${payment.payment_status.toLowerCase()}`;
     status.textContent = payment.payment_status;
-    const action = document.createElement("button");
-    action.type = "button";
-    action.className = "admin-book-slot-button";
     const canMarkPaid = payment.payment_method === "Cash" || payment.has_receipt;
-    action.textContent = payment.payment_status !== "Pending"
-      ? payment.payment_status
-      : canMarkPaid ? "Mark paid" : "Awaiting receipt";
-    action.disabled = payment.payment_status !== "Pending" || !canMarkPaid;
-    action.dataset.paymentId = payment.payments_id;
-    const editButton = document.createElement("button");
-    editButton.type = "button";
-    editButton.className = "owner-secondary-button payment-edit-button";
-    editButton.textContent = "Edit";
-    editButton.dataset.editPaymentId = payment.payments_id;
-    editButton.disabled = payment.payment_status === "Rejected";
-    const rejectButton = document.createElement("button");
-    rejectButton.type = "button";
-    rejectButton.className = "owner-secondary-button payment-reject-button";
-    rejectButton.textContent = "Reject";
-    rejectButton.dataset.rejectPaymentId = payment.payments_id;
-    rejectButton.disabled = payment.payment_status !== "Pending";
+    const actions = [];
+    if (payment.payment_status !== "Rejected") {
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "owner-secondary-button payment-edit-button";
+      editButton.textContent = "Edit";
+      editButton.dataset.editPaymentId = payment.payments_id;
+      actions.push(editButton);
+    }
+    if (payment.payment_status === "Pending" && canMarkPaid) {
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "admin-book-slot-button";
+      action.textContent = "Mark paid";
+      action.dataset.paymentId = payment.payments_id;
+      actions.push(action);
+    } else if (payment.payment_status === "Pending") {
+      const receiptNote = document.createElement("span");
+      receiptNote.className = "payment-action-note";
+      receiptNote.textContent = "Awaiting receipt";
+      actions.push(receiptNote);
+    }
+    if (payment.payment_status === "Pending") {
+      const rejectButton = document.createElement("button");
+      rejectButton.type = "button";
+      rejectButton.className = "owner-secondary-button payment-reject-button";
+      rejectButton.textContent = "Reject";
+      rejectButton.dataset.rejectPaymentId = payment.payments_id;
+      actions.push(rejectButton);
+    }
     let receipt;
     if (payment.has_receipt) {
       receipt = document.createElement("button");
@@ -191,13 +238,13 @@ function renderPayments() {
     row.append(
       paymentCell("Booking date", formatPaymentDate(payment.court_date, payment.court_time)),
       paymentCell("Court", `Court ${payment.court_no}`),
+      paymentCell("Duration", formatPaymentDuration(payment.total_duration)),
       paymentCell("Customer", customerDetails(payment)),
-      paymentCell("Method", payment.payment_method === "Gcash" ? "GCash" : "Cash"),
-      paymentCell("Reference", payment.payment_method === "Cash" ? "N/A" : payment.reference_number || "Not provided"),
+      paymentCell("Payment details", paymentDetails(payment)),
       paymentCell("Amount", pesoFormatter.format(Number(payment.total_amount))),
       paymentCell("Receipt", payment.payment_method === "Cash" ? "N/A" : receipt),
       paymentCell("Status", status),
-      paymentCell("Action", [editButton, action, rejectButton]),
+      paymentCell("Actions", actions),
     );
     paymentRows.append(row);
   }
@@ -211,11 +258,23 @@ async function loadPayments() {
     if (!result.success) throw new Error(result.message || "Unable to load payment records.");
     payments = result.payments;
     document.getElementById("pendingPaymentCount").textContent = result.pending_count;
+    document.getElementById("paidPaymentCount").textContent = payments.filter(
+      (payment) => payment.payment_status === "Paid",
+    ).length;
     document.getElementById("rejectedPaymentCount").textContent = result.rejected_count;
     document.getElementById("paidPaymentTotal").textContent = pesoFormatter.format(Number(result.paid_total));
     renderPayments();
   } catch (error) {
     showPaymentMessage(error.message || "Unable to load payment records.", true);
+    document.getElementById("paymentRecordCount").textContent = "Records unavailable";
+    paymentRows.replaceChildren();
+    const errorRow = document.createElement("tr");
+    const errorCell = document.createElement("td");
+    errorCell.colSpan = 9;
+    errorCell.className = "schedule-empty";
+    errorCell.textContent = "Unable to load payment records. Refresh to try again.";
+    errorRow.append(errorCell);
+    paymentRows.append(errorRow);
   } finally {
     paymentRows.removeAttribute("aria-busy");
   }
@@ -384,5 +443,14 @@ editPaymentForm.addEventListener("submit", async (event) => {
 });
 
 paymentStatusFilter.addEventListener("change", renderPayments);
+paymentFilters.addEventListener("submit", (event) => event.preventDefault());
+paymentSearch.addEventListener("input", renderPayments);
+paymentDateFilter.addEventListener("change", renderPayments);
+document.getElementById("resetPaymentFilters").addEventListener("click", () => {
+  paymentStatusFilter.value = "";
+  paymentSearch.value = "";
+  paymentDateFilter.value = "";
+  renderPayments();
+});
 document.getElementById("refreshPayments").addEventListener("click", loadPayments);
 loadPayments();

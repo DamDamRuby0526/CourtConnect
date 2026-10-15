@@ -48,12 +48,13 @@ try {
     }
 
     $bookingStmt = $conn->prepare(
-        "SELECT b.schedule_id
+        "SELECT b.booking_id, b.schedule_id, b.court_id, b.start_time, b.end_time,
+                cs.court_date, cd.slot_duration
          FROM bookings b
          INNER JOIN court_details cd ON cd.court_id = b.court_id
          INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
          WHERE b.booking_id = ? AND cd.facility_id = ? AND cs.court_date = CURDATE()
-             AND cs.schedule_status = 'Booked' AND b.status IN ('confirmed', 'pending')
+             AND b.status IN ('confirmed', 'pending')
              AND b.arrived_at IS NULL AND b.did_not_arrive_at IS NULL
          FOR UPDATE"
     );
@@ -63,6 +64,34 @@ try {
     $bookingStmt->close();
     if (!$booking) {
         throw new RuntimeException("This reservation can no longer be cancelled.");
+    }
+
+    $scheduleIds = bookingRangeScheduleIds($conn, $bookingId);
+    if (!$scheduleIds) {
+        throw new RuntimeException("The reservation schedule could not be found.");
+    }
+    $placeholders = implode(",", array_fill(0, count($scheduleIds), "?"));
+    $types = str_repeat("i", count($scheduleIds));
+    $slotsStmt = $conn->prepare(
+        "SELECT schedule_id, schedule_status
+         FROM court_schedule
+         WHERE schedule_id IN ($placeholders)
+         ORDER BY court_time
+         FOR UPDATE"
+    );
+    $slotsStmt->bind_param($types, ...$scheduleIds);
+    $slotsStmt->execute();
+    $slotsResult = $slotsStmt->get_result();
+    $slots = [];
+    while ($slot = $slotsResult->fetch_assoc()) $slots[] = $slot;
+    $slotsStmt->close();
+    if (count($slots) !== count($scheduleIds)) {
+        throw new RuntimeException("The reservation schedule could not be found.");
+    }
+    foreach ($slots as $slot) {
+        if ($slot["schedule_status"] !== "Booked") {
+            throw new RuntimeException("A time in this reservation is no longer booked.");
+        }
     }
 
     $cancelStmt = $conn->prepare(
@@ -78,17 +107,43 @@ try {
     }
     $cancelStmt->close();
 
-    $scheduleId = (int) $booking["schedule_id"];
+    $conflictStmt = $conn->prepare(
+        "SELECT other_booking.booking_id
+         FROM bookings other_booking
+         INNER JOIN court_schedule other_start ON other_start.schedule_id = other_booking.schedule_id
+         INNER JOIN court_details other_cd ON other_cd.court_id = other_booking.court_id
+         INNER JOIN court_schedule slot ON slot.schedule_id = ?
+         WHERE other_booking.booking_id <> ?
+             AND other_booking.court_id = ?
+             AND other_start.court_date = slot.court_date
+             AND other_booking.status IN ('pending_payment', 'pending', 'confirmed')
+             AND (other_booking.status = 'confirmed' OR other_booking.hold_expires_at > NOW())
+             AND COALESCE(other_booking.start_time, other_start.court_time)
+                 < ADDTIME(slot.court_time, SEC_TO_TIME(other_cd.slot_duration * 60))
+             AND COALESCE(other_booking.end_time,
+                 ADDTIME(other_start.court_time, SEC_TO_TIME(other_cd.slot_duration * 60)))
+                 > slot.court_time
+         LIMIT 1
+         FOR UPDATE"
+    );
     $releaseStmt = $conn->prepare(
-        "UPDATE court_schedule SET schedule_status = 'Available'
+        "UPDATE court_schedule SET schedule_status = 'Available', hold_expires_at = NULL
          WHERE schedule_id = ? AND schedule_status = 'Booked'"
     );
-    $releaseStmt->bind_param("i", $scheduleId);
-    $releaseStmt->execute();
-    if ($releaseStmt->affected_rows !== 1) {
-        $releaseStmt->close();
-        throw new RuntimeException("The court time could not be released.");
+    foreach ($scheduleIds as $scheduleId) {
+        $conflictStmt->bind_param("iii", $scheduleId, $bookingId, $booking["court_id"]);
+        $conflictStmt->execute();
+        $hasConflict = (bool) $conflictStmt->get_result()->fetch_assoc();
+        if ($hasConflict) continue;
+        $releaseStmt->bind_param("i", $scheduleId);
+        $releaseStmt->execute();
+        if ($releaseStmt->affected_rows !== 1) {
+            $conflictStmt->close();
+            $releaseStmt->close();
+            throw new RuntimeException("A court time in this reservation could not be released.");
+        }
     }
+    $conflictStmt->close();
     $releaseStmt->close();
 
     if (!$conn->commit()) {

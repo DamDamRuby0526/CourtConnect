@@ -15,11 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
   const registrationTitle = document.getElementById("registrationTitle");
   const registrationSubtitle = document.getElementById("registrationSubtitle");
-  const panelEyebrow = document.getElementById("ownerPanelEyebrow");
-  const panelTitle = document.getElementById("ownerPanelTitle");
-  const panelCopy = document.getElementById("ownerPanelCopy");
-  const panelChecklist = document.getElementById("ownerPanelChecklist");
-  const panelFooter = document.getElementById("ownerPanelFooter");
   const submitButton = document.getElementById("registrationSubmit");
   const submitLabel = document.getElementById("registrationSubmitLabel");
   const submitSpinner = document.getElementById("registrationSpinner");
@@ -48,11 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
     verificationStep.hidden = true;
     registrationTitle.textContent = "Create your facility account";
     registrationSubtitle.textContent = "Start with your account details. You'll add your facility and documents next.";
-    panelEyebrow.textContent = "FOR FACILITY OWNERS";
-    panelTitle.textContent = "List your courts. Start earning bookings.";
-    panelCopy.textContent = "Manage court schedules and bookings in one place.";
-    panelChecklist.hidden = false;
-    panelFooter.hidden = true;
     setProgress(1);
     document.getElementById("first_name").focus();
   }
@@ -62,16 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     verificationStep.hidden = false;
     registrationTitle.textContent = "Tell us about your facility";
     registrationSubtitle.textContent = "Add your facility details and upload your documents. Our team will review them before your facility goes live.";
-    panelEyebrow.textContent = "BEFORE YOU SUBMIT";
-    panelTitle.textContent = "What you'll need";
-    panelCopy.textContent = "";
-    panelChecklist.innerHTML = `
-      <li data-document-check="valid_id"><span aria-hidden="true">✓</span>Valid government ID</li>
-      <li data-document-check="business_registration"><span aria-hidden="true">✓</span>DTI / SEC registration</li>
-      <li data-document-check="business_permit"><span aria-hidden="true">✓</span>Business / Mayor's permit</li>
-      <li data-document-check="proof_of_occupancy"><span aria-hidden="true">✓</span>Proof of ownership or lease</li>
-      <li data-document-check="facility_photos"><span aria-hidden="true">✓</span>Photos of your courts</li>`;
-    panelFooter.hidden = false;
     setProgress(2);
     document.getElementById("facility_name").focus();
     updateSubmissionState();
@@ -182,11 +162,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return input.files.length === 1 && !card.querySelector(".resubmit-file-error:not([hidden])");
     }).length;
     requiredUploadCount.textContent = `${docsAdded} of 4 required documents added`;
-    document.querySelectorAll("[data-document-check]").forEach((item) => {
-      const input = document.getElementById(item.dataset.documentCheck);
-      item.classList.toggle("is-added", Boolean(input?.files.length));
-    });
-
     const missing = [];
     [
       ["facility_name", "facility name"],
@@ -218,7 +193,8 @@ document.addEventListener("DOMContentLoaded", () => {
       input,
       zone,
       error: fileError,
-      allowedTypes: window.facilityUploadTypes.documents,
+      allowedTypes: window.facilityUploadTypes.pdfDocuments,
+      invalidTypeMessage: "Invalid file format. Please upload a PDF.",
       maxFileSize: 5 * 1024 * 1024,
       onFilesChanged: (files, message) => {
         if (upload.previewUrl) {

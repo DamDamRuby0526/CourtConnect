@@ -51,12 +51,6 @@ function facilityFindDocumentPath(?string $storedName): ?string
 
 function saveFacilityDocumentUpload(array $file): string
 {
-    $allowedTypes = [
-        "image/jpeg" => "jpg",
-        "image/png" => "png",
-        "image/webp" => "webp",
-        "application/pdf" => "pdf",
-    ];
     if (($file["error"] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         throw new RuntimeException("Upload all required documents.");
     }
@@ -74,8 +68,15 @@ function saveFacilityDocumentUpload(array $file): string
     }
 
     $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($file["tmp_name"]);
-    if (!is_string($mimeType) || !isset($allowedTypes[$mimeType])) {
-        throw new RuntimeException("Documents must be JPG, PNG, WEBP, or PDF files.");
+    $pdfHeader = is_string($temporaryPath) && is_file($temporaryPath)
+        ? file_get_contents($temporaryPath, false, null, 0, 1024)
+        : false;
+    if (
+        $mimeType !== "application/pdf"
+        || !is_string($pdfHeader)
+        || strpos($pdfHeader, "%PDF-") === false
+    ) {
+        throw new RuntimeException("Documents must be PDF files.");
     }
 
     $directory = facilityPrivateDocumentDirectory();
@@ -83,7 +84,7 @@ function saveFacilityDocumentUpload(array $file): string
         throw new RuntimeException("Unable to prepare the private document folder.");
     }
 
-    $fileName = bin2hex(random_bytes(16)) . "." . $allowedTypes[$mimeType];
+    $fileName = bin2hex(random_bytes(16)) . ".pdf";
     $targetPath = $directory . DIRECTORY_SEPARATOR . $fileName;
     if (!move_uploaded_file($file["tmp_name"], $targetPath)) {
         throw new RuntimeException("Unable to save the uploaded document.");

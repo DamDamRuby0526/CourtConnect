@@ -15,9 +15,11 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 $bookingId = filter_var($_POST["booking_id"] ?? null, FILTER_VALIDATE_INT);
+$bookingGroupId = filter_var($_POST["booking_group_id"] ?? null, FILTER_VALIDATE_INT);
 $referenceNumber = is_string($_POST["reference_number"] ?? null) ? trim($_POST["reference_number"]) : "";
 $receipt = $_FILES["receipt"] ?? null;
-if (!$bookingId || $bookingId < 1 || $referenceNumber === "" || strlen($referenceNumber) > 50) {
+if ((!$bookingGroupId || $bookingGroupId < 1) && (!$bookingId || $bookingId < 1)
+    || $referenceNumber === "" || strlen($referenceNumber) > 50) {
     http_response_code(400);
     echo json_encode(["success" => false, "message" => "Enter a valid reference number."]);
     exit();
@@ -56,23 +58,61 @@ $oldReceipt = "";
 
 try {
     $conn->begin_transaction();
+    $bookingLookupId = $bookingGroupId > 0 ? $bookingGroupId : $bookingId;
+    $bookingLookup = $bookingGroupId > 0 ? "b.booking_group_id = ?" : "b.booking_id = ?";
     $bookingStmt = $conn->prepare(
         "SELECT b.booking_id, b.schedule_id, b.status, b.hold_expires_at,
             cs.schedule_status, cs.hold_expires_at AS schedule_hold_expires_at,
+            (cs.hold_expires_at IS NOT NULL AND cs.hold_expires_at > NOW()) AS schedule_hold_active,
             (b.hold_expires_at IS NULL OR b.hold_expires_at <= NOW()) AS hold_expired
          FROM bookings b
          INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
-         WHERE b.booking_id = ? AND b.user_id = ?
+         WHERE $bookingLookup AND b.user_id = ?
+         ORDER BY cs.court_date, cs.court_time
          FOR UPDATE"
     );
-    $bookingStmt->bind_param("ii", $bookingId, $userId);
+    $bookingStmt->bind_param("ii", $bookingLookupId, $userId);
     $bookingStmt->execute();
-    $booking = $bookingStmt->get_result()->fetch_assoc();
+    $bookingResult = $bookingStmt->get_result();
+    $bookings = [];
+    while ($booking = $bookingResult->fetch_assoc()) {
+        $bookings[] = $booking;
+    }
     $bookingStmt->close();
-    if (!$booking || $booking["status"] !== "pending_payment" || $booking["schedule_status"] !== "Held"
-        || (int) $booking["hold_expired"] === 1) {
+    $validBookings = count($bookings) > 0;
+    foreach ($bookings as $booking) {
+        $scheduleIdsForBooking = bookingRangeScheduleIds($conn, (int) $booking["booking_id"]);
+        if (!$scheduleIdsForBooking) $scheduleIdsForBooking[] = (int) $booking["schedule_id"];
+        $placeholders = implode(",", array_fill(0, count($scheduleIdsForBooking), "?"));
+        $types = str_repeat("i", count($scheduleIdsForBooking));
+        $slotStmt = $conn->prepare(
+            "SELECT cs.schedule_id, cs.schedule_status,
+                    (cs.hold_expires_at IS NOT NULL AND cs.hold_expires_at > NOW()) AS schedule_hold_active
+             FROM court_schedule cs
+             WHERE cs.schedule_id IN ($placeholders)
+             ORDER BY cs.court_date, cs.court_time
+             FOR UPDATE"
+        );
+        $slotStmt->bind_param($types, ...$scheduleIdsForBooking);
+        $slotStmt->execute();
+        $slotResult = $slotStmt->get_result();
+        $bookingSlots = [];
+        while ($bookingSlot = $slotResult->fetch_assoc()) {
+            $bookingSlots[] = $bookingSlot;
+        }
+        $slotStmt->close();
+        $validBookings = $validBookings
+            && $booking["status"] === "pending_payment"
+            && (int) $booking["hold_expired"] === 0;
+        foreach ($bookingSlots as $bookingSlot) {
+            $validBookings = $validBookings
+                && $bookingSlot["schedule_status"] === "Held"
+                && (int) $bookingSlot["schedule_hold_active"] === 1;
+        }
+    }
+    if (!$validBookings) {
         $conn->rollback();
-        if ($booking && $booking["status"] === "pending_payment") {
+        if ($bookings && $bookings[0]["status"] === "pending_payment") {
             expireUnpaidBookings($conn);
         }
         unlink($filePath);
@@ -89,74 +129,92 @@ try {
          LIMIT 1
          FOR UPDATE"
     );
-    $latestPaymentStmt->bind_param("i", $bookingId);
-    $latestPaymentStmt->execute();
-    $latestPayment = $latestPaymentStmt->get_result()->fetch_assoc();
-    $latestPaymentStmt->close();
-    if ($latestPayment && $latestPayment["payment_status"] !== "Rejected") {
-        throw new RuntimeException("This booking already has a payment awaiting review.");
+    $paymentRecords = [];
+    foreach ($bookings as $booking) {
+        $currentBookingId = (int) $booking["booking_id"];
+        $latestPaymentStmt->bind_param("i", $currentBookingId);
+        $latestPaymentStmt->execute();
+        $latestPayment = $latestPaymentStmt->get_result()->fetch_assoc();
+        if ($latestPayment && $latestPayment["payment_status"] !== "Rejected") {
+            $latestPaymentStmt->close();
+            throw new RuntimeException("This booking already has a payment awaiting review.");
+        }
+        $paymentRecords[$currentBookingId] = $latestPayment;
     }
+    $latestPaymentStmt->close();
     if (!move_uploaded_file($receipt["tmp_name"], $filePath)) {
         http_response_code(500);
         throw new RuntimeException("Unable to save the receipt image.");
     }
     $fileSaved = true;
-    if ($latestPayment) {
-        $oldReceipt = basename((string) ($latestPayment["receipt_image"] ?? ""));
-        $paymentStmt = $conn->prepare(
-            "UPDATE payments
-             SET payment_method = 'Gcash', payment_status = 'Pending',
-                 reference_number = ?, receipt_image = ?, rejection_reason = NULL, paid_at = NULL
-             WHERE payments_id = ? AND booking_id = ? AND payment_status = 'Rejected'"
-        );
-        $paymentStmt->bind_param("ssii", $referenceNumber, $fileName, $latestPayment["payments_id"], $bookingId);
-        $paymentStmt->execute();
-        if ($paymentStmt->affected_rows !== 1) {
+    $oldReceipts = [];
+    foreach ($bookings as $booking) {
+        $currentBookingId = (int) $booking["booking_id"];
+        $latestPayment = $paymentRecords[$currentBookingId];
+        if ($latestPayment) {
+            $oldReceipt = basename((string) ($latestPayment["receipt_image"] ?? ""));
+            if ($oldReceipt !== "") $oldReceipts[] = $oldReceipt;
+            $paymentStmt = $conn->prepare(
+                "UPDATE payments
+                 SET payment_method = 'Gcash', payment_status = 'Pending',
+                     reference_number = ?, receipt_image = ?, rejection_reason = NULL, paid_at = NULL
+                 WHERE payments_id = ? AND booking_id = ? AND payment_status = 'Rejected'"
+            );
+            $paymentStmt->bind_param("ssii", $referenceNumber, $fileName, $latestPayment["payments_id"], $currentBookingId);
+            $paymentStmt->execute();
+            if ($paymentStmt->affected_rows !== 1) {
+                $paymentStmt->close();
+                throw new RuntimeException("A rejected payment has already changed.");
+            }
             $paymentStmt->close();
-            throw new RuntimeException("This rejected payment has already changed.");
+        } else {
+            $paymentStmt = $conn->prepare(
+                "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, receipt_image)
+                 VALUES (?, 'Gcash', 'Pending', ?, ?)"
+            );
+            $paymentStmt->bind_param("iss", $currentBookingId, $referenceNumber, $fileName);
+            $paymentStmt->execute();
+            $paymentStmt->close();
         }
-        $paymentStmt->close();
-    } else {
-        $paymentStmt = $conn->prepare(
-            "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, receipt_image)
-             VALUES (?, 'Gcash', 'Pending', ?, ?)"
+
+        $updateBookingStmt = $conn->prepare(
+            "UPDATE bookings SET status = 'pending', payment_status = 'unpaid',
+                hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+             WHERE booking_id = ? AND user_id = ? AND status = 'pending_payment'"
         );
-        $paymentStmt->bind_param("iss", $bookingId, $referenceNumber, $fileName);
-        $paymentStmt->execute();
-        $paymentStmt->close();
-    }
-
-    $updateBookingStmt = $conn->prepare(
-        "UPDATE bookings SET status = 'pending', payment_status = 'unpaid',
-            hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
-         WHERE booking_id = ? AND user_id = ? AND status = 'pending_payment'"
-    );
-    $updateBookingStmt->bind_param("ii", $bookingId, $userId);
-    $updateBookingStmt->execute();
-    if ($updateBookingStmt->affected_rows !== 1) {
+        $updateBookingStmt->bind_param("ii", $currentBookingId, $userId);
+        $updateBookingStmt->execute();
+        if ($updateBookingStmt->affected_rows !== 1) {
+            $updateBookingStmt->close();
+            throw new RuntimeException("A booking in this reservation is no longer waiting for payment.");
+        }
         $updateBookingStmt->close();
-        throw new RuntimeException("This booking is no longer waiting for payment.");
-    }
-    $updateBookingStmt->close();
 
-    $extendHoldStmt = $conn->prepare(
-        "UPDATE court_schedule SET hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
-            WHERE schedule_id = ?
-             AND schedule_status = 'Held' AND hold_expires_at > NOW()"
-    );
-        $extendHoldStmt->bind_param("i", $booking["schedule_id"]);
-    $extendHoldStmt->execute();
-    if ($extendHoldStmt->affected_rows !== 1) {
+        $extendHoldStmt = $conn->prepare(
+            "UPDATE court_schedule SET hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+                WHERE schedule_id = ?
+                 AND schedule_status = 'Held' AND hold_expires_at > NOW()"
+        );
+        $slotIds = bookingRangeScheduleIds($conn, $currentBookingId);
+        if (!$slotIds) $slotIds[] = (int) $booking["schedule_id"];
+        foreach ($slotIds as $scheduleId) {
+            $extendHoldStmt->bind_param("i", $scheduleId);
+            $extendHoldStmt->execute();
+            if ($extendHoldStmt->affected_rows !== 1) {
+                $extendHoldStmt->close();
+                throw new RuntimeException("A booking hold expired before payment could be submitted.");
+            }
+        }
         $extendHoldStmt->close();
-        throw new RuntimeException("This booking hold expired before payment could be submitted.");
     }
-    $extendHoldStmt->close();
 
     $conn->commit();
-    if ($oldReceipt !== "" && $oldReceipt !== $fileName) {
-        $oldReceiptPath = $uploadDirectory . DIRECTORY_SEPARATOR . $oldReceipt;
-        if (is_file($oldReceiptPath)) {
-            unlink($oldReceiptPath);
+    foreach (array_unique($oldReceipts) as $oldReceipt) {
+        if ($oldReceipt !== $fileName) {
+            $oldReceiptPath = $uploadDirectory . DIRECTORY_SEPARATOR . $oldReceipt;
+            if (is_file($oldReceiptPath)) {
+                unlink($oldReceiptPath);
+            }
         }
     }
     echo json_encode(["success" => true, "message" => "Payment submitted. The facility will confirm your payment."]);

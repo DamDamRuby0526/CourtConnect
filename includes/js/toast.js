@@ -1,4 +1,4 @@
-function showToast(title, message, type = "success") {
+function showToast(title, message, type = "success", options = {}) {
   let container = document.getElementById("toast-container");
   if (!container) {
     container = document.createElement("div");
@@ -10,7 +10,9 @@ function showToast(title, message, type = "success") {
   }
 
   const toast = document.createElement("div");
-  toast.className = `toast${type === "error" ? " is-error" : ""}`;
+  const centered = options.position === "center";
+  toast.className = `toast${type === "error" ? " is-error" : ""}${centered ? " is-centered" : ""}`;
+  if (centered) container.classList.add("is-centered");
   toast.setAttribute("role", type === "error" ? "alert" : "status");
 
   const content = document.createElement("div");
@@ -28,7 +30,10 @@ function showToast(title, message, type = "success") {
     toast.dataset.dismissing = "true";
     toast.style.animation = "toast-out .25s ease-in forwards";
     window.clearTimeout(timeout);
-    window.setTimeout(() => toast.remove(), 250);
+    window.setTimeout(() => {
+      toast.remove();
+      if (!container.querySelector(".toast.is-centered")) container.classList.remove("is-centered");
+    }, 250);
   };
 
   toast.addEventListener("click", dismiss);

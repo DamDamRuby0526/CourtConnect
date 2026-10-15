@@ -113,6 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
       error: card.querySelector(".resubmit-file-error"),
       maxFileSize: 5 * 1024 * 1024,
       allowedTypes: window.facilityUploadTypes.documents,
+      invalidTypeMessage: "Invalid file format. Please upload a PDF.",
       onFilesChanged: (files, message) => {
         renderUploadState(input, files, message);
       },

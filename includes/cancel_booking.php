@@ -85,21 +85,33 @@ function cancelBookingForUser(int $bookingId, int $userId): array
                 return ["success" => false, "code" => "not_cancellable", "message" => "This booking can no longer be cancelled.", "http_status" => 409];
             }
             if ($booking["schedule_status"] === "Held") {
-                $scheduleId = (int) $booking["schedule_id"];
-                $releaseStmt = $conn->prepare(
-                    "UPDATE court_schedule cs
-                     SET cs.schedule_status = 'Available', cs.hold_expires_at = NULL
-                     WHERE cs.schedule_id = ? AND cs.schedule_status = 'Held'
-                         AND NOT EXISTS (
-                             SELECT 1 FROM bookings other_booking
-                             WHERE other_booking.schedule_id = cs.schedule_id
-                                 AND other_booking.booking_id <> ?
-                                 AND other_booking.status IN ('pending_payment', 'pending', 'confirmed')
-                         )"
-                );
-                $releaseStmt->bind_param("ii", $scheduleId, $bookingId);
-                $releaseStmt->execute();
-                $releaseStmt->close();
+                foreach (bookingRangeScheduleIds($conn, $bookingId) as $scheduleId) {
+                    $releaseStmt = $conn->prepare(
+                        "UPDATE court_schedule cs
+                         INNER JOIN court_details cd ON cd.court_id = cs.court_id
+                         SET cs.schedule_status = 'Available', cs.hold_expires_at = NULL
+                         WHERE cs.schedule_id = ? AND cs.schedule_status = 'Held'
+                             AND NOT EXISTS (
+                                 SELECT 1
+                                 FROM bookings other_booking
+                                 INNER JOIN court_schedule other_start ON other_start.schedule_id = other_booking.schedule_id
+                                 INNER JOIN court_details other_cd ON other_cd.court_id = other_booking.court_id
+                                 WHERE other_booking.booking_id <> ?
+                                     AND other_booking.court_id = cs.court_id
+                                     AND other_start.court_date = cs.court_date
+                                     AND other_booking.status IN ('pending_payment', 'pending', 'confirmed')
+                                     AND (other_booking.status = 'confirmed' OR other_booking.hold_expires_at > NOW())
+                                     AND COALESCE(other_booking.start_time, other_start.court_time)
+                                         < ADDTIME(cs.court_time, SEC_TO_TIME(cd.slot_duration * 60))
+                                     AND COALESCE(other_booking.end_time,
+                                         ADDTIME(other_start.court_time, SEC_TO_TIME(other_cd.slot_duration * 60)))
+                                         > cs.court_time
+                             )"
+                    );
+                    $releaseStmt->bind_param("ii", $scheduleId, $bookingId);
+                    $releaseStmt->execute();
+                    $releaseStmt->close();
+                }
             }
 
             $deleteStmt = $conn->prepare(
@@ -184,22 +196,35 @@ function cancelBookingForUser(int $bookingId, int $userId): array
         }
 
         if (in_array($booking["schedule_status"], ["Held", "Booked"], true)) {
-            $scheduleId = (int) $booking["schedule_id"];
-            $releaseStmt = $conn->prepare(
-                "UPDATE court_schedule cs
-                 SET cs.schedule_status = 'Available', cs.hold_expires_at = NULL
-                 WHERE cs.schedule_id = ? AND cs.schedule_status IN ('Held', 'Booked')
-                     AND NOT EXISTS (
-                         SELECT 1 FROM bookings other_booking
-                         WHERE other_booking.schedule_id = cs.schedule_id
-                             AND other_booking.booking_id <> ?
-                             AND other_booking.status IN ('pending_payment', 'pending', 'confirmed')
-                     )"
-            );
-            $releaseStmt->bind_param("ii", $scheduleId, $bookingId);
-            $releaseStmt->execute();
-            $released = $releaseStmt->affected_rows === 1;
-            $releaseStmt->close();
+            $released = 0;
+            foreach (bookingRangeScheduleIds($conn, $bookingId) as $scheduleId) {
+                $releaseStmt = $conn->prepare(
+                    "UPDATE court_schedule cs
+                     INNER JOIN court_details cd ON cd.court_id = cs.court_id
+                     SET cs.schedule_status = 'Available', cs.hold_expires_at = NULL
+                     WHERE cs.schedule_id = ? AND cs.schedule_status IN ('Held', 'Booked')
+                         AND NOT EXISTS (
+                             SELECT 1
+                             FROM bookings other_booking
+                             INNER JOIN court_schedule other_start ON other_start.schedule_id = other_booking.schedule_id
+                             INNER JOIN court_details other_cd ON other_cd.court_id = other_booking.court_id
+                             WHERE other_booking.booking_id <> ?
+                                 AND other_booking.court_id = cs.court_id
+                                 AND other_start.court_date = cs.court_date
+                                 AND other_booking.status IN ('pending_payment', 'pending', 'confirmed')
+                                 AND (other_booking.status = 'confirmed' OR other_booking.hold_expires_at > NOW())
+                                 AND COALESCE(other_booking.start_time, other_start.court_time)
+                                     < ADDTIME(cs.court_time, SEC_TO_TIME(cd.slot_duration * 60))
+                                 AND COALESCE(other_booking.end_time,
+                                     ADDTIME(other_start.court_time, SEC_TO_TIME(other_cd.slot_duration * 60)))
+                                     > cs.court_time
+                         )"
+                );
+                $releaseStmt->bind_param("ii", $scheduleId, $bookingId);
+                $releaseStmt->execute();
+                $released += $releaseStmt->affected_rows;
+                $releaseStmt->close();
+            }
             if (!$released) {
                 throw new RuntimeException("Court time could not be released.");
             }

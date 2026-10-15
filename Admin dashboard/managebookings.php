@@ -82,14 +82,16 @@ $courtsStmt->close();
 $paymentStatus = "COALESCE(p.payment_status, IF(LOWER(b.payment_status) = 'paid', 'Paid', 'Pending'))";
 $where = [
     "cd.facility_id = ?",
-    "b.status NOT IN ('pending_payment', 'Expired')",
-    "LOWER($paymentStatus) = 'paid'",
+    "((b.status NOT IN ('pending_payment', 'Expired') AND LOWER($paymentStatus) = 'paid')
+        OR (b.status = 'pending_payment' AND LOWER(b.payment_status) = 'unpaid'
+            AND b.hold_expires_at > NOW()
+            AND NOT EXISTS (SELECT 1 FROM payments unpaid_hold_payment WHERE unpaid_hold_payment.booking_id = b.booking_id)))",
     "NOT (LOWER(b.status) = 'cancelled' AND LOWER(b.payment_status) = 'unpaid'
         AND NOT EXISTS (SELECT 1 FROM payments unpaid_cancel_payment WHERE unpaid_cancel_payment.booking_id = b.booking_id))",
 ];
 $params = [$facilityId];
 $paramTypes = "i";
-$startedSlot = "TIMESTAMP(cs.court_date, cs.court_time) <= NOW()";
+$startedSlot = "TIMESTAMP(cs.court_date, COALESCE(b.start_time, cs.court_time)) <= NOW()";
 
 if ($attendanceFilter === "upcoming") {
     $where[] = "LOWER(b.status) <> 'cancelled' AND b.arrived_at IS NULL AND b.did_not_arrive_at IS NULL AND NOT ($startedSlot)";
@@ -135,7 +137,9 @@ $bookingsStmt = $conn->prepare(
             b.arrived_at, b.did_not_arrive_at,
             COALESCE(b.customer_name, CONCAT(u.first_name, ' ', u.last_name)) AS customer_name,
             COALESCE(b.customer_phone, u.phone_number) AS customer_phone,
-            cs.court_date, cs.court_time,
+            cs.court_date, COALESCE(b.start_time, cs.court_time) AS court_time,
+            COALESCE(b.end_time, ADDTIME(cs.court_time, SEC_TO_TIME(cd.slot_duration * 60))) AS end_time,
+            COALESCE(b.total_duration, cd.slot_duration) AS total_duration,
             cd.court_no, cd.slot_duration,
             $paymentStatus AS payment_status,
             CASE
@@ -146,7 +150,11 @@ $bookingsStmt = $conn->prepare(
                 ELSE 'upcoming'
             END AS attendance_status,
             (LOWER(b.status) <> 'cancelled' AND b.arrived_at IS NULL AND b.did_not_arrive_at IS NULL) AS can_mark_attendance,
-            $startedSlot AS slot_has_started
+            $startedSlot AS slot_has_started,
+            (b.status = 'pending_payment' AND LOWER(b.payment_status) = 'unpaid'
+                AND b.hold_expires_at > NOW()
+                AND COALESCE(b.total_duration, cd.slot_duration) > cd.slot_duration
+                AND NOT EXISTS (SELECT 1 FROM payments duration_payment WHERE duration_payment.booking_id = b.booking_id)) AS can_edit_duration
      FROM bookings b
      LEFT JOIN users u ON u.user_id = b.user_id
      INNER JOIN court_details cd ON cd.court_id = b.court_id
@@ -158,7 +166,7 @@ $bookingsStmt = $conn->prepare(
      ) latest_payment ON latest_payment.booking_id = b.booking_id
      LEFT JOIN payments p ON p.payments_id = latest_payment.payments_id
      WHERE " . implode(" AND ", $where) . "
-     ORDER BY cs.court_date DESC, cs.court_time DESC"
+     ORDER BY cs.court_date DESC, COALESCE(b.start_time, cs.court_time) DESC"
 );
 $bindParams = [$paramTypes];
 foreach ($params as $index => $value) {
@@ -180,6 +188,13 @@ function bookingsPageEscape($value)
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
+
+function bookingsDurationLabel($minutes)
+{
+    $hours = (int) $minutes / 60;
+    $formatted = rtrim(rtrim(number_format($hours, 2, ".", ""), "0"), ".");
+    return $formatted . " " . ((float) $hours === 1.0 ? "Hour" : "Hours");
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -190,21 +205,23 @@ function bookingsPageEscape($value)
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="../includes/js/admin_bookings.js" defer></script>
     <title>Bookings | CourtConnect</title>
 </head>
 <body class="admin-ui">
     <div class="admin-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
-        <main class="admin-content">
+        <main class="admin-content admin-workspace-page admin-bookings-page">
             <header class="admin-page-head">
                 <div>
-                    <p class="admin-breadcrumb"><?= $roleId === 3 ? "FACILITY OWNER" : "FACILITY ADMIN" ?> <span>/</span> BOOKINGS</p>
                     <h1>Bookings</h1>
-                    <p class="admin-subtitle">Reservations across all dates, with attendance and payment status.</p>
+                    <p class="admin-subtitle">Manage reservations, attendance, and booking status.</p>
                 </div>
                 <div class="admin-head-actions">
                     <span class="admin-today"><?= date("l, F j") ?></span>
-                    <button class="admin-refresh-button" type="button" id="refreshBookings" aria-label="Refresh bookings" title="Refresh bookings">&#8635;</button>
+                    <button class="admin-refresh-button" type="button" id="refreshBookings" aria-label="Refresh bookings" title="Refresh bookings">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 0 1 4"></path></svg>
+                    </button>
                 </div>
             </header>
             <section class="booking-section" aria-label="Bookings">
@@ -219,7 +236,7 @@ function bookingsPageEscape($value)
                 </div>
                 <form class="booking-tools" method="get" action="managebookings.php" role="search" aria-label="Filter bookings" id="bookingFilters">
                     <label class="booking-filter">
-                        <span>Attendance</span>
+                        <span>Attendance status</span>
                         <select name="attendance" onchange="this.form.submit()">
                             <option value="">All</option>
                             <option value="upcoming" <?= $attendanceFilter === "upcoming" ? "selected" : "" ?>>Upcoming</option>
@@ -243,7 +260,7 @@ function bookingsPageEscape($value)
                         </select>
                     </label>
                     <label class="booking-filter booking-search-filter">
-                        <span>Player</span>
+                        <span>Customer</span>
                         <input type="search" name="player" value="<?= bookingsPageEscape($playerFilter) ?>" placeholder="Name or phone" aria-label="Search by player">
                     </label>
                     <label class="booking-filter">
@@ -255,34 +272,32 @@ function bookingsPageEscape($value)
                         </select>
                     </label>
                     <label class="booking-filter">
-                        <span>Payment</span>
+                        <span>Payment status</span>
                         <select name="payment" onchange="this.form.submit()">
                             <option value="">All</option>
                             <option value="Paid" <?= $paymentFilter === "Paid" ? "selected" : "" ?>>Paid</option>
                             <option value="Pending" <?= $paymentFilter === "Pending" ? "selected" : "" ?>>Pending</option>
                         </select>
                     </label>
-                    <a class="admin-clear-button" href="managebookings.php">Clear</a>
+                    <a class="admin-clear-button" href="managebookings.php">Clear filters</a>
                 </form>
                 <div class="schedule-table-wrap">
                     <table class="schedule-table">
                         <thead>
                             <tr>
-                                <th scope="col">Date</th>
-                                <th scope="col">Time</th>
+                                <th scope="col">Schedule</th>
                                 <th scope="col">Court</th>
+                                <th scope="col">Customer</th>
                                 <th scope="col">Duration</th>
-                                        <th scope="col">Customer</th>
-                                <th scope="col">Amount</th>
-                                <th scope="col">Payment</th>
+                                <th scope="col">Booking amount</th>
+                                <th scope="col">Payment status</th>
                                 <th scope="col">Attendance</th>
-                                <th scope="col">Booked on</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="bookingRows">
                             <?php if (!$bookings): ?>
-                                <tr><td colspan="10" class="schedule-empty">No bookings match these filters. <a class="admin-clear-button" href="managebookings.php">Clear</a></td></tr>
+                                <tr><td colspan="8" class="schedule-empty"><strong>No reservations found</strong><span>Try changing your filters or clear them to see all reservations.</span><a class="admin-clear-button" href="managebookings.php">Clear filters</a></td></tr>
                             <?php else: ?>
                                 <?php foreach ($bookings as $booking): ?>
                                     <?php
@@ -309,24 +324,43 @@ function bookingsPageEscape($value)
                                             : "Available from " . date("g:i A", $slotStart);
                                     ?>
                                     <tr class="booking-row">
-                                        <td data-label="Date"><?= bookingsPageEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></td>
-                                        <td data-label="Time"><?= bookingsPageEscape(date("g:i A", strtotime($booking["court_time"]))) ?></td>
-                                        <td data-label="Court"><?= bookingsPageEscape($booking["court_no"]) ?></td>
-                                        <td data-label="Duration"><?= (int) $booking["slot_duration"] ?> min</td>
-                                        <td data-label="Customer" class="booking-player"><?= bookingsPageEscape($booking["customer_name"]) ?><small><?= bookingsPageEscape($booking["customer_phone"] ?? "") ?></small></td>
-                                        <td data-label="Amount">&#8369;<?= number_format((float) $booking["total_amount"], 2) ?></td>
-                                        <td data-label="Payment"><span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($displayPaymentStatus) ?></span></td>
+                                        <td data-label="Schedule">
+                                            <span class="booking-date"><?= bookingsPageEscape(date("D, M j, Y", strtotime($booking["court_date"]))) ?></span>
+                                            <span class="booking-time-range"><?= bookingsPageEscape(date("g:i A", strtotime($booking["court_time"]))) ?>–<?= bookingsPageEscape(date("g:i A", strtotime($booking["end_time"]))) ?></span>
+                                            <small class="booking-booked-on">Booked <?= bookingsPageEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></small>
+                                        </td>
+                                        <td data-label="Court">Court <?= bookingsPageEscape(preg_replace('/^Court\s*/i', '', (string) $booking["court_no"])) ?></td>
+                                        <td data-label="Customer" class="booking-player">
+                                            <span class="booking-customer"><strong><?= bookingsPageEscape($booking["customer_name"]) ?></strong><?php if (!empty($booking["customer_phone"])): ?><small><?= bookingsPageEscape($booking["customer_phone"]) ?></small><?php endif; ?></span>
+                                        </td>
+                                        <td data-label="Duration"><?= bookingsPageEscape(bookingsDurationLabel($booking["total_duration"])) ?></td>
+                                        <td data-label="Booking amount" class="booking-amount">&#8369;<?= number_format((float) $booking["total_amount"], 2) ?></td>
+                                        <td data-label="Payment status"><span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($displayPaymentStatus) ?></span></td>
                                         <td data-label="Attendance"><span class="attendance-status attendance-status-<?= bookingsPageEscape($attendanceStatus) ?>"><?= bookingsPageEscape($attendanceLabels[$attendanceStatus] ?? "Upcoming") ?></span></td>
-                                        <td data-label="Booked on"><?= bookingsPageEscape(date("M j, Y g:i A", strtotime($booking["created_at"]))) ?></td>
                                         <td data-label="Actions">
+                                            <div class="booking-attendance-actions">
+                                                <?php if ((bool) $booking["can_edit_duration"]): ?>
+                                                    <button type="button" class="booking-action-icon" data-edit-booking-duration
+                                                        title="Edit reservation duration" aria-label="Edit reservation duration"
+                                                        data-booking-id="<?= (int) $booking["booking_id"] ?>"
+                                                        data-current-duration="<?= (int) $booking["total_duration"] ?>"
+                                                        data-slot-duration="<?= (int) $booking["slot_duration"] ?>"
+                                                        data-rate="<?= number_format((float) $booking["total_amount"] / max(1, ((int) $booking["total_duration"] / max(1, (int) $booking["slot_duration"]))), 2, ".", "") ?>"
+                                                    >
+                                                        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M11.5 4.5 15.5 8.5M3 17l3.6-.8L16.8 6a1.8 1.8 0 0 0-2.5-2.5L4.1 13.7 3 17Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    </button>
+                                                <?php endif; ?>
                                             <?php if ($booking["can_mark_attendance"]): ?>
-                                                <div class="booking-attendance-actions">
-                                                    <button type="button" class="dashboard-arrived-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="arrived" title="<?= $arrivalAvailableFromTitle !== "" ? bookingsPageEscape($arrivalAvailableFromTitle) : "" ?>">Mark arrived</button>
-                                                    <button type="button" class="dashboard-cancel-button" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="no_show" title="<?= $noShowAvailableFromTitle !== "" ? bookingsPageEscape($noShowAvailableFromTitle) : "" ?>">Did not arrive</button>
-                                                </div>
+                                                <button type="button" class="dashboard-arrived-button booking-action-icon" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="arrived" aria-label="Mark arrived" title="<?= bookingsPageEscape($arrivalAvailableFromTitle !== "" ? "Mark arrived. " . $arrivalAvailableFromTitle : "Mark arrived") ?>">
+                                                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                </button>
+                                                <button type="button" class="dashboard-cancel-button booking-action-icon" data-booking-id="<?= (int) $booking["booking_id"] ?>" data-attendance="no_show" aria-label="Mark did not arrive" title="<?= bookingsPageEscape($noShowAvailableFromTitle !== "" ? "Mark did not arrive. " . $noShowAvailableFromTitle : "Mark did not arrive") ?>">
+                                                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.7"/><path d="m7.5 7.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                                                </button>
                                             <?php else: ?>
                                                 <span class="booking-no-action">&mdash;</span>
                                             <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -337,6 +371,26 @@ function bookingsPageEscape($value)
             </section>
             <footer class="admin-footer"><span><?= bookingsPageEscape($facilityName) ?></span><span>Paid total: &#8369;<?= number_format($paidPaymentTotal, 2) ?></span></footer>
         </main>
+    </div>
+    <div class="modal-container owner-modal admin-booking-dialog" id="bookingDurationModal" aria-hidden="true">
+        <section class="modal owner-modal-panel admin-booking-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="bookingDurationTitle">
+            <form id="bookingDurationForm">
+                <div class="owner-modal-heading">
+                    <div><p class="owner-breadcrumb">UNPAID RESERVATION</p><h2 id="bookingDurationTitle">Edit duration</h2></div>
+                    <button class="owner-modal-close" type="button" data-close-booking-dialog aria-label="Close duration editor">×</button>
+                </div>
+                <input type="hidden" name="booking_id" id="durationBookingId">
+                <label class="player-payment-field" for="bookingDurationSelect">New duration
+                    <select id="bookingDurationSelect" name="total_duration" required></select>
+                </label>
+                <p id="bookingDurationPrice" class="admin-booking-duration-price"></p>
+                <p id="bookingDurationFeedback" class="owner-form-status" role="status" aria-live="polite"></p>
+                <div class="owner-modal-actions">
+                    <button class="owner-secondary-button" type="button" data-close-booking-dialog>Keep current duration</button>
+                    <button class="owner-primary-button" id="saveBookingDuration" type="submit">Save duration</button>
+                </div>
+            </form>
+        </section>
     </div>
     <script>
         const filtersForm = document.getElementById("bookingFilters");
@@ -362,19 +416,31 @@ function bookingsPageEscape($value)
                         if (result.code === "already_recorded") {
                             const row = button.closest("tr");
                             const attendanceCell = row?.querySelector("[data-label='Attendance']");
-                            const attendanceValue = result.attendance_state === "arrived" ? "Arrived" : "Did not arrive";
-                            const attendanceClass = result.attendance_state === "arrived" ? "attendance-status-arrived" : "attendance-status-no-show";
                             if (attendanceCell) {
-                                attendanceCell.innerHTML = `<span class="attendance-status ${attendanceClass}">${attendanceValue}</span>`;
+                                const attendanceStatus = document.createElement("span");
+                                attendanceStatus.className = `attendance-status attendance-status-${result.attendance_state === "arrived" ? "arrived" : "no-show"}`;
+                                attendanceStatus.textContent = result.attendance_state === "arrived" ? "Arrived" : "Did not arrive";
+                                attendanceCell.replaceChildren(attendanceStatus);
+                            }
+                            const actionsCell = row?.querySelector("[data-label='Actions']");
+                            if (actionsCell) {
+                                const recordedLabel = document.createElement("span");
+                                recordedLabel.className = "booking-no-action";
+                                recordedLabel.textContent = "Recorded";
+                                actionsCell.replaceChildren(recordedLabel);
                             }
                             window.showDialog({ type: "success", title: "Attendance recorded", message: result.message || "Attendance was already recorded for this booking." });
-                            rowButtons.forEach((rowButton) => { rowButton.disabled = false; });
                             return;
                         }
 
                         throw new Error(result.message || "Unable to update this booking.");
                     }
 
+                    await window.showDialog({
+                        type: "success",
+                        title: button.dataset.attendance === "arrived" ? "Attendance recorded" : "No-show recorded",
+                        message: result.message || "The booking attendance has been updated.",
+                    });
                     location.reload();
                 } catch (error) {
                     window.showDialog({ type: "error", title: "Unable to update booking", message: error.message || "Unable to update this booking." });

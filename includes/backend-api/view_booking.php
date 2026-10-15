@@ -10,7 +10,8 @@ if (!$userId || (int) ($_SESSION["role_id"] ?? 0) !== 1) {
 }
 
 $stmt = $conn->prepare(
-    "SELECT b.booking_id, b.status AS booking_status, b.payment_status AS booking_payment_status,
+    "SELECT b.booking_id, b.booking_group_id, b.start_time, b.end_time, b.total_duration,
+            b.status AS booking_status, b.payment_status AS booking_payment_status,
             b.total_amount, b.created_at, b.arrived_at, b.did_not_arrive_at,
             cs.court_date, cs.court_time, cs.schedule_status, cs.hold_expires_at,
             cd.court_no, cd.slot_duration, cd.facility_id, f.facility_name, f.municipality,
@@ -82,14 +83,16 @@ $bookings = [];
 while ($row = $result->fetch_assoc()) {
     $bookings[] = [
         "booking_id" => (int) $row["booking_id"],
+        "booking_group_id" => $row["booking_group_id"] ? (int) $row["booking_group_id"] : null,
         "booking_status" => $row["booking_status"],
         "booking_payment_status" => $row["booking_payment_status"],
         "total_amount" => (float) $row["total_amount"],
         "court_date" => $row["court_date"],
-        "court_time" => $row["court_time"],
+        "court_time" => $row["start_time"] ?: $row["court_time"],
+        "end_time" => $row["end_time"],
         "court_no" => $row["court_no"],
         "facility_id" => (int) $row["facility_id"],
-        "slot_duration" => (int) $row["slot_duration"],
+        "slot_duration" => (int) ($row["total_duration"] ?: $row["slot_duration"]),
         "facility_name" => $row["facility_name"],
         "municipality" => $row["municipality"],
         "payment_id" => $row["payments_id"] ? (int) $row["payments_id"] : null,

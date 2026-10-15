@@ -97,10 +97,9 @@ function dashboardEscape($value)
 <body class="admin-ui">
     <div class="admin-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
-        <main class="admin-content">
+        <main class="admin-content admin-workspace-page admin-upcoming-page">
             <header class="admin-page-head">
                 <div>
-                    <p class="admin-breadcrumb"><?= (int) ($_SESSION["role_id"] ?? 0) === 3 ? "FACILITY OWNER" : "FACILITY ADMIN" ?> <span>/</span> UPCOMING RESERVATIONS</p>
                     <h1>Upcoming reservations</h1>
                     <p class="admin-subtitle">Today's confirmed court bookings and open court times.</p>
                 </div>

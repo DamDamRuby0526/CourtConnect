@@ -53,10 +53,9 @@ function ownerAccountsEscape($value)
 <body class="owner-ui">
     <div class="owner-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
-        <main class="owner-content">
+        <main class="owner-content owner-workspace-page">
             <header class="owner-page-head">
                 <div>
-                    <p class="owner-breadcrumb">FACILITY OWNER <span>/</span> COURT SETTINGS <span>/</span> ADMIN ACCOUNTS</p>
                     <h1>Admin accounts</h1>
                     <p>Manage staff access to <?= ownerAccountsEscape($facilityName) ?>.</p>
                 </div>

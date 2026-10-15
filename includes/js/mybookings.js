@@ -22,7 +22,64 @@ function bookingDateTime(booking) {
     day: "numeric",
     year: "numeric",
   });
-  return { date, time };
+  let endTime = "";
+  if (booking.end_time) {
+    const [endHours, endMinutes] = booking.end_time.split(":").map(Number);
+    endTime = new Date(2000, 0, 1, endHours, endMinutes).toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+  return { date, time: endTime ? `${time}–${endTime}` : time };
+}
+
+function groupPlayerBookings(bookings) {
+  const groups = new Map();
+  bookings.forEach((booking) => {
+    const key = booking.booking_group_id
+      ? `group:${booking.booking_group_id}`
+      : `booking:${booking.booking_id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(booking);
+  });
+
+  return Array.from(groups.values(), (group) => {
+    if (group.length === 1 || !group.every((booking) => booking.can_checkout)) {
+      return group.map((booking) => ({ ...booking, end_time: booking.end_time || null }));
+    }
+    group.sort((left, right) => (
+      `${left.court_date} ${left.court_time}`.localeCompare(`${right.court_date} ${right.court_time}`)
+    ));
+    const first = group[0];
+    const last = group[group.length - 1];
+    const slotDuration = Number(first.slot_duration);
+    const endDate = new Date(2000, 0, 1);
+    const [endHours, endMinutes] = last.court_time.split(":").map(Number);
+    endDate.setHours(endHours, endMinutes + Number(last.slot_duration), 0, 0);
+    const endTime = `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}:00`;
+    const paymentPriority = { Rejected: 3, Pending: 2, Submitted: 2, Paid: 1, PendingPayment: 0 };
+    const paymentStatus = group
+      .map((booking) => booking.payment_status)
+      .sort((left, right) => (paymentPriority[right] || 0) - (paymentPriority[left] || 0))[0];
+    const holdExpiry = Math.min(...group.map((booking) => Number(booking.hold_expires_epoch) || Infinity));
+    const representative = { ...first };
+    representative.end_time = endTime;
+    representative.slot_count = group.length;
+    representative.slot_duration = slotDuration * group.length;
+    representative.total_amount = group.reduce((total, booking) => total + Number(booking.total_amount || 0), 0);
+    representative.payment_status = paymentStatus || first.payment_status;
+    representative.payment_id = group.find((booking) => booking.payment_id)?.payment_id || null;
+    representative.has_receipt = group.some((booking) => booking.has_receipt);
+    representative.rejection_reason = group.find((booking) => booking.rejection_reason)?.rejection_reason || null;
+    representative.is_past = group.some((booking) => booking.is_past);
+    representative.can_checkout = group.every((booking) => booking.can_checkout);
+    representative.can_cancel = group.every((booking) => booking.can_cancel);
+    representative.can_delete_on_cancel = group.every((booking) => booking.can_delete_on_cancel);
+    representative.can_resubmit_payment = group.every((booking) => booking.can_resubmit_payment);
+    representative.hold_expires_epoch = Number.isFinite(holdExpiry) ? holdExpiry : first.hold_expires_epoch;
+    representative.has_multiple_slots = true;
+    return representative;
+  }).flat();
 }
 
 function makeStatusBadge(label, className) {
@@ -69,10 +126,12 @@ function makeBookingCard(booking) {
   const details = document.createElement("dl");
   details.className = "player-booking-details";
   const dateTime = bookingDateTime(booking);
+  const durationHours = Number((Number(booking.slot_duration) / 60).toFixed(2));
+  const durationLabel = `${durationHours} ${durationHours === 1 ? "hour" : "hours"}`;
   const detailItems = [
     ["Date", dateTime.date],
     ["Time", dateTime.time],
-    ["Duration", `${booking.slot_duration} min`],
+    ["Duration", durationLabel],
     ["Amount", `P${Number(booking.total_amount).toFixed(2)}`],
   ];
   detailItems.forEach(([label, value]) => {
@@ -90,7 +149,9 @@ function makeBookingCard(booking) {
   if (booking.can_checkout) {
     const checkout = document.createElement("a");
     checkout.className = "player-primary-link";
-    checkout.href = `checkout.php?booking_id=${encodeURIComponent(booking.booking_id)}`;
+    checkout.href = booking.booking_group_id
+      ? `checkout.php?booking_group_id=${encodeURIComponent(booking.booking_group_id)}`
+      : `checkout.php?booking_id=${encodeURIComponent(booking.booking_id)}`;
     checkout.textContent = "Complete payment";
     actions.append(checkout);
     const expiry = document.createElement("span");
@@ -106,6 +167,7 @@ function makeBookingCard(booking) {
     cancel.type = "button";
     cancel.className = "player-secondary-link";
     cancel.dataset.cancelBookingId = booking.booking_id;
+    if (booking.booking_group_id) cancel.dataset.cancelBookingGroupId = booking.booking_group_id;
     cancel.textContent = "Cancel booking";
     actions.append(cancel);
   }
@@ -200,7 +262,10 @@ async function expirePlayerBooking(label) {
     if (!response.ok || !result.success) throw new Error(result.message || "Unable to refresh this expired booking.");
     if (result.expired) {
       toastBooking("Booking expired", result.message, "error");
-      allBookings = allBookings.filter((booking) => String(booking.booking_id) !== label.dataset.bookingId);
+      const expiredBooking = allBookings.find((booking) => String(booking.booking_id) === label.dataset.bookingId);
+      allBookings = allBookings.filter((booking) => expiredBooking?.booking_group_id
+        ? Number(booking.booking_group_id) !== Number(expiredBooking.booking_group_id)
+        : String(booking.booking_id) !== label.dataset.bookingId);
       renderBookingTab(bookingList.dataset.activeTab || "upcoming");
     } else {
       label.dataset.expires = result.hold_expires_epoch;
@@ -220,7 +285,7 @@ async function loadMyBookings() {
     const response = await fetch("includes/backend-api/view_booking.php");
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || "Unable to load your bookings.");
-    allBookings = result.bookings;
+    allBookings = groupPlayerBookings(result.bookings);
     renderBookingTab(bookingList.dataset.activeTab || "upcoming");
   } catch (error) {
     bookingList.replaceChildren();
@@ -234,7 +299,9 @@ async function cancelPlayerBooking(button) {
   if (!booking) return;
 
   const confirmationMessage = booking.can_delete_on_cancel
-    ? "The time slot will be released and this booking will be removed."
+    ? booking.booking_group_id
+      ? "All selected time slots will be released and this reservation will be removed."
+      : "The time slot will be released and this booking will be removed."
     : "The time slot will be released. Your payment record will be kept; contact the facility about your payment.";
   const confirmed = await window.showDialog({
     type: "confirm",
@@ -250,7 +317,9 @@ async function cancelPlayerBooking(button) {
     const response = await fetch("includes/backend-api/cancel_checkout_booking.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ booking_id: bookingId }),
+      body: new URLSearchParams(booking.booking_group_id && booking.can_delete_on_cancel
+        ? { booking_group_id: booking.booking_group_id }
+        : { booking_id: bookingId }),
     });
     const result = await response.json();
     if (!response.ok || !result.success) {
@@ -260,7 +329,9 @@ async function cancelPlayerBooking(button) {
     }
 
     if (result.code === "deleted" || result.code === "already_gone") {
-      allBookings = allBookings.filter((item) => String(item.booking_id) !== String(bookingId));
+      allBookings = allBookings.filter((item) => booking.booking_group_id
+        ? Number(item.booking_group_id) !== Number(booking.booking_group_id)
+        : String(item.booking_id) !== String(bookingId));
     } else if (result.code === "cancelled") {
       booking.booking_status = "cancelled";
       booking.can_cancel = false;
@@ -305,6 +376,10 @@ function openRejectionReason(booking) {
 function openPaymentResubmission() {
   if (!activeRejectedBooking?.can_resubmit_payment) return;
   const booking = activeRejectedBooking;
+  if (booking.booking_group_id) {
+    window.location.href = `checkout.php?booking_group_id=${encodeURIComponent(booking.booking_group_id)}`;
+    return;
+  }
   const dateTime = bookingDateTime(booking);
   document.getElementById("resubmissionBookingId").value = booking.booking_id;
   document.getElementById("resubmissionBookingDetails").textContent =

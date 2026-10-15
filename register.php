@@ -2,6 +2,9 @@
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
+$pendingScheduleIds = $_SESSION["pending_reservation"]["schedule_ids"] ?? [];
+$hasPendingReservation = (is_array($pendingScheduleIds) && count($pendingScheduleIds) > 0)
+  || filter_var($_SESSION["pending_reservation"]["schedule_id"] ?? null, FILTER_VALIDATE_INT) > 0;
 ?>
 <!doctype html>
 <html lang="en">
@@ -14,12 +17,15 @@ if (session_status() === PHP_SESSION_NONE) {
   <title>CourtConnect Bataan</title>
 </head>
 
-<body>
+<body data-pending-reservation="<?= $hasPendingReservation ? "true" : "false" ?>">
 
   <?php include 'includes/navigation/header.php'; ?>
 
   <form id="registerForm">
     <h2>Sign Up</h2>
+    <?php if ($hasPendingReservation): ?>
+      <p class="reservation-auth-notice">Your selected court time is saved while you create and verify your customer account.</p>
+    <?php endif; ?>
     <label for="first_name">First Name</label><br>
     <input type="text" id="first_name" name="first_name" required><br>
 

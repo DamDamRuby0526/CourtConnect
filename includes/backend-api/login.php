@@ -124,6 +124,7 @@ if ((int)$user["is_verified"] === 0) {
     exit();
 }
 
+session_regenerate_id(true);
 $_SESSION["user_id"] = $user["user_id"];
 $_SESSION["first_name"] = $user["first_name"];
 $_SESSION["last_name"] = $user["last_name"];

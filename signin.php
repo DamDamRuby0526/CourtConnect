@@ -2,6 +2,7 @@
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
+$returningForReservation = ($_GET["return_to"] ?? "") === "reservation_resume.php";
 ?>
 <!doctype html>
 <html lang="en">
@@ -23,6 +24,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
       <form id="loginForm">
         <h2>Sign In</h2>
+        <?php if ($returningForReservation): ?>
+          <p class="reservation-auth-notice">You’re one step away from your next match! Log in to continue with your selected court reservation.</p>
+        <?php endif; ?>
 
         <label for="email">Email</label><br>
         <input type="email" name="email" required autocomplete="email"><br>

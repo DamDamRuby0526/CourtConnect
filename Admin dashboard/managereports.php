@@ -161,7 +161,7 @@ $dateFilterLabel = $dateBasis === 'payment' ? 'Payment date' : 'Booking date';
 $bookingSql = "
     SELECT
         b.booking_id,
-        COALESCE(NULLIF(b.customer_name, ''), CONCAT_WS(' ', u.first_name, u.last_name)) AS customer_name,
+        COALESCE(NULLIF(b.customer_name, ''), NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), 'Customer') AS customer_name,
         COALESCE(NULLIF(b.customer_phone, ''), u.phone_number) AS customer_phone,
         f.facility_name,
         cd.court_no,
@@ -260,6 +260,12 @@ function escapeHtml($value)
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+function formatReportDate($value)
+{
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $value, new DateTimeZone('Asia/Manila'));
+    return $date ? $date->format('M j, Y') : (string) $value;
+}
+
 function isPdfExportRequest()
 {
     return isset($_GET['export']) && $_GET['export'] === 'pdf';
@@ -288,9 +294,9 @@ C:\\xampp\\php\\php.exe -d detect_unicode=0 C:\\xampp\\htdocs\\CourtConnect\\com
     $pdfHtml .= '<table class="card-grid"><tr><td class="box"><div class="label">Verified Revenue</div><div class="value">' . formatCurrency($verifiedRevenue) . '</div></td><td class="box"><div class="label">Paid Bookings</div><div class="value">' . (int) $paidBookings . '</div></td><td class="box"><div class="label">Total Bookings</div><div class="value">' . (int) $totalBookings . '</div></td></tr></table>';
     $pdfHtml .= '<div class="meta">Pending: ' . (int) $pendingPayments . ' &nbsp;|&nbsp; Rejected: ' . (int) $rejectedPayments . ' &nbsp;|&nbsp; Cancelled: ' . (int) $cancelledBookings . '</div>';
     if ($rows) {
-        $pdfHtml .= '<table><thead><tr><th>Reference</th>' . ($roleId === 4 ? '<th>Facility</th>' : '') . '<th>Booking Date</th><th>Court</th><th>Sport</th><th>Amount</th><th>Payment Status</th></tr></thead><tbody>';
+        $pdfHtml .= '<table><thead><tr><th>Customer Name</th>' . ($roleId === 4 ? '<th>Facility</th>' : '') . '<th>Booking Date</th><th>Court</th><th>Sport</th><th>Amount</th><th>Payment Status</th></tr></thead><tbody>';
         foreach ($rows as $row) {
-            $pdfHtml .= '<tr><td>#' . (int) ($row["booking_id"] ?? 0) . '</td>' . ($roleId === 4 ? '<td>' . escapeHtml((string) ($row["facility_name"] ?? "")) . '</td>' : '') . '<td>' . escapeHtml((string) ($row["reservation_date"] ?? "")) . '</td><td>' . escapeHtml((string) ($row["court_no"] ?? "")) . '</td><td>' . escapeHtml((string) ($row["sport_type"] ?? "")) . '</td><td>' . formatCurrency((float) ($row["verified_amount"] ?? 0)) . '</td><td class="status">' . escapeHtml((string) ($row["payment_status"] ?? "Pending")) . '</td></tr>';
+            $pdfHtml .= '<tr><td>' . escapeHtml((string) ($row["customer_name"] ?? "Customer")) . '</td>' . ($roleId === 4 ? '<td>' . escapeHtml((string) ($row["facility_name"] ?? "")) . '</td>' : '') . '<td>' . escapeHtml(formatReportDate($row["reservation_date"] ?? "")) . '</td><td>Court ' . escapeHtml((string) ($row["court_no"] ?? "")) . '</td><td>' . escapeHtml((string) ($row["sport_type"] ?? "")) . '</td><td>' . formatCurrency((float) ($row["verified_amount"] ?? 0)) . '</td><td class="status">' . escapeHtml((string) ($row["payment_status"] ?? "Pending")) . '</td></tr>';
         }
         $pdfHtml .= '</tbody></table>';
     } else {
@@ -336,7 +342,6 @@ $reportQueryString = http_build_query([
         body.admin-ui { background: #f6f8f4; }
         .admin-content.sales-report-content { padding-top: 25px; padding-bottom: 16px; }
         .sales-report-head { align-items: center; margin-bottom: 14px; }
-        .sales-report-head h1 { font-size: 20px; }
         .sales-report-head .admin-subtitle { margin-top: 3px; font-size: 10px; }
         .report-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
         .report-actions a { min-height: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid transparent; border-radius: 5px; font-size: 10px; font-weight: 600; text-decoration: none; white-space: nowrap; }
@@ -345,9 +350,9 @@ $reportQueryString = http_build_query([
         .reports-layout { display: grid; width: 100%; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 10px; }
         .report-toolbar { width: 100%; padding: 10px 12px; border: 1px solid #d8e2dc; border-radius: 7px; background: #fff; }
         .report-form { display: flex; width: 100%; min-width: 0; flex-wrap: wrap; align-items: end; gap: 9px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-        .report-form label { display: grid; min-width: 0; flex: 0 1 145px; gap: 4px; margin: 0; color: #586d78; font-size: 9px; font-weight: 600; }
-        .report-form input, .report-form select { width: 100%; min-width: 0; height: 29px; box-sizing: border-box; margin: 0; padding: 4px 8px; border: 1px solid #d8e2dc; border-radius: 4px; background: #fff; color: #0d3157; font: inherit; font-size: 10px; }
-        .report-form button { width: auto; height: 29px; flex: 0 0 auto; margin: 0; padding: 0 13px; border: 0; border-radius: 4px; background: #78b936; color: #0d3157; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; }
+        .report-form label { display: grid; min-width: 0; flex: 0 1 145px; gap: 4px; margin: 0; color: #586d78; font-size: 11px; font-weight: 600; }
+        .report-form input, .report-form select { width: 100%; min-width: 0; height: 34px; box-sizing: border-box; margin: 0; padding: 4px 8px; border: 1px solid #d8e2dc; border-radius: 4px; background: #fff; color: #0d3157; font: 500 12px/1.25 "Poppins", "Trebuchet MS", sans-serif !important; }
+        .report-form button { width: auto; height: 34px; flex: 0 0 auto; margin: 0; padding: 0 13px; border: 0; border-radius: 4px; background: #78b936; color: #0d3157; font: 700 12px/1.25 "Poppins", "Trebuchet MS", sans-serif; cursor: pointer; }
         .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
         .summary-card { min-height: 66px; padding: 10px 13px; border: 1px solid #d8e2dc; border-radius: 7px; background: #fff; }
         .summary-card .label { color: #586d78; font-size: 9px; font-weight: 600; letter-spacing: .02em; }
@@ -360,10 +365,11 @@ $reportQueryString = http_build_query([
         .transactions-heading h2 { margin: 0; color: #0d3157; font-family: "Poppins", sans-serif; font-size: 14px; font-weight: 600; }
         .transactions-heading span { color: #687b81; font-size: 9px; }
         .table-shell { width: 100%; min-width: 0; overflow-x: auto; }
-        .table-shell table { width: 100%; min-width: 0; border-collapse: collapse; }
+        .table-shell table { width: 100%; min-width: 0; border: 0; border-collapse: collapse; box-shadow: none; outline: 0; }
         .table-shell table.all-facilities-table { min-width: 680px; }
-        .table-shell th, .table-shell td { padding: 7px 9px; border: 0; border-bottom: 1px solid #e8ece9; text-align: left; vertical-align: middle; font-size: 10px; }
-        .table-shell th { background: #edf2ee; color: #405b65; font-size: 9px; font-weight: 700; white-space: nowrap; }
+        .table-shell th, .table-shell td { padding: 11px 12px; border: 0; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: middle; font-size: 10px; }
+        .table-shell th { background: #f7f9f8; color: #405b65; font-size: 9px; font-weight: 700; white-space: nowrap; }
+        .table-shell tbody tr:last-child td { border-bottom: 0; }
         .table-shell td.amount { color: #0d3157; font-weight: 600; white-space: nowrap; }
         .status-pill { display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 999px; font-size: 8px; font-weight: 700; }
         .status-paid { background: #eaf5e3; color: #397a2b; }
@@ -378,7 +384,6 @@ $reportQueryString = http_build_query([
         @media (max-width: 650px) {
             .admin-content.sales-report-content { padding-top: 20px; }
             .sales-report-head { align-items: flex-start; flex-direction: column; gap: 10px; margin-bottom: 13px; }
-            .sales-report-head h1 { font-size: 20px; }
             .report-actions { width: 100%; }
             .report-actions a { flex: 1; }
             .report-form label { flex: 1 1 140px; }
@@ -494,7 +499,7 @@ $reportQueryString = http_build_query([
                             <table class="<?= $roleId === 4 ? 'all-facilities-table' : '' ?>">
                             <thead>
                                 <tr>
-                                    <th>Reference</th>
+                                    <th>Customer Name</th>
                                     <?php if ($roleId === 4): ?>
                                         <th>Facility</th>
                                     <?php endif; ?>
@@ -515,12 +520,12 @@ $reportQueryString = http_build_query([
                                         elseif ($paymentStatus === 'cancelled') { $statusClass = 'status-cancelled'; }
                                     ?>
                                     <tr>
-                                        <td>#<?= (int) ($row["booking_id"] ?? 0) ?></td>
+                                        <td><?= escapeHtml((string) ($row["customer_name"] ?? "Customer")) ?></td>
                                         <?php if ($roleId === 4): ?>
                                             <td><?= escapeHtml((string) ($row["facility_name"] ?? "Facility")) ?></td>
                                         <?php endif; ?>
-                                        <td><?= escapeHtml((string) ($row["reservation_date"] ?? "-")) ?></td>
-                                        <td><?= escapeHtml((string) ($row["court_no"] ?? "-")) ?></td>
+                                        <td><?= escapeHtml(formatReportDate($row["reservation_date"] ?? "")) ?></td>
+                                        <td>Court <?= escapeHtml((string) ($row["court_no"] ?? "-")) ?></td>
                                         <td><?= escapeHtml((string) ($row["sport_type"] ?? "-")) ?></td>
                                         <td class="amount"><?= formatCurrency((float) ($row["verified_amount"] ?? 0)) ?></td>
                                         <td><span class="status-pill <?= $statusClass ?>"><?= escapeHtml(ucfirst((string) ($row["payment_status"] ?? "Pending"))) ?></span></td>

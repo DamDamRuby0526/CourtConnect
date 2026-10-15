@@ -10,24 +10,13 @@ $ownerOnboardingHeader = true;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="includes/css/styles.css">
-    <script src="includes/js/file_upload_zone.js?v=20261014-1" defer></script>
-    <script src="includes/js/admin_register.js?v=20261014-1" defer></script>
+    <script src="includes/js/file_upload_zone.js?v=20261016-1" defer></script>
+    <script src="includes/js/admin_register.js?v=20261016-1" defer></script>
     <title>Facility owner registration | CourtConnect</title>
 </head>
 <body class="owner-onboarding-page">
     <?php include 'includes/navigation/header.php'; ?>
     <main class="auth-shell owner-onboarding-layout">
-        <aside class="auth-visual owner-brand-panel" id="ownerBrandPanel">
-            <p class="auth-visual-eyebrow" id="ownerPanelEyebrow">FOR FACILITY OWNERS</p>
-            <h2 id="ownerPanelTitle">List your courts. Start earning bookings.</h2>
-            <p id="ownerPanelCopy">Manage court schedules and bookings in one place.</p>
-            <ul class="owner-panel-checklist" id="ownerPanelChecklist">
-                <li><span aria-hidden="true">✓</span>Online and walk-in bookings in one place</li>
-                <li><span aria-hidden="true">✓</span>Payments go to your own GCash QR</li>
-                <li><span aria-hidden="true">✓</span>Manage schedules and see reports</li>
-            </ul>
-            <p class="owner-panel-footer" id="ownerPanelFooter" hidden>Our team reviews every application before a facility goes live.</p>
-        </aside>
         <section class="auth-panel owner-onboarding-form-panel">
             <form id="registerForm" class="auth-card owner-onboarding-card" enctype="multipart/form-data">
                 <h1 id="registrationTitle">Create your facility account</h1>
@@ -90,6 +79,9 @@ $ownerOnboardingHeader = true;
                 </div>
 
                 <div id="verificationStep" class="owner-registration-step" hidden>
+                    <aside class="owner-document-prep" role="note">
+                        Please prepare your PDF documents (Government ID, DTI/SEC, Business Permit, Proof of Ownership) before continuing.
+                    </aside>
                     <section class="owner-form-section">
                         <h2>Facility information</h2>
                         <p>Tell us where players can find and book your facility.</p>
@@ -138,8 +130,8 @@ $ownerOnboardingHeader = true;
                             <div class="owner-document-upload-card" data-required-document="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>">
                                 <div class="owner-upload-heading"><strong><?= htmlspecialchars($label, ENT_QUOTES, "UTF-8") ?></strong><span>Required</span></div>
                                 <div class="resubmit-file-zone owner-upload-zone">
-                                    <input class="resubmit-file-input owner-upload-input" type="file" id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" name="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" accept=".jpg,.jpeg,.png,.webp,.pdf" required aria-describedby="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>_error">
-                                    <label class="resubmit-drop-area" for="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" tabindex="0"><span class="resubmit-upload-icon" aria-hidden="true">↑</span><span><strong>Choose file</strong><small>or drop it here</small></span><small>JPG, PNG, WEBP or PDF · up to 5 MB</small></label>
+                                    <input class="resubmit-file-input owner-upload-input" type="file" id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" name="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" accept=".pdf,application/pdf" required aria-describedby="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>_error">
+                                    <label class="resubmit-drop-area" for="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>" tabindex="0"><span class="resubmit-upload-icon" aria-hidden="true">↑</span><span><strong>Choose file</strong><small>or drop it here</small></span><small>PDF ONLY · up to 5 MB</small></label>
                                     <div class="resubmit-file-preview owner-upload-preview" id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>_preview" hidden aria-live="polite"></div>
                                     <p class="resubmit-file-error" id="<?= htmlspecialchars($inputId, ENT_QUOTES, "UTF-8") ?>_error" role="alert" hidden></p>
                                 </div>

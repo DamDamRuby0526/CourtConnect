@@ -65,7 +65,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         const returnUrl = new URL(returnTo, window.location.href);
         const appDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
         const returnRoute = returnUrl.pathname.slice(appDirectory.length);
-        const allowedRoutes = ["courts.php", "mybookings.php", "checkout.php"];
+        const allowedRoutes = ["courts.php", "mybookings.php", "checkout.php", "reservation_resume.php"];
         if (returnUrl.origin === window.location.origin
           && returnUrl.pathname.startsWith(appDirectory)
           && allowedRoutes.includes(returnRoute)) {
@@ -83,14 +83,21 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   notification.className = "login-success-overlay";
   notification.style.setProperty("--login-redirect-delay", `${loginRedirectDelay}ms`);
   notification.setAttribute("role", "status");
-  notification.innerHTML = `
-    <div class="login-success-card">
-      <span class="login-success-icon" aria-hidden="true">&#10003;</span>
-      <strong>Welcome, ${result.user.first_name}!</strong>
-      <small>Taking you to ${destinationLabel}</small>
-      <span class="login-success-loader" aria-hidden="true"></span>
-    </div>
-  `;
+  const card = document.createElement("div");
+  card.className = "login-success-card";
+  const icon = document.createElement("span");
+  icon.className = "login-success-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "\u2713";
+  const welcome = document.createElement("strong");
+  welcome.textContent = `Welcome, ${result.user.first_name}!`;
+  const destinationMessage = document.createElement("small");
+  destinationMessage.textContent = `Taking you to ${destinationLabel}`;
+  const loader = document.createElement("span");
+  loader.className = "login-success-loader";
+  loader.setAttribute("aria-hidden", "true");
+  card.append(icon, welcome, destinationMessage, loader);
+  notification.appendChild(card);
   document.body.appendChild(notification);
 
   window.setTimeout(() => {

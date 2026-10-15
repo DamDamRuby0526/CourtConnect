@@ -166,25 +166,32 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
 
     const result = await response.json();
     alert(result.message);
-    // redirect to home page after successful verification without forcing login again
     if (result.success) {
       const notification = document.createElement("div");
       const loginRedirectDelay = 2000;
+      const hasPendingReservation = document.body.dataset.pendingReservation === "true";
       notification.className = "login-success-overlay";
       notification.style.setProperty("--login-redirect-delay", `${loginRedirectDelay}ms`);
       notification.setAttribute("role", "status");
-      notification.innerHTML = `
-        <div class="login-success-card">
-          <span class="login-success-icon" aria-hidden="true">&#10003;</span>
-          <strong>Welcome, ${result.user.first_name}!</strong>
-          <small>Taking you to your home page.</small>
-          <span class="login-success-loader" aria-hidden="true"></span>
-        </div>
-      `;
+      const card = document.createElement("div");
+      card.className = "login-success-card";
+      const icon = document.createElement("span");
+      icon.className = "login-success-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = "\u2713";
+      const welcome = document.createElement("strong");
+      welcome.textContent = `Welcome, ${result.user.first_name}!`;
+      const destinationMessage = document.createElement("small");
+      destinationMessage.textContent = `Taking you to ${hasPendingReservation ? "your selected reservation" : "your home page"}.`;
+      const loader = document.createElement("span");
+      loader.className = "login-success-loader";
+      loader.setAttribute("aria-hidden", "true");
+      card.append(icon, welcome, destinationMessage, loader);
+      notification.appendChild(card);
       document.body.appendChild(notification);
 
       window.setTimeout(() => {
-        window.location.href = "index.php";
+        window.location.href = hasPendingReservation ? "reservation_resume.php" : "index.php";
       }, loginRedirectDelay);
     }
   } catch (error) {

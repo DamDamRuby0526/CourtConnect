@@ -125,8 +125,14 @@ function renderTodayBookings() {
     for (const booking of bookings) {
       const row = document.createElement("article");
       row.className = "dashboard-today-row";
-      const time = makeTextElement("time", "dashboard-booking-time", formatSlotTime(booking.court_time));
+      const timeRange = booking.end_time
+        ? `${formatSlotTime(booking.court_time)}–${formatSlotTime(booking.end_time)}`
+        : formatSlotTime(booking.court_time);
+      const schedule = document.createElement("div");
+      schedule.className = "dashboard-booking-schedule";
+      const time = makeTextElement("time", "dashboard-booking-time", timeRange);
       time.dateTime = `${booking.court_date}T${booking.court_time}`;
+      schedule.append(time);
       const customer = document.createElement("div");
       customer.className = "dashboard-booking-customer";
       customer.append(
@@ -149,6 +155,11 @@ function renderTodayBookings() {
       badges.append(makeTextElement("span", `dashboard-badge ${attendance.className}`, attendance.label));
 
       const amount = makeTextElement("strong", "dashboard-booking-amount", `₱${Number(booking.total_amount).toFixed(2)}`);
+      const durationMinutes = Number(booking.total_duration || 0);
+      const durationHours = durationMinutes / 60;
+      const durationLabel = `${Number.isInteger(durationHours) ? durationHours : durationHours.toFixed(2)} ${durationHours === 1 ? "hour" : "hours"}`;
+      const duration = makeTextElement("small", "dashboard-booking-duration", durationLabel);
+      schedule.append(duration);
       const actions = document.createElement("div");
       actions.className = "dashboard-booking-actions";
       if (!booking.arrived_at && !booking.did_not_arrive_at) {
@@ -170,7 +181,7 @@ function renderTodayBookings() {
       }
       actions.append(cancel);
 
-      row.append(time, customer, badges, amount, actions);
+      row.append(schedule, customer, badges, amount, actions);
       rows.append(row);
     }
     court.append(rows);

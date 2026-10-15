@@ -59,7 +59,9 @@ async function checkCheckoutExpiry(timer) {
     const response = await fetch("includes/backend-api/expire_booking.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ booking_id: document.querySelector(".checkout-page").dataset.bookingId }),
+      body: new URLSearchParams({
+        booking_id: document.querySelector(".checkout-page").dataset.bookingId,
+      }),
     });
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || "Unable to check the booking hold.");
@@ -135,10 +137,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const cancelButton = document.getElementById("cancelCheckoutBooking");
   cancelButton?.addEventListener("click", async () => {
+    const checkoutPage = document.querySelector(".checkout-page");
+    const isGroupedReservation = Number(checkoutPage.dataset.bookingGroupId) > 0;
     const confirmed = await window.showDialog({
       type: "confirm",
-      title: "Cancel this booking?",
-      message: "The time slot will be released and this booking will be removed.",
+      title: isGroupedReservation ? "Cancel this reservation?" : "Cancel this booking?",
+      message: isGroupedReservation
+        ? "All selected time slots will be released and this reservation will be removed."
+        : "The time slot will be released and this booking will be removed.",
       confirmText: "Yes, cancel",
       cancelText: "Keep booking",
     });
@@ -152,9 +158,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("includes/backend-api/cancel_checkout_booking.php", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          booking_id: document.querySelector(".checkout-page").dataset.bookingId,
-        }),
+        body: new URLSearchParams(isGroupedReservation
+          ? { booking_group_id: checkoutPage.dataset.bookingGroupId }
+          : { booking_id: checkoutPage.dataset.bookingId }),
       });
       const result = await response.json();
       if (!response.ok || !result.success) {
@@ -198,7 +204,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const submitButton = form.querySelector("button[type='submit']");
     const formData = new FormData(form);
-    formData.append("booking_id", document.querySelector(".checkout-page").dataset.bookingId);
+    const checkoutPage = document.querySelector(".checkout-page");
+    if (Number(checkoutPage.dataset.bookingGroupId) > 0) {
+      formData.append("booking_group_id", checkoutPage.dataset.bookingGroupId);
+    } else {
+      formData.append("booking_id", checkoutPage.dataset.bookingId);
+    }
     submitButton.disabled = true;
     submitButton.textContent = "Submitting...";
     try {

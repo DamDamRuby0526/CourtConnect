@@ -55,53 +55,66 @@ $conn->close();
 <body class="admin-ui">
     <div class="admin-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
-        <main class="admin-content">
+        <main class="admin-content admin-workspace-page admin-payments-page">
             <header class="admin-page-head">
                 <div>
-                    <p class="admin-breadcrumb"><?= $roleId === 3 ? "FACILITY OWNER" : "FACILITY ADMIN" ?> <span>/</span> PAYMENTS</p>
                     <h1>Payments</h1>
-                    <p class="admin-subtitle">Review GCash receipts and record confirmed payments.</p>
+                    <p class="admin-subtitle">Review receipts and manage payment confirmations.</p>
                 </div>
                 <div class="admin-head-actions">
                     <span class="admin-today"><?= date("l, F j, Y") ?></span>
-                    <button class="admin-refresh-button" type="button" id="refreshPayments" aria-label="Refresh payments" title="Refresh payments">&#8635;</button>
+                    <button class="admin-refresh-button" type="button" id="refreshPayments" aria-label="Refresh payments" title="Refresh payments">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 0 1 4"></path></svg>
+                    </button>
                 </div>
             </header>
             <section class="booking-section" aria-label="Facility payments">
                 <div class="booking-section-head">
                     <div>
-                        <h2>Payment records</h2>
-                        <p><?= htmlspecialchars($facilityName, ENT_QUOTES, "UTF-8") ?></p>
+                        <h2>Payment transactions</h2>
+                        <p><?= htmlspecialchars($facilityName, ENT_QUOTES, "UTF-8") ?> · <span id="paymentRecordCount">Loading records</span></p>
                     </div>
                     <div class="payment-summary" aria-live="polite">
-                        <span><strong id="pendingPaymentCount">--</strong> pending</span>
-                        <span><strong id="rejectedPaymentCount">--</strong> rejected</span>
-                        <span><strong id="paidPaymentTotal">--</strong> paid total</span>
+                        <span><strong id="pendingPaymentCount">—</strong> Pending</span>
+                        <span><strong id="paidPaymentCount">—</strong> Paid</span>
+                        <span><strong id="rejectedPaymentCount">—</strong> Rejected</span>
+                        <span><strong id="paidPaymentTotal">—</strong> confirmed total</span>
                     </div>
                 </div>
-                <label class="payment-filter">
-                    <span>Payment status</span>
-                    <select id="paymentStatusFilter">
-                        <option value="">All status</option>
-                        <option value="pending">Pending</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="paid">Paid</option>
-                    </select>
-                </label>
+                <form class="payment-tools" id="paymentFilters" role="search" aria-label="Filter payment transactions">
+                    <label class="payment-filter payment-search-filter" for="paymentSearch">
+                        <span>Search</span>
+                        <input type="search" id="paymentSearch" placeholder="Customer, phone, booking or reference">
+                    </label>
+                    <label class="payment-filter" for="paymentStatusFilter">
+                        <span>Payment status</span>
+                        <select id="paymentStatusFilter">
+                            <option value="">All statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </label>
+                    <label class="payment-filter" for="paymentDateFilter">
+                        <span>Booking date</span>
+                        <input type="date" id="paymentDateFilter">
+                    </label>
+                    <button type="reset" class="payment-reset-button" id="resetPaymentFilters">Clear filters</button>
+                </form>
                 <p id="paymentMessage" class="owner-form-status" role="status" aria-live="polite"></p>
                 <div class="schedule-table-wrap payment-table-wrap">
                     <table class="schedule-table payment-table">
                         <thead>
                             <tr>
-                                <th scope="col">Booking date</th>
+                                <th scope="col">Booking date &amp; time</th>
                                 <th scope="col">Court</th>
+                                <th scope="col">Duration</th>
                                 <th scope="col">Customer</th>
-                                <th scope="col">Method</th>
-                                <th scope="col">Reference Number</th>
+                                <th scope="col">Payment details</th>
                                 <th scope="col">Amount</th>
                                 <th scope="col">Receipt</th>
                                 <th scope="col">Status</th>
-                                <th scope="col">Action</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="paymentRows">

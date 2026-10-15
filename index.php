@@ -5,6 +5,24 @@ $municipalities = [
     "Abucay", "Bagac", "Balanga City", "Dinalupihan", "Hermosa", "Limay",
     "Mariveles", "Morong", "Orani", "Orion", "Pilar", "Samal",
 ];
+$homeHeroSlides = [
+    [
+        "file" => "02053841fc800bc68074c217c55cf853.png",
+        "alt" => "Indoor pickleball court with blue playing surfaces",
+    ],
+    [
+        "file" => "22b8f56d14771659e6128921f6ed9f6d.png",
+        "alt" => "Players on an indoor pickleball court",
+    ],
+    [
+        "file" => "2833aff3367ec88cf87540f346a17ce3.jpg",
+        "alt" => "Indoor badminton court with green playing surfaces",
+    ],
+    [
+        "file" => "5e93fc55432d01ea65b749927bfb6ae0.png",
+        "alt" => "Indoor badminton court with marked playing lines",
+    ],
+];
 $activeFacilityCondition = "EXISTS (
     SELECT 1 FROM admins active_owner
     WHERE active_owner.facility_id = f.facility_id AND active_owner.status = 'Active'
@@ -13,35 +31,17 @@ $activeFacilityCondition = "EXISTS (
     WHERE inactive_owner.facility_id = f.facility_id AND inactive_owner.status <> 'Active'
 )";
 
-$facilityCountStmt = $conn->prepare(
-    "SELECT COUNT(*) AS facility_count FROM facilities f WHERE $activeFacilityCondition"
-);
-$facilityCountStmt->execute();
-$activeFacilityCount = (int) ($facilityCountStmt->get_result()->fetch_assoc()["facility_count"] ?? 0);
-$facilityCountStmt->close();
-
-$availableCourtStmt = $conn->prepare(
-    "SELECT COUNT(DISTINCT cd.court_id) AS court_count
-     FROM court_details cd
-     INNER JOIN facilities f ON f.facility_id = cd.facility_id
-     WHERE cd.court_status = 'Available' AND $activeFacilityCondition"
-);
-$availableCourtStmt->execute();
-$availableCourtCount = (int) ($availableCourtStmt->get_result()->fetch_assoc()["court_count"] ?? 0);
-$availableCourtStmt->close();
-
-$municipalityCountStmt = $conn->prepare(
-    "SELECT COUNT(DISTINCT NULLIF(TRIM(f.municipality), '')) AS municipality_count
-     FROM facilities f
-     WHERE $activeFacilityCondition"
-);
-$municipalityCountStmt->execute();
-$municipalityCount = (int) ($municipalityCountStmt->get_result()->fetch_assoc()["municipality_count"] ?? 0);
-$municipalityCountStmt->close();
-
 $featuredStmt = $conn->prepare(
     "SELECT f.facility_id, f.facility_name, f.municipality, f.sport_type,
-            f.opening_time, f.closing_time, f.facility_img, rates.lowest_rate
+            f.opening_time, f.closing_time, f.facility_img, rates.lowest_rate,
+            (SELECT court.court_img
+             FROM court_details court
+             WHERE court.facility_id = f.facility_id
+                 AND court.court_status = 'Available'
+                 AND court.court_img IS NOT NULL
+                 AND court.court_img <> ''
+             ORDER BY court.court_id ASC
+             LIMIT 1) AS court_image
      FROM facilities f
      INNER JOIN (
          SELECT facility_id, MIN(court_rate) AS lowest_rate
@@ -62,6 +62,7 @@ while ($facility = $featuredResult->fetch_assoc()) {
 }
 $featuredStmt->close();
 $conn->close();
+$isLoggedIn = !empty($_SESSION["logged_in"]);
 
 function homePageEscape($value)
 {
@@ -100,8 +101,12 @@ function homePageIsOpen($openingTime, $closingTime)
             <div class="home-hero-copy">
                 <p class="home-eyebrow">YOUR GAME. YOUR TIME. YOUR COURT.</p>
                 <h1 id="homeTitle">Find a court.<br><span>Make your next match.</span></h1>
-                <p class="home-hero-description">Discover badminton and pickleball courts around Bataan, then reserve a time that works for you.</p>
-                <form class="home-search" action="facility.php" method="get" aria-label="Search courts">
+                <p class="home-hero-description">Discover badminton and pickleball facilities across Bataan. Compare courts, check availability, and reserve a time that works for you.</p>
+                <div class="home-hero-actions">
+                    <a class="home-primary-button" href="facility.php">Find a Court <span aria-hidden="true">→</span></a>
+                    <a class="home-text-link" href="#how-it-works">How It Works <span aria-hidden="true">↓</span></a>
+                </div>
+                <form class="home-search" action="facility.php" method="get" aria-label="Find a court">
                     <label>
                         <span>Sport</span>
                         <select name="sport">
@@ -119,13 +124,26 @@ function homePageIsOpen($openingTime, $closingTime)
                             <?php endforeach; ?>
                         </select>
                     </label>
-                    <button class="home-primary-button" type="submit">Search courts</button>
+                    <button class="home-primary-button" type="submit">Find Courts <span aria-hidden="true">→</span></button>
                 </form>
-                <a class="home-text-link" href="#how-it-works">How it works <span aria-hidden="true">&#8595;</span></a>
             </div>
-            <div class="home-hero-art">
-                <img src="uploads/badminton-pickleball-court.svg" alt="Badminton and pickleball court illustration">
-                <span class="home-art-caption" aria-hidden="true">BATAAN / FIND YOUR COURT</span>
+            <div class="home-hero-art" data-court-slideshow aria-label="Court photos">
+                <?php foreach ($homeHeroSlides as $slideIndex => $slide): ?>
+                    <img
+                        class="home-hero-slide<?= $slideIndex === 0 ? " is-active" : "" ?>"
+                        src="uploads/court/<?= homePageEscape($slide["file"]) ?>"
+                        alt="<?= homePageEscape($slide["alt"]) ?>"
+                        aria-hidden="<?= $slideIndex === 0 ? "false" : "true" ?>"
+                    >
+                <?php endforeach; ?>
+                <div class="home-art-caption">
+                    <span>COURTCONNECT / BATAAN</span>
+                    <strong>Made for your next match.</strong>
+                </div>
+                <div class="home-slideshow-controls" aria-label="Court photo controls">
+                    <button type="button" data-slide-previous aria-label="Previous court photo">‹</button>
+                    <button type="button" data-slide-next aria-label="Next court photo">›</button>
+                </div>
             </div>
         </section>
 
@@ -133,46 +151,59 @@ function homePageIsOpen($openingTime, $closingTime)
             <div class="home-section-heading">
                 <p class="home-eyebrow">THREE STEPS TO GAME TIME</p>
                 <h2 id="howTitle">How it works</h2>
-                <p>Find a local court, choose your time, and send your payment for confirmation.</p>
+                <p>A clear path from finding a venue to submitting your reservation.</p>
             </div>
             <div class="home-steps">
                 <article class="home-step">
-                    <span>01</span>
-                    <h3>Find a court</h3>
-                    <p>Browse active facilities by sport and municipality.</p>
+                    <span class="home-step-number">01</span>
+                    <span class="home-step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4.2 4.2M8 10.8h5.6M10.8 8v5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+                    <h3>Find a Court</h3>
+                    <p>Browse badminton and pickleball facilities by sport and municipality.</p>
                 </article>
                 <article class="home-step">
-                    <span>02</span>
-                    <h3>Pick a time</h3>
-                    <p>Choose an available slot and hold it while you check out.</p>
+                    <span class="home-step-number">02</span>
+                    <span class="home-step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M8 13h3M8 16.5h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+                    <h3>Choose Your Schedule</h3>
+                    <p>Select an available court and reservation time that suits you.</p>
                 </article>
                 <article class="home-step">
-                    <span>03</span>
-                    <h3>Pay and get confirmed</h3>
-                    <p>Pay with the facility's GCash QR and upload your receipt for confirmation.</p>
+                    <span class="home-step-number">03</span>
+                    <span class="home-step-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 1 4 16.5v-11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 6h13M8 12h8M8 15h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+                    <h3>Submit Your Payment</h3>
+                    <p>Follow the facility’s payment instructions and upload your receipt for verification.</p>
                 </article>
             </div>
         </section>
 
-        <?php if ($featuredFacilities): ?>
-            <section class="home-section home-featured" aria-labelledby="featuredTitle">
+        <section class="home-section home-featured" aria-labelledby="featuredTitle">
                 <div class="home-section-heading home-section-heading-row">
                     <div>
                         <p class="home-eyebrow">PLAY CLOSE TO HOME</p>
-                        <h2 id="featuredTitle">Featured facilities</h2>
-                        <p>Explore courts listed by facility owners around Bataan.</p>
+                        <h2 id="featuredTitle">Find Your Next Court</h2>
+                        <p>Explore badminton and pickleball facilities around Bataan.</p>
                     </div>
-                    <a class="home-primary-button" href="facility.php">See all facilities</a>
+                    <a class="home-section-link" href="facility.php">View All Facilities <span aria-hidden="true">→</span></a>
                 </div>
-                <div class="home-featured-grid">
+                <?php if ($featuredFacilities): ?>
+                    <div class="home-featured-grid">
                     <?php foreach ($featuredFacilities as $facility): ?>
                         <article class="facility-card home-facility-card">
                             <div class="facility-card-media">
-                                <?php if (!empty($facility["facility_img"])): ?>
-                                    <img class="facility-card-image is-loading" src="uploads/facility/<?= rawurlencode(basename($facility["facility_img"])) ?>" alt="<?= homePageEscape($facility["facility_name"]) ?>" loading="lazy">
-                                    <div class="facility-image-fallback" aria-hidden="true">Facility photo unavailable</div>
+                                <?php if (!empty($facility["court_image"])): ?>
+                                    <img class="facility-card-image is-loading" src="uploads/court/<?= rawurlencode(basename($facility["court_image"])) ?>" alt="Court at <?= homePageEscape($facility["facility_name"]) ?>" loading="lazy">
+                                    <div class="facility-image-fallback" aria-hidden="true">
+                                        <?php if (!empty($facility["facility_img"])): ?>
+                                            <img src="uploads/facility/<?= rawurlencode(basename($facility["facility_img"])) ?>" alt="">
+                                        <?php endif; ?>
+                                        <span>Court photo unavailable</span>
+                                    </div>
+                                <?php elseif (!empty($facility["facility_img"])): ?>
+                                    <div class="facility-image-fallback home-facility-placeholder">
+                                        <img src="uploads/facility/<?= rawurlencode(basename($facility["facility_img"])) ?>" alt="">
+                                        <span>Court photo not provided</span>
+                                    </div>
                                 <?php else: ?>
-                                    <div class="facility-image-fallback" aria-hidden="true">Facility photo unavailable</div>
+                                    <div class="facility-image-fallback home-facility-placeholder"><span>Court photo not provided</span></div>
                                 <?php endif; ?>
                             </div>
                             <div class="facility-card-content">
@@ -184,32 +215,32 @@ function homePageIsOpen($openingTime, $closingTime)
                                     </div>
                                 </div>
                                 <p class="facility-location"><?= homePageEscape($facility["municipality"] ?: "Bataan") ?>, Bataan</p>
-                                <p class="facility-rate"><span>From</span> P<?= number_format((float) $facility["lowest_rate"], 0) ?> <span>/ hour</span></p>
-                                <a class="home-outline-link" href="courts.php?facility_id=<?= (int) $facility["facility_id"] ?>">View courts</a>
+                                <p class="facility-rate"><span>From</span> ₱<?= number_format((float) $facility["lowest_rate"], 0) ?> <span>/ hour</span></p>
+                                <a class="home-outline-link" href="courts.php?facility_id=<?= (int) $facility["facility_id"] ?>">View Courts <span aria-hidden="true">→</span></a>
                             </div>
                         </article>
                     <?php endforeach; ?>
-                </div>
-            </section>
-        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="home-facility-empty">
+                        <strong>New courts are on their way.</strong>
+                        <p>There are no participating facilities with available courts to feature right now. Browse the directory to see current listings.</p>
+                        <a href="facility.php">Browse all facilities <span aria-hidden="true">→</span></a>
+                    </div>
+                <?php endif; ?>
+        </section>
 
-        <section class="home-section home-sports" aria-labelledby="sportsTitle">
-            <div class="home-section-heading">
-                <p class="home-eyebrow">CHOOSE YOUR GAME</p>
-                <h2 id="sportsTitle">Browse by sport</h2>
-                <p>Start with the game you want to play.</p>
+        <section class="home-benefits" aria-labelledby="benefitsTitle">
+            <div class="home-benefits-heading">
+                <p class="home-eyebrow">A BETTER WAY TO PLAN GAME TIME</p>
+                <h2 id="benefitsTitle">Why Use CourtConnect?</h2>
+                <p>Useful booking information, together in one place.</p>
             </div>
-            <div class="home-sport-grid">
-                <a class="home-sport-tile home-sport-badminton" href="facility.php?sport=Badminton">
-                    <span class="home-sport-art home-badminton-art" aria-hidden="true"></span>
-                    <span class="home-sport-tile-copy"><strong>Badminton</strong><span>Find badminton courts</span></span>
-                    <span class="home-sport-arrow" aria-hidden="true">&#8594;</span>
-                </a>
-                <a class="home-sport-tile home-sport-pickleball" href="facility.php?sport=Pickleball">
-                    <span class="home-sport-art home-pickleball-art" aria-hidden="true"></span>
-                    <span class="home-sport-tile-copy"><strong>Pickleball</strong><span>Find pickleball courts</span></span>
-                    <span class="home-sport-arrow" aria-hidden="true">&#8594;</span>
-                </a>
+            <div class="home-benefit-list">
+                <article><span>01</span><div><h3>Discover Local Courts</h3><p>Find participating badminton and pickleball venues across Bataan.</p></div></article>
+                <article><span>02</span><div><h3>Check Court Availability</h3><p>Review listed schedules before making a reservation.</p></div></article>
+                <article><span>03</span><div><h3>Manage Your Bookings</h3><p>Access reservation details and booking history online.</p></div></article>
+                <article><span>04</span><div><h3>Clear Payment Status</h3><p>Check the status of your submitted payment receipt.</p></div></article>
             </div>
         </section>
 
@@ -228,11 +259,11 @@ function homePageIsOpen($openingTime, $closingTime)
                 </ul>
                 <div class="home-owner-actions">
                     <a class="home-primary-button" href="adminregister.php">Register your facility</a>
-                    <a class="home-outline-link home-outline-light" href="signin.php">Sign in as facility</a>
                 </div>
             </div>
         </section>
 
+        <?php if (!$isLoggedIn): ?>
         <section class="home-final-cta" aria-labelledby="finalCtaTitle">
             <div>
                 <p class="home-eyebrow">MAKE ROOM FOR YOUR NEXT MATCH</p>
@@ -243,6 +274,7 @@ function homePageIsOpen($openingTime, $closingTime)
                 <a class="home-outline-link" href="facility.php">Find a court</a>
             </div>
         </section>
+        <?php endif; ?>
     </main>
 
     <?php include 'includes/navigation/footer.php'; ?>

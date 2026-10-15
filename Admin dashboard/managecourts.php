@@ -53,10 +53,9 @@ function ownerEscape($value)
 <body class="owner-ui owner-facility-settings">
     <div class="owner-layout" id="ownerFacility" data-facility-id="<?= (int) $facilityId ?>">
         <?php include '../includes/navigation/admin_header.php'; ?>
-        <main class="owner-content">
+        <main class="owner-content owner-workspace-page">
             <header class="owner-page-head">
                 <div>
-                    <p class="owner-breadcrumb">FACILITY OWNER <span>/</span> SETTINGS</p>
                     <h1>Facility Settings</h1>
                     <p>Manage your facility profile, payment details, operating hours, and courts.</p>
                 </div>

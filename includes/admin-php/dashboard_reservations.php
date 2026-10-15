@@ -58,7 +58,10 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
                 b.arrived_at, b.did_not_arrive_at, b.payment_status AS booking_payment_status,
                 COALESCE(b.customer_name, CONCAT(u.first_name, ' ', u.last_name)) AS customer_name,
                 COALESCE(b.customer_phone, u.phone_number) AS display_phone,
-                cs.court_date, cs.court_time, cd.court_no,
+                cs.court_date, COALESCE(b.start_time, cs.court_time) AS court_time,
+                COALESCE(b.end_time, ADDTIME(cs.court_time, SEC_TO_TIME(cd.slot_duration * 60))) AS end_time,
+                COALESCE(b.total_duration, cd.slot_duration) AS total_duration,
+                cd.court_no,
                 COALESCE(p.payment_status, IF(b.payment_status = 'paid', 'Paid', 'Pending')) AS payment_status
          FROM bookings b
          LEFT JOIN users u ON u.user_id = b.user_id
@@ -160,7 +163,7 @@ try {
     $transactionStarted = true;
     $slotStmt = $conn->prepare(
         "SELECT cs.court_id, cs.court_date, cs.court_time, cs.schedule_status,
-                cs.hold_expires_at, cd.court_rate
+                cs.hold_expires_at, cd.court_rate, cd.slot_duration
          FROM court_schedule cs
          INNER JOIN court_details cd ON cd.court_id = cs.court_id
          WHERE cs.schedule_id = ? AND cd.facility_id = ?
@@ -204,12 +207,17 @@ try {
 
     $courtId = (int) $slot["court_id"];
     $totalAmount = (int) $slot["court_rate"];
+    $slotDuration = (int) $slot["slot_duration"];
+    $endTime = (new DateTimeImmutable($slot["court_date"] . " " . $slot["court_time"]))
+        ->modify("+{$slotDuration} minutes")
+        ->format("H:i:s");
     $bookingStmt = $conn->prepare(
         "INSERT INTO bookings
-            (user_id, booking_type, customer_name, customer_phone, court_id, schedule_id, total_amount, status, payment_status)
-         VALUES (NULL, 'walk_in', ?, ?, ?, ?, ?, 'confirmed', 'paid')"
+            (user_id, booking_type, customer_name, customer_phone, court_id, schedule_id,
+             start_time, end_time, total_duration, total_amount, status, payment_status)
+         VALUES (NULL, 'walk_in', ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'paid')"
     );
-    $bookingStmt->bind_param("ssiid", $customerName, $customerPhone, $courtId, $scheduleId, $totalAmount);
+    $bookingStmt->bind_param("ssiissii", $customerName, $customerPhone, $courtId, $scheduleId, $slot["court_time"], $endTime, $slotDuration, $totalAmount);
     $bookingStmt->execute();
     $bookingId = $bookingStmt->insert_id;
     $bookingStmt->close();
