@@ -190,6 +190,59 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const form = document.getElementById("checkoutPaymentForm");
+  const receiptInput = document.getElementById("paymentReceipt");
+  const receiptDropzone = document.getElementById("paymentReceiptDropzone");
+  const receiptStatus = document.getElementById("paymentReceiptStatus");
+  const receiptError = document.getElementById("paymentReceiptError");
+
+  const validateReceipt = (file) => {
+    if (!file) {
+      receiptStatus.textContent = "";
+      receiptError.textContent = "";
+      return false;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      receiptInput.value = "";
+      receiptStatus.textContent = "";
+      receiptError.textContent = "Choose a JPG, PNG, or WEBP image.";
+      return false;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      receiptInput.value = "";
+      receiptStatus.textContent = "";
+      receiptError.textContent = "Receipt images must be 5 MB or smaller.";
+      return false;
+    }
+    receiptError.textContent = "";
+    receiptStatus.textContent = `Selected: ${file.name}`;
+    return true;
+  };
+
+  receiptInput?.addEventListener("change", () => validateReceipt(receiptInput.files[0]));
+  receiptDropzone?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      receiptInput.click();
+    }
+  });
+  receiptDropzone?.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    receiptDropzone.classList.add("is-dragging");
+  });
+  receiptDropzone?.addEventListener("dragleave", (event) => {
+    if (!receiptDropzone.contains(event.relatedTarget)) receiptDropzone.classList.remove("is-dragging");
+  });
+  receiptDropzone?.addEventListener("drop", (event) => {
+    event.preventDefault();
+    receiptDropzone.classList.remove("is-dragging");
+    const file = event.dataTransfer?.files[0];
+    if (!file) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    receiptInput.files = transfer.files;
+    validateReceipt(file);
+  });
+
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const receipt = form.elements.receipt.files[0];
@@ -197,8 +250,12 @@ document.addEventListener("DOMContentLoaded", () => {
       form.elements.receipt.reportValidity();
       return;
     }
-    if (receipt.size > 5 * 1024 * 1024) {
-      checkoutDialog("Receipt too large", "Receipt images must be 5 MB or smaller.", "error");
+    if (!validateReceipt(receipt)) {
+      checkoutDialog(
+        "Invalid receipt",
+        receiptError.textContent || "Choose a JPG, PNG, or WEBP image.",
+        "error"
+      );
       return;
     }
 

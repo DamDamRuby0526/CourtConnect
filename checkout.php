@@ -25,7 +25,7 @@ function checkoutFindBookings(mysqli $conn, int $bookingId, int $bookingGroupId,
                 b.booking_group_id,
                 b.start_time, b.end_time, b.total_duration,
                 cs.court_date, cs.court_time, cs.schedule_status,
-                cd.court_no, cd.slot_duration, cd.court_rate, f.facility_name, f.municipality, f.qr_img,
+                cd.court_no, cd.slot_duration, cd.court_rate, f.facility_name, f.municipality, f.qr_img, f.gcash_number,
                 p.payments_id, p.payment_status, p.reference_number, p.receipt_image,
                 UNIX_TIMESTAMP(b.hold_expires_at) AS hold_expires_epoch,
                 (b.hold_expires_at IS NULL OR b.hold_expires_at <= NOW()) AS hold_expired,
@@ -172,7 +172,7 @@ $expiredMessage = "Your booking expired and the slot was released.";
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="includes/js/checkout.js" defer></script>
+    <script src="includes/js/checkout.js?v=20261016-1" defer></script>
     <title>Checkout | CourtConnect</title>
 </head>
 <body class="player-ui">
@@ -180,7 +180,6 @@ $expiredMessage = "Your booking expired and the slot was released.";
     <main class="player-page checkout-page"
         data-booking-id="<?= (int) $booking["booking_id"] ?>"
         data-booking-group-id="<?= (int) ($booking["booking_group_id"] ?? 0) ?>">
-        <nav class="player-breadcrumb" aria-label="Breadcrumb"><a href="facility.php"><a href="mybookings.php">My bookings</a></nav>
         <header class="player-page-heading">
             <div>
                 <p class="player-eyebrow">SECURE YOUR COURT TIME</p>
@@ -245,8 +244,18 @@ $expiredMessage = "Your booking expired and the slot was released.";
                             <strong>P<?= number_format((float) $booking["total_amount"], 2) ?></strong>
                             <span>Payment method: GCash</span>
                         </div>
+                        <div class="checkout-gcash-number">
+                            <span class="checkout-gcash-number-label">GCash number</span>
+                            <?php if (!empty($booking["gcash_number"])): ?>
+                                <strong><?= checkoutEscape($booking["gcash_number"]) ?></strong>
+                                <span class="checkout-gcash-number-note">Use this number if you are not scanning the QR code.</span>
+                            <?php else: ?>
+                                <strong class="checkout-gcash-number-missing">Not provided</strong>
+                                <span class="checkout-gcash-number-note">Please scan the facility's QR code to pay.</span>
+                            <?php endif; ?>
+                        </div>
                         <ol class="checkout-steps">
-                            <li>Scan the QR</li>
+                            <li>Scan the QR code or send payment to the GCash number above</li>
                             <li>Pay the exact amount</li>
                             <li>Enter the reference number and upload your receipt</li>
                         </ol>
@@ -258,8 +267,16 @@ $expiredMessage = "Your booking expired and the slot was released.";
                             <label for="paymentReference">Reference number</label>
                             <input id="paymentReference" name="reference_number" type="text" maxlength="50" required autocomplete="off">
                             <label for="paymentReceipt">Receipt screenshot</label>
-                            <input id="paymentReceipt" name="receipt" type="file" accept="image/jpeg,image/png,image/webp" required>
-                            <small>JPG, PNG, or WEBP. Maximum size 5 MB.</small>
+                            <div class="checkout-receipt-upload">
+                                <input class="checkout-receipt-input" id="paymentReceipt" name="receipt" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="paymentReceiptHelp paymentReceiptStatus">
+                                <label class="checkout-receipt-dropzone" id="paymentReceiptDropzone" for="paymentReceipt" tabindex="0">
+                                    <span class="checkout-receipt-upload-icon" aria-hidden="true">↑</span>
+                                    <span class="checkout-receipt-upload-copy"><strong>Choose file</strong><small>or drop it here</small></span>
+                                    <small class="checkout-receipt-upload-help" id="paymentReceiptHelp">JPG, PNG, or WEBP. Maximum size 5 MB.</small>
+                                </label>
+                                <small class="checkout-receipt-status" id="paymentReceiptStatus" role="status" aria-live="polite"></small>
+                                <small class="checkout-receipt-error" id="paymentReceiptError" role="alert" aria-live="assertive"></small>
+                            </div>
                             <p class="checkout-form-message" id="checkoutFormMessage" role="status" aria-live="polite"></p>
                             <button class="player-primary-button" type="submit">Submit payment</button>
                             <?php if ($canCancelCheckout): ?>

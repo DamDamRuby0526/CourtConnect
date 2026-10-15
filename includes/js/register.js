@@ -1,5 +1,30 @@
 const resumeVerification = new URLSearchParams(window.location.search).get("resumeVerification") === "1";
 const resumeUserId = new URLSearchParams(window.location.search).get("user_id");
+const resendOtpLink = document.getElementById("resendOtpLink");
+const resendOtpCountdown = document.getElementById("resendOtpCountdown");
+let resendOtpTimer = null;
+
+function startOtpResendCountdown(seconds) {
+  window.clearInterval(resendOtpTimer);
+  let remaining = seconds;
+  resendOtpLink.setAttribute("aria-disabled", "true");
+  const updateCountdown = () => {
+    const minutes = Math.floor(remaining / 60).toString().padStart(2, "0");
+    const secondsRemaining = (remaining % 60).toString().padStart(2, "0");
+    resendOtpCountdown.textContent = `(${minutes}:${secondsRemaining})`;
+  };
+  updateCountdown();
+  resendOtpTimer = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      window.clearInterval(resendOtpTimer);
+      resendOtpLink.removeAttribute("aria-disabled");
+      resendOtpCountdown.textContent = "";
+      return;
+    }
+    updateCountdown();
+  }, 1000);
+}
 
 async function resumeOtpVerification(userId) {
   const otpForm = document.getElementById("otpForm");
@@ -16,6 +41,8 @@ async function resumeOtpVerification(userId) {
 
   const sendResult = await sendResponse.json();
   if (!sendResult.success) {
+    resendOtpLink.removeAttribute("aria-disabled");
+    resendOtpCountdown.textContent = "";
     alert(sendResult.message);
     return;
   }
@@ -23,6 +50,7 @@ async function resumeOtpVerification(userId) {
   if (sendResult.otp_code) {
     alert(`Development OTP: ${sendResult.otp_code}`);
   }
+  startOtpResendCountdown(60);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -83,22 +111,52 @@ document
     document.getElementById("modal_container").classList.add("show");
 
     // Automatically send the OTP as soon as the modal opens
-    const sendResponse = await fetch("includes/backend-api/sendOTP.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: result.user_id,
-      }),
-    });
-
-    const sendResult = await sendResponse.json();
-
-    if (!sendResult.success) {
-      alert(sendResult.message);
+    try {
+      const sendResponse = await fetch("includes/backend-api/sendOTP.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_id: result.user_id }),
+      });
+      let sendResult;
+      try {
+        sendResult = await sendResponse.json();
+      } catch {
+        throw new Error("The email service did not return a valid response. Please contact support.");
+      }
+      if (!sendResponse.ok || !sendResult.success) {
+        throw new Error(sendResult.message || "Unable to send the verification code.");
+      }
+      startOtpResendCountdown(60);
+    } catch (error) {
+      resendOtpLink.removeAttribute("aria-disabled");
+      resendOtpCountdown.textContent = "";
+      alert(error.message || "Unable to send the verification code.");
     }
   });
+
+resendOtpLink.addEventListener("click", async (event) => {
+  event.preventDefault();
+  if (resendOtpLink.getAttribute("aria-disabled") === "true") return;
+  try {
+    const response = await fetch("includes/backend-api/sendOTP.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: document.getElementById("otpForm").dataset.userId }),
+    });
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error("The email service did not return a valid response. Please contact support.");
+    }
+    if (!response.ok || !result.success) throw new Error(result.message || "Unable to resend the code.");
+    startOtpResendCountdown(60);
+  } catch (error) {
+    alert(error.message || "Unable to resend the code.");
+  }
+});
 
 // Move through the six OTP fields as the user types.
 
@@ -164,9 +222,14 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
       }),
     });
 
-    const result = await response.json();
-    alert(result.message);
+    let result;
+    try {
+      result = await response.json();
+    } catch {
+      throw new Error("The email service did not return a valid response. Please contact support.");
+    }
     if (result.success) {
+      document.getElementById("modal_container").classList.remove("show");
       const notification = document.createElement("div");
       const loginRedirectDelay = 2000;
       const hasPendingReservation = document.body.dataset.pendingReservation === "true";
@@ -193,6 +256,8 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
       window.setTimeout(() => {
         window.location.href = hasPendingReservation ? "reservation_resume.php" : "index.php";
       }, loginRedirectDelay);
+    } else {
+      alert(result.message || "Unable to verify this code.");
     }
   } catch (error) {
     alert("Network error. Please try again.");

@@ -8,15 +8,24 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     password: form.get("password"),
   };
 
-  const response = await fetch("includes/backend-api/login.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  const result = await response.json();
+  let result;
+  try {
+    const response = await fetch("includes/backend-api/login.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    result = await response.json();
+  } catch (error) {
+    window.showDialog({
+      type: "error",
+      title: "Unable to sign in",
+      message: error.message || "Could not complete sign-in. Please try again.",
+    });
+    return;
+  }
 
   if (!result.success) {
     if (result.requires_review) {
@@ -76,6 +85,11 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         destination = "index.php";
       }
     }
+  }
+
+  if (destination === "Admin dashboard/admindex.php") {
+    window.location.assign(destination);
+    return;
   }
 
   const notification = document.createElement("div");

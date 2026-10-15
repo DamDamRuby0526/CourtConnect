@@ -15,7 +15,6 @@
             <section>
                 <strong>Support</strong>
                 <a href="about.php">About us</a>
-                <a href="contactus.php">Contact us</a>
             </section>
         </div>
     </div>

@@ -389,8 +389,13 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: activeUserId }),
         });
-        const sent = await response.json();
-        if (!sent.success) {
+        let sent;
+        try {
+          sent = await response.json();
+        } catch {
+          throw new Error("The email service did not return a valid response. Please contact support.");
+        }
+        if (!response.ok || !sent.success) {
           await window.showDialog({ type: "error", title: "Unable to send verification code", message: sent.message || "Please try again." });
           return;
         }
@@ -398,10 +403,14 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.classList.add("show");
         modal.setAttribute("aria-hidden", "false");
         otpInputs[0].focus();
-        startResendCountdown(30);
+        startResendCountdown(60);
       })
-      .catch(async () => {
-        await window.showDialog({ type: "error", title: "Unable to load application", message: "Please return to sign in and try again." });
+      .catch(async (error) => {
+        await window.showDialog({
+          type: "error",
+          title: "Unable to send verification code",
+          message: error.message || "Please check the email service configuration and try again.",
+        });
       });
   }
 
@@ -415,7 +424,12 @@ document.addEventListener("DOMContentLoaded", () => {
     window.clearInterval(resendTimer);
     let remaining = seconds;
     resendLink.setAttribute("aria-disabled", "true");
-    resendCountdown.textContent = `(${remaining}s)`;
+    const updateCountdown = () => {
+      const minutes = Math.floor(remaining / 60).toString().padStart(2, "0");
+      const secondsRemaining = (remaining % 60).toString().padStart(2, "0");
+      resendCountdown.textContent = `(${minutes}:${secondsRemaining})`;
+    };
+    updateCountdown();
     resendTimer = window.setInterval(() => {
       remaining -= 1;
       if (remaining <= 0) {
@@ -424,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resendCountdown.textContent = "";
         return;
       }
-      resendCountdown.textContent = `(${remaining}s)`;
+      updateCountdown();
     }, 1000);
   }
   document.getElementById("inputs").addEventListener("input", (event) => {
@@ -469,7 +483,12 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: otpForm.dataset.userId, otp }),
       });
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error("The email service did not return a valid response. Please contact support.");
+      }
       if (!response.ok || !result.success) throw new Error(result.message || "Unable to verify this code.");
       await window.showDialog({ type: "success", title: "Email verified", message: result.message || "Account verified successfully." });
       window.location.assign("signin.php");
@@ -492,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || "Unable to resend the code.");
       otpError.textContent = "";
-      startResendCountdown(30);
+      startResendCountdown(60);
     } catch (error) {
       otpError.textContent = error.message || "Unable to resend the code.";
     }

@@ -119,6 +119,8 @@ async function loadCourts() {
     const uploadQrButton = document.getElementById("uploadGcashQr");
     const removeLogoButton = document.getElementById("clearFacilityLogo");
     const facilityNameInput = document.getElementById("facilityNameInput");
+    const gcashNumberInput = document.getElementById("gcashNumberInput");
+    gcashNumberInput.dataset.initialValue = gcashNumberInput.value.trim();
     const brandingStatus = document.getElementById("facilityBrandingStatus");
     const saveBrandingButton = document.getElementById("saveFacilityBranding");
     let initialFacilityName = facilityNameInput.value;
@@ -128,6 +130,7 @@ async function loadCourts() {
 
     function updateBrandingSaveState() {
       const changed = facilityNameInput.value.trim() !== initialFacilityName
+        || gcashNumberInput.value.trim() !== (gcashNumberInput.dataset.initialValue || "")
         || logoInput.files.length > 0
         || qrInput.files.length > 0
         || removeLogoInput.value === "1";
@@ -212,6 +215,7 @@ async function loadCourts() {
     });
 
     facilityNameInput.addEventListener("input", updateBrandingSaveState);
+    gcashNumberInput.addEventListener("input", updateBrandingSaveState);
 
     brandingForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -234,6 +238,8 @@ async function loadCourts() {
 
         facilityNameInput.value = result.facility_name;
         initialFacilityName = result.facility_name;
+        gcashNumberInput.value = result.gcash_number || "";
+        gcashNumberInput.dataset.initialValue = result.gcash_number || "";
         document.querySelectorAll(".owner-brand small, .admin-brand-copy small").forEach((label) => {
           label.textContent = result.facility_name;
         });

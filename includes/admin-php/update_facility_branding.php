@@ -14,6 +14,14 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 $facilityName = trim((string) ($_POST["facility_name"] ?? ""));
+$gcashNumber = trim((string) ($_POST["gcash_number"] ?? ""));
+$gcashNumber = $gcashNumber === "" ? null : $gcashNumber;
+$validGcashNumber = $gcashNumber === null || preg_match('/^09\d{9}$/', $gcashNumber) === 1;
+if (!$validGcashNumber) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "message" => "Enter an 11-digit GCash number starting with 09."]);
+    exit();
+}
 $nameLength = function_exists("mb_strlen")
     ? mb_strlen($facilityName, "UTF-8")
     : preg_match_all("/./us", $facilityName);
@@ -91,7 +99,7 @@ try {
         throw new RuntimeException("Unable to start the facility branding update.");
     }
     $currentStmt = $conn->prepare(
-        "SELECT facility_name, facility_img, qr_img
+        "SELECT facility_name, facility_img, qr_img, gcash_number
          FROM facilities
          WHERE facility_id = ?
          LIMIT 1
@@ -120,13 +128,14 @@ try {
 
     if ($facilityName !== $current["facility_name"]
         || $facilityLogo !== $current["facility_img"]
-        || $facilityQr !== $current["qr_img"]) {
+        || $facilityQr !== $current["qr_img"]
+        || $gcashNumber !== ($current["gcash_number"] ?? null)) {
         $updateStmt = $conn->prepare(
             "UPDATE facilities
-             SET facility_name = ?, facility_img = ?, qr_img = ?
+             SET facility_name = ?, facility_img = ?, qr_img = ?, gcash_number = ?
              WHERE facility_id = ?"
         );
-        $updateStmt->bind_param("sssi", $facilityName, $facilityLogo, $facilityQr, $facilityId);
+        $updateStmt->bind_param("ssssi", $facilityName, $facilityLogo, $facilityQr, $gcashNumber, $facilityId);
         $updateStmt->execute();
         $updateStmt->close();
     }
@@ -154,6 +163,7 @@ try {
         "facility_name" => $facilityName,
         "facility_img" => $facilityLogo,
         "qr_img" => $facilityQr,
+        "gcash_number" => $gcashNumber,
     ]);
 } catch (Throwable $error) {
     if ($conn->in_transaction) {

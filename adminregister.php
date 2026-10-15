@@ -11,7 +11,7 @@ $ownerOnboardingHeader = true;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="includes/css/styles.css">
     <script src="includes/js/file_upload_zone.js?v=20261016-1" defer></script>
-    <script src="includes/js/admin_register.js?v=20261016-1" defer></script>
+    <script src="includes/js/admin_register.js?v=20261016-2" defer></script>
     <title>Facility owner registration | CourtConnect</title>
 </head>
 <body class="owner-onboarding-page">
@@ -162,11 +162,10 @@ $ownerOnboardingHeader = true;
     </main>
 
     <div class="modal-container owner-otp-overlay" id="modal_container" aria-hidden="true">
-        <div class="modal owner-otp-modal">
+        <div class="modal otp-modal owner-otp-modal">
             <form id="otpForm" class="otp-form" aria-labelledby="ownerOtpTitle">
                 <h2 id="ownerOtpTitle">Verify your account</h2>
-                <p class="otp-instructions">The 6-digit code has been sent to your email.</p>
-                <p class="otp-instructions">This code will expire in 5 minutes.</p>
+                <p class="otp-instructions">The 6-digit code has been sent to your email. It expires in 5 minutes.</p>
                 <div id="inputs" class="inputs" aria-label="Six-digit verification code">
                     <?php for ($digit = 1; $digit <= 6; $digit++): ?>
                         <input class="input" type="text" name="otp" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="OTP digit <?= $digit ?>" required>
@@ -174,7 +173,7 @@ $ownerOnboardingHeader = true;
                 </div>
                 <p class="owner-otp-error" id="ownerOtpError" role="alert" aria-live="polite"></p>
                 <button type="submit" id="submitOtpButton" class="btn">Submit Code</button>
-                <p>Didn't receive the code? <a href="#" id="resendOtpLink">Resend code</a> <span id="resendOtpCountdown" aria-live="polite"></span></p>
+                <p class="otp-resend-line">Didn't receive the code? <a href="#" id="resendOtpLink">Resend <span id="resendOtpCountdown" aria-live="polite"></span></a></p>
             </form>
         </div>
     </div>

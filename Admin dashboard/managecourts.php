@@ -11,7 +11,7 @@ if (!$ownerId || !$facilityId || (int) ($_SESSION["role_id"] ?? 0) !== 3) {
 }
 
 $facilityStmt = $conn->prepare(
-    "SELECT f.facility_id, f.facility_name, f.facility_img, f.qr_img, f.opening_time, f.closing_time
+    "SELECT f.facility_id, f.facility_name, f.facility_img, f.qr_img, f.gcash_number, f.opening_time, f.closing_time
      FROM facilities f
      INNER JOIN admins a ON a.facility_id = f.facility_id
      INNER JOIN users u ON u.user_id = a.user_id
@@ -47,7 +47,7 @@ function ownerEscape($value)
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="../includes/js/admin_managecourts.js" defer></script>
+    <script src="../includes/js/admin_managecourts.js?v=20261016-1" defer></script>
     <title>Court settings | CourtConnect</title>
 </head>
 <body class="owner-ui owner-facility-settings">
@@ -118,6 +118,9 @@ function ownerEscape($value)
                             <input id="gcashQrInput" name="gcash_qr" type="file" accept="image/jpeg,image/png,image/webp" hidden>
                             <button type="button" class="owner-secondary-button" id="uploadGcashQr">Upload / Change QR Code</button>
                             <small>JPG, PNG, or WebP. Maximum 2 MB.</small>
+                            <label class="owner-branding-name-label" for="gcashNumberInput">GCash Number</label>
+                            <input class="owner-branding-name-input" id="gcashNumberInput" name="gcash_number" type="tel" inputmode="numeric" autocomplete="tel" maxlength="11" pattern="09[0-9]{9}" placeholder="09XXXXXXXXX" value="<?= ownerEscape($facility["gcash_number"] ?? "") ?>" aria-describedby="gcashNumberHint">
+                            <small id="gcashNumberHint">Enter an 11-digit GCash number starting with 09.</small>
                         </div>
                     </div>
                 </section>

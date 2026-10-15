@@ -7,6 +7,14 @@ function sendOtpEmail(
     string $recipientName,
     string $otp
 ): array {
+    if (!courtConnectEmailConfigured()) {
+        error_log("OTP email delivery is not configured. Set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
+        return [
+            "success" => false,
+            "message" => "Email delivery is not configured. Please contact support."
+        ];
+    }
+
     $safeOtp = htmlspecialchars($otp, ENT_QUOTES, "UTF-8");
     $safeName = htmlspecialchars(
         $recipientName !== "" ? $recipientName : "CourtConnect user",
@@ -124,6 +132,14 @@ function sendFacilityApplicationDecisionEmail(
     string $reason,
     array $rejectedDocuments
 ): array {
+    if (!courtConnectEmailConfigured()) {
+        error_log("Facility decision email delivery is not configured. Set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
+        return [
+            "success" => false,
+            "message" => "Email delivery is not configured."
+        ];
+    }
+
     $safeName = htmlspecialchars($recipientName !== "" ? $recipientName : "facility owner", ENT_QUOTES, "UTF-8");
     $approved = $decision === "Approved";
     $baseUrl = getenv("COURTCONNECT_BASE_URL");

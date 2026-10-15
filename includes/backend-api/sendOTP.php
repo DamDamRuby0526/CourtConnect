@@ -105,6 +105,16 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     exit();
 }
 
+if (!courtConnectEmailConfigured()) {
+    http_response_code(503);
+    error_log("OTP request rejected because email delivery is not configured.");
+    echo json_encode([
+        "success" => false,
+        "message" => "Email delivery is not configured. Please contact support."
+    ]);
+    exit();
+}
+
 // Generation of OTP CODE
 
 //Allow only one OTP request every 60 seconds.
