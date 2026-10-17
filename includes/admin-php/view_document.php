@@ -13,7 +13,7 @@ $documentKey = $_GET["doc"] ?? "";
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $roleId = (int) ($_SESSION["role_id"] ?? 0);
 
-if (!$userId || !in_array($roleId, [3, 4], true) || !isset($documentColumns[$documentKey])) {
+if (!$userId || !in_array($roleId, [3, 4, 5], true) || !isset($documentColumns[$documentKey])) {
     http_response_code(403);
     exit("Forbidden");
 }
@@ -43,15 +43,16 @@ if (!$application) {
     http_response_code(404);
     exit("Document not found");
 }
-if ($roleId === 4) {
+if (in_array($roleId, [4, 5], true)) {
     $staffStmt = $conn->prepare(
         "SELECT 1
          FROM users u
          INNER JOIN roles r ON r.role_id = u.role_id
-         WHERE u.user_id = ? AND u.is_verified = 1 AND r.role_name = 'courtconnect'
+         WHERE u.user_id = ? AND u.is_verified = 1 AND u.role_id = ?
+             AND r.role_name = CASE WHEN u.role_id = 4 THEN 'courtconnect' ELSE 'superadmin' END
          LIMIT 1"
     );
-    $staffStmt->bind_param("i", $userId);
+    $staffStmt->bind_param("ii", $userId, $roleId);
     $staffStmt->execute();
     $isStaff = $staffStmt->get_result()->fetch_row();
     $staffStmt->close();
@@ -60,7 +61,7 @@ if ($roleId === 4) {
         exit("Forbidden");
     }
 }
-if ($roleId !== 4 && (int) $application["user_id"] !== $userId) {
+if ($roleId === 3 && (int) $application["user_id"] !== $userId) {
     http_response_code(403);
     exit("Forbidden");
 }

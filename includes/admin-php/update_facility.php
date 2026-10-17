@@ -1,6 +1,12 @@
 <?php
 header("Content-Type: application/json");
-require_once __DIR__ . "/facility_owner_guard.php";
+require_once __DIR__ . "/../backend-api/config.php";
+$isSuperadmin = (int) ($_SESSION["role_id"] ?? 0) === 5;
+if ($isSuperadmin) {
+    require_once __DIR__ . "/superadmin_auth_guard.php";
+} else {
+    require_once __DIR__ . "/facility_owner_guard.php";
+}
 require 'upload_helper.php';
 
 $uploadDir = __DIR__ . '/../../uploads/facility';
@@ -57,8 +63,8 @@ if ($method === 'POST') {
     $openingTime  = trim($_POST['opening_time'] ?? "");
     $closingTime  = trim($_POST['closing_time'] ?? "");
 
-    $ownerFacilityId = (int) $_SESSION["facility_id"];
-    if (!$facilityId || !is_numeric($facilityId) || (int) $facilityId !== $ownerFacilityId) {
+    $ownerFacilityId = (int) ($_SESSION["facility_id"] ?? 0);
+    if (!$facilityId || !is_numeric($facilityId) || (!$isSuperadmin && (int) $facilityId !== $ownerFacilityId)) {
         http_response_code(403);
         echo json_encode(["success" => false, "message" => "You can only update your own facility."]);
         exit();

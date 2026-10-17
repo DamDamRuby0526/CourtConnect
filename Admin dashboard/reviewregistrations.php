@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . "/../includes/backend-api/config.php";
+$staffRoleGuardApi = false;
 require_once __DIR__ . "/../includes/admin-php/courtconnect_auth_guard.php";
 
 $pendingResult = $conn->query("SELECT COUNT(*) AS total FROM admins WHERE status = 'Pending'");
 $courtconnectPendingCount = (int) ($pendingResult ? $pendingResult->fetch_assoc()["total"] : 0);
+$isSuperadmin = (int) ($_SESSION["role_id"] ?? 0) === 5;
 $courtconnectDashboardLayout = true;
 $courtconnectNavPage = "applications";
 $_SESSION["csrf_token"] ??= bin2hex(random_bytes(32));
@@ -29,7 +31,7 @@ $staffEmail = $_SESSION["email"] ?? "";
         <main class="owner-content staff-application-content" data-csrf-token="<?= htmlspecialchars($csrfToken, ENT_QUOTES, "UTF-8") ?>">
             <header class="owner-page-head">
                 <div>
-                    <p class="owner-breadcrumb">COURTCONNECT STAFF <span>/</span> FACILITY APPLICATIONS</p>
+                    <p class="owner-breadcrumb"><?= $isSuperadmin ? "SUPERADMIN" : "COURTCONNECT STAFF" ?> <span>/</span> FACILITY APPLICATIONS</p>
                     <h1>Facility applications</h1>
                     <p>Review submitted documents and decisions for facility owners.</p>
                 </div>

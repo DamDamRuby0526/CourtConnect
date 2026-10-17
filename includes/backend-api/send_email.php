@@ -212,4 +212,76 @@ function sendFacilityApplicationDecisionEmail(
     return ["success" => false, "message" => "Email service returned HTTP {$httpCode}."];
 }
 
+function sendPaymentRejectionEmail(
+    string $recipientEmail,
+    string $recipientName,
+    string $rejectionReason,
+    string $resubmissionDeadline
+): array {
+    if (!courtConnectEmailConfigured()) {
+        error_log("Payment rejection email delivery is not configured.");
+        return ["success" => false, "message" => "Email delivery is not configured."];
+    }
+
+    $host = $_SERVER["HTTP_HOST"] ?? "localhost";
+    if (!preg_match('/^[a-z0-9.-]+(?::[0-9]{1,5})?$/i', $host)) {
+        $host = "localhost";
+    }
+    $scheme = (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") ? "https" : "http";
+    $baseUrl = getenv("COURTCONNECT_BASE_URL");
+    if (!is_string($baseUrl) || $baseUrl === "") {
+        $scriptDirectory = str_replace("\\", "/", dirname($_SERVER["SCRIPT_NAME"] ?? "/"));
+        $baseUrl = $scheme . "://" . $host . rtrim($scriptDirectory, "/");
+        $baseUrl = preg_replace('~/includes/admin-php$~', "", $baseUrl);
+    }
+    $bookingUrl = rtrim($baseUrl, "/") . "/mybookings.php";
+    $formattedDeadline = date("F j, Y g:i A", strtotime($resubmissionDeadline));
+    $name = $recipientName !== "" ? $recipientName : "CourtConnect player";
+    $text = "Your payment was rejected by the facility.\n\n"
+        . "Reason: {$rejectionReason}\n"
+        . "Submit a replacement payment by {$formattedDeadline}. The reservation will be canceled if no replacement is submitted before then.\n\n"
+        . "Review your booking and submit a replacement payment: {$bookingUrl}";
+    $safeName = htmlspecialchars($name, ENT_QUOTES, "UTF-8");
+    $safeBody = nl2br(htmlspecialchars($text, ENT_QUOTES, "UTF-8"));
+    $payload = [
+        "sender" => ["name" => COURTCONNECT_SENDER_NAME, "email" => COURTCONNECT_SENDER_EMAIL],
+        "to" => [["email" => $recipientEmail, "name" => $name]],
+        "subject" => "Action required: payment rejected for your CourtConnect booking",
+        "htmlContent" => "<!doctype html><html><body style=\"font-family:Arial,sans-serif;background:#f7f4ea;padding:24px;\"><div style=\"max-width:560px;margin:auto;background:#fff;padding:32px;border-radius:12px;\"><p>Hello {$safeName},</p><p>{$safeBody}</p></div></body></html>",
+        "textContent" => "Hello {$name},\n\n{$text}",
+    ];
+    $curl = curl_init(BREVO_API_URL);
+    if ($curl === false) {
+        error_log("Unable to initialize payment rejection email delivery.");
+        return ["success" => false, "message" => "Unable to initialize email delivery."];
+    }
+    curl_setopt_array($curl, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => [
+            "accept: application/json",
+            "api-key: " . BREVO_API_KEY,
+            "content-type: application/json",
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload),
+    ]);
+    $responseBody = curl_exec($curl);
+    $curlError = curl_error($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($responseBody === false || $curlError !== "") {
+        error_log("Payment rejection email connection failed: " . $curlError);
+        return ["success" => false, "message" => "Unable to connect to the email service."];
+    }
+    $responseData = json_decode($responseBody, true);
+    if ($httpCode >= 200 && $httpCode < 300 && isset($responseData["messageId"])) {
+        return ["success" => true, "message" => "Payment rejection email sent."];
+    }
+    error_log("Payment rejection email service returned HTTP {$httpCode}.");
+    return ["success" => false, "message" => "Email service rejected the notification."];
+}
+
 ?>

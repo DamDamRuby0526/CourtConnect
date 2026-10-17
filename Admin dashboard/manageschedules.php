@@ -55,14 +55,14 @@ $previewCourtsStmt->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Court Schedule | CourtConnect</title>
 
-    <link rel="stylesheet" href="../includes/css/styles.css">
+    <link rel="stylesheet" href="../includes/css/styles.css?v=20261018-schedule-layout-1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="../includes/js/admin_manageschedules.js" defer></script>
+    <script src="../includes/js/admin_manageschedules.js?v=20261018-schedule-layout-1" defer></script>
 </head>
 
-<body class="owner-ui">
+<body class="owner-ui owner-schedule-page">
     <div class="owner-layout">
         <?php include '../includes/navigation/admin_header.php'; ?>
         <main class="owner-content">
@@ -72,7 +72,7 @@ $previewCourtsStmt->close();
                     <h1>Court schedule</h1>
                     <p>Manage reservation times for <?= htmlspecialchars($facilityName, ENT_QUOTES, "UTF-8") ?>.</p>
                 </div>
-                <div class="owner-page-actions">
+                <div class="owner-page-actions schedule-page-actions">
                     <button type="button" id="add-btn" class="owner-primary-button">Add time slot</button>
                     <button type="button" id="generate-btn" class="owner-secondary-button" data-today="<?= date('Y-m-d') ?>">Generate Schedule</button>
                     <button type="button" id="remove-schedule-btn" class="owner-secondary-button">Remove schedule</button>

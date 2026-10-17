@@ -9,8 +9,9 @@ $result = expireUnpaidBookings($conn);
 $conn->close();
 
 printf(
-    "Expired %d unpaid booking(s); released %d Held slot(s).%s",
+    "Expired %d unpaid booking(s) and canceled %d rejected-payment booking(s); released %d Held slot(s).%s",
     $result["expired"],
+    $result["rejected_expired"],
     $result["released"],
     PHP_EOL
 );

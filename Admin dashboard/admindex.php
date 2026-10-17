@@ -2,6 +2,11 @@
 require_once __DIR__ . "/../includes/backend-api/config.php";
 require_once __DIR__ . "/../includes/admin-php/facility_owner_page_guard.php";
 
+if (!in_array((int) ($_SESSION["role_id"] ?? 0), [2, 3], true)) {
+    header("Location: ../signin.php");
+    exit();
+}
+
 $adminDashboardLayout = true;
 $adminNavPage = "upcoming";
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);

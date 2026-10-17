@@ -4,9 +4,15 @@ require_once __DIR__ . "/../includes/admin-php/facility_owner_page_guard.php";
 
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $roleId = (int) ($_SESSION["role_id"] ?? 0);
-if (!$userId || !in_array($roleId, [2, 3, 4], true)) {
+if (!$userId || !in_array($roleId, [2, 3, 5], true)) {
     header("Location: ../signin.php");
     exit();
+}
+if ($roleId === 5) {
+    $staffRoleGuardApi = false;
+    require_once __DIR__ . "/../includes/admin-php/superadmin_auth_guard.php";
+    $courtconnectDashboardLayout = true;
+    $courtconnectNavPage = "reports";
 }
 
 $reportType = isset($_GET["report_type"]) && in_array($_GET["report_type"], ["daily", "weekly", "monthly", "custom"], true)
@@ -294,9 +300,9 @@ C:\\xampp\\php\\php.exe -d detect_unicode=0 C:\\xampp\\htdocs\\CourtConnect\\com
     $pdfHtml .= '<table class="card-grid"><tr><td class="box"><div class="label">Verified Revenue</div><div class="value">' . formatCurrency($verifiedRevenue) . '</div></td><td class="box"><div class="label">Paid Bookings</div><div class="value">' . (int) $paidBookings . '</div></td><td class="box"><div class="label">Total Bookings</div><div class="value">' . (int) $totalBookings . '</div></td></tr></table>';
     $pdfHtml .= '<div class="meta">Pending: ' . (int) $pendingPayments . ' &nbsp;|&nbsp; Rejected: ' . (int) $rejectedPayments . ' &nbsp;|&nbsp; Cancelled: ' . (int) $cancelledBookings . '</div>';
     if ($rows) {
-        $pdfHtml .= '<table><thead><tr><th>Customer Name</th>' . ($roleId === 4 ? '<th>Facility</th>' : '') . '<th>Booking Date</th><th>Court</th><th>Sport</th><th>Amount</th><th>Payment Status</th></tr></thead><tbody>';
+        $pdfHtml .= '<table><thead><tr><th>Customer Name</th>' . ($roleId === 5 ? '<th>Facility</th>' : '') . '<th>Booking Date</th><th>Court</th><th>Sport</th><th>Amount</th><th>Payment Status</th></tr></thead><tbody>';
         foreach ($rows as $row) {
-            $pdfHtml .= '<tr><td>' . escapeHtml((string) ($row["customer_name"] ?? "Customer")) . '</td>' . ($roleId === 4 ? '<td>' . escapeHtml((string) ($row["facility_name"] ?? "")) . '</td>' : '') . '<td>' . escapeHtml(formatReportDate($row["reservation_date"] ?? "")) . '</td><td>Court ' . escapeHtml((string) ($row["court_no"] ?? "")) . '</td><td>' . escapeHtml((string) ($row["sport_type"] ?? "")) . '</td><td>' . formatCurrency((float) ($row["verified_amount"] ?? 0)) . '</td><td class="status">' . escapeHtml((string) ($row["payment_status"] ?? "Pending")) . '</td></tr>';
+            $pdfHtml .= '<tr><td>' . escapeHtml((string) ($row["customer_name"] ?? "Customer")) . '</td>' . ($roleId === 5 ? '<td>' . escapeHtml((string) ($row["facility_name"] ?? "")) . '</td>' : '') . '<td>' . escapeHtml(formatReportDate($row["reservation_date"] ?? "")) . '</td><td>Court ' . escapeHtml((string) ($row["court_no"] ?? "")) . '</td><td>' . escapeHtml((string) ($row["sport_type"] ?? "")) . '</td><td>' . formatCurrency((float) ($row["verified_amount"] ?? 0)) . '</td><td class="status">' . escapeHtml((string) ($row["payment_status"] ?? "Pending")) . '</td></tr>';
         }
         $pdfHtml .= '</tbody></table>';
     } else {
@@ -431,7 +437,7 @@ $reportQueryString = http_build_query([
                                 </select>
                             </label>
 
-                            <?php if ($roleId === 4): ?>
+                            <?php if ($roleId === 5): ?>
                                 <label>
                                     Facility
                                     <select name="facility_id">
@@ -496,11 +502,11 @@ $reportQueryString = http_build_query([
                             <span><?= number_format($totalBookings) ?> <?= $totalBookings === 1 ? 'record' : 'records' ?></span>
                         </div>
                         <div class="table-shell">
-                            <table class="<?= $roleId === 4 ? 'all-facilities-table' : '' ?>">
+                            <table class="<?= $roleId === 5 ? 'all-facilities-table' : '' ?>">
                             <thead>
                                 <tr>
                                     <th>Customer Name</th>
-                                    <?php if ($roleId === 4): ?>
+                                    <?php if ($roleId === 5): ?>
                                         <th>Facility</th>
                                     <?php endif; ?>
                                     <th>Booking Date</th>
@@ -521,7 +527,7 @@ $reportQueryString = http_build_query([
                                     ?>
                                     <tr>
                                         <td><?= escapeHtml((string) ($row["customer_name"] ?? "Customer")) ?></td>
-                                        <?php if ($roleId === 4): ?>
+                                        <?php if ($roleId === 5): ?>
                                             <td><?= escapeHtml((string) ($row["facility_name"] ?? "Facility")) ?></td>
                                         <?php endif; ?>
                                         <td><?= escapeHtml(formatReportDate($row["reservation_date"] ?? "")) ?></td>

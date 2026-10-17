@@ -43,11 +43,11 @@ function ownerEscape($value)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../includes/css/styles.css">
+    <link rel="stylesheet" href="../includes/css/styles.css?v=20261018-schedule-layout-1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="../includes/js/admin_managecourts.js?v=20261016-1" defer></script>
+    <script src="../includes/js/admin_managecourts.js?v=20261018-schedule-layout-1" defer></script>
     <title>Court settings | CourtConnect</title>
 </head>
 <body class="owner-ui owner-facility-settings">
@@ -190,10 +190,18 @@ function ownerEscape($value)
                     <label class="owner-wide-field" for="description">Court description
                         <textarea id="description" name="description" rows="3" maxlength="255" required></textarea>
                     </label>
-                    <label class="owner-wide-field" for="court_img">Court photo
-                        <input type="file" id="court_img" name="court_img" accept="image/jpeg,image/png,image/webp">
-                        <small>JPG, PNG, or WEBP. Maximum 5 MB.</small>
-                    </label>
+                    <div class="owner-wide-field court-photo-field">
+                        <span class="court-photo-label">Court photo</span>
+                        <div class="checkout-receipt-upload court-photo-upload">
+                            <input class="checkout-receipt-input" type="file" id="court_img" name="court_img" accept="image/jpeg,image/png,image/webp" aria-label="Court photo" aria-describedby="courtImageHelp courtImageFileStatus">
+                            <label class="checkout-receipt-dropzone" id="courtImageDropzone" for="court_img" tabindex="0">
+                                <span class="checkout-receipt-upload-icon" aria-hidden="true">↑</span>
+                                <span class="checkout-receipt-upload-copy"><strong>Choose file</strong><small>or drop it here</small></span>
+                                <small class="checkout-receipt-upload-help" id="courtImageHelp">JPG, PNG, or WEBP. Maximum size 5 MB.</small>
+                            </label>
+                            <small class="court-photo-file-status" id="courtImageFileStatus" role="status" aria-live="polite"></small>
+                        </div>
+                    </div>
                 </div>
                 <img id="court_img_preview" class="owner-image-preview" alt="Current court photo" hidden>
                 <p id="courtFormStatus" class="owner-form-status" role="status" aria-live="polite"></p>

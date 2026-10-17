@@ -56,7 +56,7 @@ if (!$courtFilter || $courtFilter < 1) {
 if (!in_array($typeFilter, ["walk_in", "online"], true)) {
     $typeFilter = "";
 }
-if (!in_array($paymentFilter, ["Paid", "Pending"], true)) {
+if (!in_array($paymentFilter, ["Paid", "Pending", "Rejected"], true)) {
     $paymentFilter = "";
 }
 
@@ -85,7 +85,8 @@ $where = [
     "((b.status NOT IN ('pending_payment', 'Expired') AND LOWER($paymentStatus) = 'paid')
         OR (b.status = 'pending_payment' AND LOWER(b.payment_status) = 'unpaid'
             AND b.hold_expires_at > NOW()
-            AND NOT EXISTS (SELECT 1 FROM payments unpaid_hold_payment WHERE unpaid_hold_payment.booking_id = b.booking_id)))",
+            AND NOT EXISTS (SELECT 1 FROM payments unpaid_hold_payment WHERE unpaid_hold_payment.booking_id = b.booking_id))
+        OR LOWER($paymentStatus) = 'rejected')",
     "NOT (LOWER(b.status) = 'cancelled' AND LOWER(b.payment_status) = 'unpaid'
         AND NOT EXISTS (SELECT 1 FROM payments unpaid_cancel_payment WHERE unpaid_cancel_payment.booking_id = b.booking_id))",
 ];
@@ -134,6 +135,7 @@ if ($paymentFilter !== "") {
 
 $bookingsStmt = $conn->prepare(
     "SELECT b.booking_id, b.total_amount, b.created_at, b.status, b.booking_type,
+            b.cancellation_reason, p.rejection_reason, p.resubmission_deadline,
             b.arrived_at, b.did_not_arrive_at,
             COALESCE(b.customer_name, CONCAT(u.first_name, ' ', u.last_name)) AS customer_name,
             COALESCE(b.customer_phone, u.phone_number) AS customer_phone,
@@ -277,6 +279,7 @@ function bookingsDurationLabel($minutes)
                             <option value="">All</option>
                             <option value="Paid" <?= $paymentFilter === "Paid" ? "selected" : "" ?>>Paid</option>
                             <option value="Pending" <?= $paymentFilter === "Pending" ? "selected" : "" ?>>Pending</option>
+                            <option value="Rejected" <?= $paymentFilter === "Rejected" ? "selected" : "" ?>>Rejected</option>
                         </select>
                     </label>
                     <a class="admin-clear-button" href="managebookings.php">Clear filters</a>
@@ -335,7 +338,17 @@ function bookingsDurationLabel($minutes)
                                         </td>
                                         <td data-label="Duration"><?= bookingsPageEscape(bookingsDurationLabel($booking["total_duration"])) ?></td>
                                         <td data-label="Booking amount" class="booking-amount">&#8369;<?= number_format((float) $booking["total_amount"], 2) ?></td>
-                                        <td data-label="Payment status"><span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($displayPaymentStatus) ?></span></td>
+                                        <td data-label="Payment status">
+                                            <span class="payment-status payment-<?= bookingsPageEscape($paymentSlug) ?>"><?= bookingsPageEscape($displayPaymentStatus) ?></span>
+                                            <?php if (!empty($booking["cancellation_reason"])): ?>
+                                                <small class="booking-payment-note">Canceled: <?= bookingsPageEscape($booking["cancellation_reason"]) ?></small>
+                                            <?php elseif (!empty($booking["rejection_reason"])): ?>
+                                                <small class="booking-payment-note">Rejected: <?= bookingsPageEscape($booking["rejection_reason"]) ?></small>
+                                                <?php if (!empty($booking["resubmission_deadline"]) && strtolower((string) $booking["status"]) !== "cancelled"): ?>
+                                                    <small class="booking-payment-note">Resubmit by <?= bookingsPageEscape(date("M j, Y g:i A", strtotime($booking["resubmission_deadline"]))) ?> PHT</small>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td data-label="Attendance"><span class="attendance-status attendance-status-<?= bookingsPageEscape($attendanceStatus) ?>"><?= bookingsPageEscape($attendanceLabels[$attendanceStatus] ?? "Upcoming") ?></span></td>
                                         <td data-label="Actions">
                                             <div class="booking-attendance-actions">

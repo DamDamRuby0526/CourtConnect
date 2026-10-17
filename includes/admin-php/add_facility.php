@@ -1,7 +1,7 @@
 <?php
 header("Content-Type: application/json");
-// require_once __DIR__ . "/admin_auth_guard.php";
 require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/superadmin_auth_guard.php";
 
 if (empty($_POST)) {
     echo json_encode(["success" => false, "message" => "No data received."]);

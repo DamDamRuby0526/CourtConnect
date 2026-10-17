@@ -153,7 +153,36 @@ function paymentDetails(payment) {
     ? "N/A"
     : `#${payment.reference_number || "Not provided"}`;
   details.append(method, reference);
+  if (payment.payment_status === "Rejected" && payment.rejection_reason) {
+    const reason = document.createElement("small");
+    reason.textContent = `Reason: ${payment.rejection_reason}`;
+    details.append(reason);
+  }
+  if (payment.payment_status === "Rejected" && payment.resubmission_deadline && !payment.has_newer_attempt) {
+    const deadline = document.createElement("small");
+    deadline.textContent = `Resubmit by ${payment.resubmission_deadline} PHT`;
+    details.append(deadline);
+  }
   return details;
+}
+
+function paymentBookingStatus(payment) {
+  const status = document.createElement("div");
+  status.className = "payment-detail-stack";
+  const bookingStatus = document.createElement("small");
+  bookingStatus.textContent = `Booking: ${payment.booking_status || "Unknown"}`;
+  status.append(bookingStatus);
+  if (payment.has_newer_attempt) {
+    const replaced = document.createElement("small");
+    replaced.textContent = "A replacement payment was submitted";
+    status.append(replaced);
+  }
+  if (payment.cancellation_reason) {
+    const cancellation = document.createElement("small");
+    cancellation.textContent = `Cancellation: ${payment.cancellation_reason}`;
+    status.append(cancellation);
+  }
+  return status;
 }
 
 function renderPayments() {
@@ -194,6 +223,8 @@ function renderPayments() {
     const status = document.createElement("span");
     status.className = `payment-status payment-${payment.payment_status.toLowerCase()}`;
     status.textContent = payment.payment_status;
+    const statusDetails = paymentBookingStatus(payment);
+    statusDetails.prepend(status);
     const canMarkPaid = payment.payment_method === "Cash" || payment.has_receipt;
     const actions = [];
     if (payment.payment_status !== "Rejected") {
@@ -243,7 +274,7 @@ function renderPayments() {
       paymentCell("Payment details", paymentDetails(payment)),
       paymentCell("Amount", pesoFormatter.format(Number(payment.total_amount))),
       paymentCell("Receipt", payment.payment_method === "Cash" ? "N/A" : receipt),
-      paymentCell("Status", status),
+      paymentCell("Status", statusDetails),
       paymentCell("Actions", actions),
     );
     paymentRows.append(row);

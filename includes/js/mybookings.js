@@ -5,6 +5,8 @@ let activeRejectedBooking = null;
 const rejectionReasonModal = document.getElementById("rejectionReasonModal");
 const paymentResubmissionModal = document.getElementById("paymentResubmissionModal");
 const paymentResubmissionForm = document.getElementById("paymentResubmissionForm");
+const paymentReceiptModal = document.getElementById("playerPaymentReceiptModal");
+const paymentReceiptImage = document.getElementById("playerPaymentReceiptImage");
 
 function toastBooking(title, message, type = "success") {
   if (typeof window.showToast === "function") window.showToast(title, message, type);
@@ -143,6 +145,14 @@ function makeBookingCard(booking) {
     item.append(term, description);
     details.append(item);
   });
+  let deadlineNotice = null;
+  if (booking.payment_status === "Rejected") {
+    deadlineNotice = document.createElement("p");
+    deadlineNotice.className = "player-resubmission-deadline";
+    deadlineNotice.textContent = booking.can_resubmit_payment
+      ? `Submit a replacement payment by ${booking.resubmission_deadline_label}.`
+      : booking.cancellation_reason || booking.resubmission_message || "";
+  }
 
   const actions = document.createElement("div");
   actions.className = "player-booking-actions";
@@ -180,15 +190,15 @@ function makeBookingCard(booking) {
     actions.append(rejectionButton);
   }
   if (booking.has_receipt && booking.payment_id) {
-    const receipt = document.createElement("a");
+    const receipt = document.createElement("button");
+    receipt.type = "button";
     receipt.className = "player-secondary-link";
-    receipt.href = `includes/admin-php/view_payment_receipt.php?payment_id=${encodeURIComponent(booking.payment_id)}`;
-    receipt.target = "_blank";
-    receipt.rel = "noopener noreferrer";
+    receipt.dataset.receiptPaymentId = booking.payment_id;
     receipt.textContent = "View receipt";
     actions.append(receipt);
   }
   card.append(heading, details);
+  if (deadlineNotice?.textContent) card.append(deadlineNotice);
   if (actions.childElementCount) card.append(actions);
   return card;
 }
@@ -360,12 +370,31 @@ function setPlayerModalOpen(modal, open) {
   modal.setAttribute("aria-hidden", String(!open));
 }
 
+function setPaymentReceiptOpen(open, paymentId = "") {
+  paymentReceiptModal.classList.toggle("show", open);
+  paymentReceiptModal.setAttribute("aria-hidden", String(!open));
+  if (open) {
+    paymentReceiptImage.hidden = false;
+    document.getElementById("paymentReceiptLoadMessage").textContent = "";
+    paymentReceiptImage.src = `includes/admin-php/view_payment_receipt.php?payment_id=${encodeURIComponent(paymentId)}`;
+    document.getElementById("closePlayerPaymentReceipt").focus();
+  } else {
+    paymentReceiptImage.removeAttribute("src");
+    paymentReceiptImage.hidden = false;
+  }
+}
+
 function openRejectionReason(booking) {
   activeRejectedBooking = booking;
   document.getElementById("rejectionReasonText").textContent =
     booking.rejection_reason?.trim() || "No rejection reason was provided. Please contact the facility.";
   const resubmissionButton = document.getElementById("openPaymentResubmission");
   const resubmissionMessage = document.getElementById("rejectionResubmissionMessage");
+  const resubmissionDeadline = document.getElementById("rejectionResubmissionDeadline");
+  resubmissionDeadline.hidden = !booking.can_resubmit_payment || !booking.resubmission_deadline_label;
+  resubmissionDeadline.textContent = booking.resubmission_deadline_label
+    ? `Submit a replacement payment by ${booking.resubmission_deadline_label}.`
+    : "";
   resubmissionButton.hidden = !booking.can_resubmit_payment;
   resubmissionMessage.hidden = booking.can_resubmit_payment;
   resubmissionMessage.textContent = booking.resubmission_message || "";
@@ -399,6 +428,11 @@ bookingList.addEventListener("click", (event) => {
   if (!(target instanceof Element)) return;
   const cancelButton = target.closest("[data-cancel-booking-id]");
   if (cancelButton) cancelPlayerBooking(cancelButton);
+  const receiptButton = target.closest("[data-receipt-payment-id]");
+  if (receiptButton) {
+    setPaymentReceiptOpen(true, receiptButton.dataset.receiptPaymentId);
+    return;
+  }
   const rejectionButton = target.closest("[data-rejected-payment-booking-id]");
   if (rejectionButton) {
     const booking = allBookings.find((item) => String(item.booking_id) === rejectionButton.dataset.rejectedPaymentBookingId);
@@ -420,8 +454,20 @@ for (const modal of [rejectionReasonModal, paymentResubmissionModal]) {
 }
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (paymentReceiptModal.classList.contains("show")) setPaymentReceiptOpen(false);
   if (paymentResubmissionModal.classList.contains("show")) setPlayerModalOpen(paymentResubmissionModal, false);
   if (rejectionReasonModal.classList.contains("show")) setPlayerModalOpen(rejectionReasonModal, false);
+});
+document.getElementById("closePlayerPaymentReceipt").addEventListener("click", () => {
+  setPaymentReceiptOpen(false);
+});
+paymentReceiptModal.addEventListener("click", (event) => {
+  if (event.target === paymentReceiptModal) setPaymentReceiptOpen(false);
+});
+paymentReceiptImage.addEventListener("error", () => {
+  paymentReceiptImage.hidden = true;
+  document.getElementById("paymentReceiptLoadMessage").textContent =
+    "This receipt could not be loaded. Refresh your bookings and try again.";
 });
 
 paymentResubmissionForm.addEventListener("submit", async (event) => {
@@ -467,6 +513,9 @@ paymentResubmissionForm.addEventListener("submit", async (event) => {
       booking.payment_status = "Pending";
       booking.has_receipt = true;
       booking.rejection_reason = null;
+      booking.resubmission_deadline = null;
+      booking.resubmission_deadline_label = null;
+      booking.cancellation_reason = null;
       booking.can_resubmit_payment = false;
     }
     setPlayerModalOpen(paymentResubmissionModal, false);

@@ -1,18 +1,17 @@
-<div class="facility-otp-overlay" id="facilityOtpOverlay" aria-hidden="true">
-    <section class="facility-otp-modal" role="dialog" aria-modal="true" aria-labelledby="facilityOtpTitle">
-        <button class="facility-otp-close" id="facilityOtpClose" type="button" aria-label="Close verification">×</button>
-        <p class="facility-otp-eyebrow">EMAIL VERIFICATION</p>
-        <h2 id="facilityOtpTitle">Verify your email</h2>
-        <p class="facility-otp-copy">Enter the six-digit code sent to your email to continue to your facility dashboard.</p>
-        <p class="facility-otp-status" id="facilityOtpStatus" role="status" aria-live="polite"></p>
-        <form id="facilityOtpForm">
-            <label for="facilityOtpCode">Verification code</label>
-            <input id="facilityOtpCode" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
-            <div class="facility-otp-actions">
-                <button class="facility-otp-resend" id="facilityOtpResend" type="button">Resend code</button>
-                <button class="facility-otp-submit" id="facilityOtpSubmit" type="submit">Verify and continue</button>
+<div class="modal-container facility-login-otp-overlay" id="facilityOtpOverlay" aria-hidden="true">
+    <div class="modal otp-modal facility-login-otp-modal" role="dialog" aria-modal="true" aria-labelledby="facilityOtpTitle">
+        <form id="facilityOtpForm" class="otp-form">
+            <h2 id="facilityOtpTitle">Verify your account</h2>
+            <p class="otp-instructions">The 6-digit code has been sent to your email. It expires in 5 minutes.</p>
+            <p class="facility-login-otp-status" id="facilityOtpStatus" role="status" aria-live="polite"></p>
+            <div id="facilityOtpInputs" class="inputs" aria-label="Six-digit verification code">
+                <?php for ($digit = 1; $digit <= 6; $digit++): ?>
+                    <input class="input" type="text" inputmode="numeric" autocomplete="<?= $digit === 1 ? "one-time-code" : "off" ?>" maxlength="1" pattern="[0-9]" aria-label="OTP digit <?= $digit ?>" aria-required="true">
+                <?php endfor; ?>
             </div>
+            <button type="submit" id="facilityOtpSubmit" class="btn">Submit Code</button>
+            <p class="otp-resend-line">Didn't receive the code? <a href="#" id="facilityOtpResend">Resend <span id="facilityOtpResendCountdown" aria-live="polite"></span></a></p>
         </form>
-    </section>
+    </div>
 </div>
-<script src="includes/js/facility_otp.js?v=20261021-1" defer></script>
+<script src="includes/js/facility_otp.js?v=20261018-2" defer></script>

@@ -30,7 +30,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     }
     window.showDialog({
       type: "error",
-      title: "Sign-in failed",
+      title: result.account_disabled ? "Account disabled" : "Sign-in failed",
       message: result.message || "Check your details and try again.",
     });
     return;

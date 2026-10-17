@@ -9,9 +9,12 @@ $ownerOnboardingHeader = true;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="includes/css/styles.css">
+    <link rel="stylesheet" href="includes/css/styles.css?v=20261018-owner-4">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="includes/js/file_upload_zone.js?v=20261016-1" defer></script>
-    <script src="includes/js/admin_register.js?v=20261016-2" defer></script>
+    <script src="includes/js/admin_register.js?v=20261018-3" defer></script>
     <title>Facility owner registration | CourtConnect</title>
 </head>
 <body class="owner-onboarding-page">
@@ -61,7 +64,10 @@ $ownerOnboardingHeader = true;
                         <label for="password">Password</label>
                         <div class="owner-password-input">
                             <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="password_hint password_error">
-                            <button type="button" class="owner-password-toggle" aria-label="Show password" data-password-target="password"><span aria-hidden="true">◉</span></button>
+                            <button type="button" class="owner-password-toggle" aria-label="Show password" data-password-target="password">
+                                <svg class="owner-password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <svg class="owner-password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.2 4.1"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.6 10.6 0 0 0 4-.8"></path></svg>
+                            </button>
                         </div>
                         <div class="owner-password-strength" aria-hidden="true"><span id="passwordStrengthBar"></span></div>
                         <small id="password_hint" class="owner-field-hint">At least 8 characters</small>
@@ -71,7 +77,10 @@ $ownerOnboardingHeader = true;
                         <label for="confirm_password">Confirm password</label>
                         <div class="owner-password-input">
                             <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required aria-describedby="confirm_password_error">
-                            <button type="button" class="owner-password-toggle" aria-label="Show password" data-password-target="confirm_password"><span aria-hidden="true">◉</span></button>
+                            <button type="button" class="owner-password-toggle" aria-label="Show password" data-password-target="confirm_password">
+                                <svg class="owner-password-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                <svg class="owner-password-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"></path><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.2 4.1"></path><path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10.6 10.6 0 0 0 4-.8"></path></svg>
+                            </button>
                         </div>
                         <small class="owner-field-error" id="confirm_password_error" hidden></small>
                     </div>

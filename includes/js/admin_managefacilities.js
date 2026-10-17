@@ -7,7 +7,7 @@ async function loadFacilities() {
     const res = await fetch("../includes/admin-php/get_facility.php");
     const data = await res.json();
 
-    if (!data.success) {
+    if (!res.ok || !data.success) {
       window.showDialog({ type: "error", title: "Unable to load facilities", message: data.message || "Failed to load facilities." });
       return;       
     }
@@ -15,19 +15,21 @@ async function loadFacilities() {
     grid.replaceChildren();
 
     for (const facility of data.facilities) {
-      const item = document.createElement("div");
-      item.className = "item";
+      const item = document.createElement("article");
+      item.className = "superadmin-facility-card";
 
       const img = document.createElement("img");
       img.src = facility.facility_img
         ? "../uploads/facility/" + facility.facility_img
         : "../uploads/facility/facility.png";
-      img.alt = "Facility Icon";
+      img.alt = `${facility.facility_name} facility`;
 
       const name = document.createElement("p");
+      name.className = "superadmin-facility-name";
       name.textContent = facility.facility_name;
 
       const id = document.createElement("p");
+      id.className = "superadmin-facility-id";
       id.textContent = "Facility ID: " + facility.facility_id;
 
       const editBtn = document.createElement("button");
@@ -36,17 +38,23 @@ async function loadFacilities() {
       editBtn.textContent = "Manage Facility";
       editBtn.dataset.facilityId = facility.facility_id;
 
-      const openBtn = document.createElement("button");
-      openBtn.type = "button";
-      openBtn.className = "open-btn";
-      openBtn.textContent = "Court Details";
-      openBtn.dataset.facilityId = facility.facility_id;
-
-      item.append(img, name, id, editBtn, openBtn);
+      item.append(img, name, id, editBtn);
+      if (document.body.dataset.roleId !== "5") {
+        const openBtn = document.createElement("button");
+        openBtn.type = "button";
+        openBtn.className = "open-btn";
+        openBtn.textContent = "Court Details";
+        openBtn.dataset.facilityId = facility.facility_id;
+        item.append(openBtn);
+      }
       grid.append(item);
     }
   } catch (error) {
-    console.error("Error loading facilities:", error);
+    window.showDialog({
+      type: "error",
+      title: "Unable to load facilities",
+      message: error.message || "Could not load facility records. Please try again.",
+    });
   }
 }
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../includes/backend-api/config.php";
-require_once __DIR__ . "/../includes/admin-php/courtconnect_auth_guard.php";
+$staffRoleGuardApi = false;
+require_once __DIR__ . "/../includes/admin-php/superadmin_auth_guard.php";
 
 $courtconnectDashboardLayout = true;
 $courtconnectNavPage = "users";

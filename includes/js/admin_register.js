@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
       message = "Enter an 11-digit number starting with 09.";
     } else if (input.id === "password" && input.value.length < 8) {
       message = "Use at least 8 characters.";
-    } else if (input.id === "confirm_password" && input.value !== document.getElementById("password").value) {
+    } else if (input.id === "confirm_password" && input.value && input.value !== document.getElementById("password").value) {
       message = "Passwords do not match.";
     } else if (input.required && !input.value.trim()) {
       message = "This field is required.";
@@ -89,6 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener("blur", () => validateField(input));
     input.addEventListener("input", () => {
       if (!document.getElementById(`${input.id}_error`).hidden) validateField(input);
+      if (input.id === "confirm_password" && input.value) validateField(input);
+      if (input.id === "password") {
+        const confirmPassword = document.getElementById("confirm_password");
+        if (confirmPassword.value) validateField(confirmPassword);
+      }
     });
   });
 
@@ -98,6 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const show = input.type === "password";
       input.type = show ? "text" : "password";
       button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      button.classList.toggle("is-visible", show);
     });
   });
 

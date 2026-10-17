@@ -54,7 +54,6 @@ if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0755, true) && !is_dir
 $fileName = bin2hex(random_bytes(16)) . "." . $mimeExtensions[$mimeType];
 $filePath = $uploadDirectory . DIRECTORY_SEPARATOR . $fileName;
 $fileSaved = false;
-$oldReceipt = "";
 
 try {
     $conn->begin_transaction();
@@ -122,7 +121,8 @@ try {
     }
 
     $latestPaymentStmt = $conn->prepare(
-        "SELECT payments_id, payment_status, receipt_image
+        "SELECT payments_id, payment_status, receipt_image,
+                (resubmission_deadline IS NOT NULL AND resubmission_deadline > NOW()) AS resubmission_open
          FROM payments
          WHERE booking_id = ?
          ORDER BY payments_id DESC
@@ -139,6 +139,11 @@ try {
             $latestPaymentStmt->close();
             throw new RuntimeException("This booking already has a payment awaiting review.");
         }
+        if ($latestPayment && (int) $latestPayment["resubmission_open"] !== 1) {
+            $latestPaymentStmt->close();
+            http_response_code(409);
+            throw new RuntimeException("The 24-hour payment resubmission window has expired.");
+        }
         $paymentRecords[$currentBookingId] = $latestPayment;
     }
     $latestPaymentStmt->close();
@@ -153,11 +158,14 @@ try {
         $latestPayment = $paymentRecords[$currentBookingId];
         if ($latestPayment) {
             $oldReceipt = basename((string) ($latestPayment["receipt_image"] ?? ""));
-            if ($oldReceipt !== "") $oldReceipts[] = $oldReceipt;
+            if ($oldReceipt !== "") {
+                $oldReceipts[] = $oldReceipt;
+            }
             $paymentStmt = $conn->prepare(
                 "UPDATE payments
                  SET payment_method = 'Gcash', payment_status = 'Pending',
-                     reference_number = ?, receipt_image = ?, rejection_reason = NULL, paid_at = NULL
+                     reference_number = ?, receipt_image = ?, rejection_reason = NULL,
+                     rejected_at = NULL, resubmission_deadline = NULL, paid_at = NULL
                  WHERE payments_id = ? AND booking_id = ? AND payment_status = 'Rejected'"
             );
             $paymentStmt->bind_param("ssii", $referenceNumber, $fileName, $latestPayment["payments_id"], $currentBookingId);
@@ -166,7 +174,6 @@ try {
                 $paymentStmt->close();
                 throw new RuntimeException("A rejected payment has already changed.");
             }
-            $paymentStmt->close();
         } else {
             $paymentStmt = $conn->prepare(
                 "INSERT INTO payments (booking_id, payment_method, payment_status, reference_number, receipt_image)
@@ -174,8 +181,8 @@ try {
             );
             $paymentStmt->bind_param("iss", $currentBookingId, $referenceNumber, $fileName);
             $paymentStmt->execute();
-            $paymentStmt->close();
         }
+        $paymentStmt->close();
 
         $updateBookingStmt = $conn->prepare(
             "UPDATE bookings SET status = 'pending', payment_status = 'unpaid',
@@ -210,11 +217,17 @@ try {
 
     $conn->commit();
     foreach (array_unique($oldReceipts) as $oldReceipt) {
-        if ($oldReceipt !== $fileName) {
-            $oldReceiptPath = $uploadDirectory . DIRECTORY_SEPARATOR . $oldReceipt;
-            if (is_file($oldReceiptPath)) {
-                unlink($oldReceiptPath);
-            }
+        if ($oldReceipt === $fileName) {
+            continue;
+        }
+        $receiptCheck = $conn->prepare("SELECT COUNT(*) AS receipt_references FROM payments WHERE receipt_image = ?");
+        $receiptCheck->bind_param("s", $oldReceipt);
+        $receiptCheck->execute();
+        $receiptReferences = (int) $receiptCheck->get_result()->fetch_assoc()["receipt_references"];
+        $receiptCheck->close();
+        $oldReceiptPath = $uploadDirectory . DIRECTORY_SEPARATOR . $oldReceipt;
+        if ($receiptReferences === 0 && is_file($oldReceiptPath) && !unlink($oldReceiptPath)) {
+            error_log("Unable to remove replaced receipt image for booking " . $bookingId . ".");
         }
     }
     echo json_encode(["success" => true, "message" => "Payment submitted. The facility will confirm your payment."]);

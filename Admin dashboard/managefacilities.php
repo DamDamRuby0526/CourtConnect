@@ -1,3 +1,10 @@
+<?php
+require_once __DIR__ . "/../includes/backend-api/config.php";
+$staffRoleGuardApi = false;
+require_once __DIR__ . "/../includes/admin-php/superadmin_auth_guard.php";
+$courtconnectDashboardLayout = true;
+$courtconnectNavPage = "facilities";
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,24 +12,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../includes/css/styles.css" />
-    <script src="../includes/js/admin_managefacilities.js" defer></script>
-    <title>CourtConnect Bataan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="../includes/js/admin_managefacilities.js?v=20261017-1" defer></script>
+    <title>Manage facilities | CourtConnect</title>
 </head>
-
-<body>
-
-    <?php include '../includes/navigation/admin_header.php'; ?>
-
-    <h2>Manage Facilities</h2>
-
-    <button type="button" id="add-btn">Add New Facility</button>
-    <div id="grid-container">
+<body class="owner-ui" data-role-id="<?= (int) $_SESSION["role_id"] ?>">
+    <div class="owner-layout">
+        <?php include '../includes/navigation/admin_header.php'; ?>
+        <main class="owner-content owner-workspace-page superadmin-facilities-page">
+            <header class="owner-page-head">
+                <div>
+                    <p class="owner-breadcrumb">SYSTEM ADMINISTRATION</p>
+                    <h1>Manage facilities</h1>
+                    <p>Review and manage facility listings across CourtConnect.</p>
+                </div>
+                <button type="button" id="add-btn" class="owner-primary-button">Add new facility</button>
+            </header>
+            <div id="grid-container" class="superadmin-facility-grid" aria-live="polite"></div>
+        </main>
     </div>
 
-    <!-- facility picture not matching sa filename randomizer shenanigan sa includes/upload_helper.php -->
-
-
-    <!-- modal popup -->
     <div class="modal-container compact-modal-overlay" id="modal_container" aria-hidden="true">
         <div class="modal modal--compact" role="dialog" aria-modal="true" aria-labelledby="facilityDialogTitle">
             <form id="facilityForm" enctype="multipart/form-data">
@@ -84,9 +95,6 @@
             </form>
         </div>
     </div>
-
+    <?php include '../includes/navigation/admin_footer.php'; ?>
 </body>
-
-<?php include '../includes/navigation/admin_footer.php'; ?>
-
 </html>

@@ -2,7 +2,7 @@
 // update single user in a form
 header("Content-Type: application/json");
 require_once __DIR__ . "/../backend-api/config.php";
-require_once __DIR__ . "/courtconnect_auth_guard.php";
+require_once __DIR__ . "/superadmin_auth_guard.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);

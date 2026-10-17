@@ -74,6 +74,15 @@ if (!password_verify($password, $admin["password"])) {
     exit();
 }
 
+if ((int) $admin["role_id"] === 2 && $admin["status"] === "Inactive") {
+    echo json_encode([
+        "success" => false,
+        "message" => "This account has been disabled by the owner.",
+        "account_disabled" => true
+    ]);
+    exit();
+}
+
 if ((int) $admin["role_id"] === 3 && in_array($admin["status"], ["Pending", "Rejected"], true)) {
     session_regenerate_id(true);
     $_SESSION["admin_id"] = (int) $admin["admin_id"];

@@ -1,6 +1,7 @@
 <?php
 header("Content-Type: application/json");
 require_once __DIR__ . "/../backend-api/config.php";
+require_once __DIR__ . "/../backend-api/send_email.php";
 
 $userId = filter_var($_SESSION["user_id"] ?? null, FILTER_VALIDATE_INT);
 $facilityId = filter_var($_SESSION["facility_id"] ?? null, FILTER_VALIDATE_INT);
@@ -36,12 +37,17 @@ function managePaymentGroupRows(mysqli $conn, array $current, int $facilityId): 
     $lookupId = $groupId > 0 ? $groupId : (int) $current["booking_id"];
     $stmt = $conn->prepare(
         "SELECT b.booking_id, b.booking_group_id, b.status AS booking_status, b.schedule_id,
+                b.booking_type, b.user_id, u.email AS customer_email,
+                CONCAT_WS(' ', u.first_name, u.last_name) AS customer_name,
                 cs.schedule_status, cs.hold_expires_at,
                 TIMESTAMPDIFF(SECOND, NOW(), cs.hold_expires_at) AS hold_seconds,
-                p.payments_id, p.payment_status, p.receipt_image, p.payment_method
+                p.payments_id, p.payment_status, p.receipt_image, p.payment_method,
+                cd.court_no, f.facility_name
          FROM bookings b
          INNER JOIN court_details cd ON cd.court_id = b.court_id
+         INNER JOIN facilities f ON f.facility_id = cd.facility_id
          INNER JOIN court_schedule cs ON cs.schedule_id = b.schedule_id
+         LEFT JOIN users u ON u.user_id = b.user_id
          LEFT JOIN (
              SELECT booking_id, MAX(payments_id) AS payments_id
              FROM payments
@@ -64,8 +70,9 @@ function managePaymentGroupRows(mysqli $conn, array $current, int $facilityId): 
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
     $stmt = $conn->prepare(
         "SELECT p.payments_id, p.payment_method, p.payment_status, p.reference_number,
-            p.rejection_reason, p.receipt_image,
+            p.rejection_reason, p.rejected_at, p.resubmission_deadline, p.receipt_image,
             p.paid_at, p.created_at, b.booking_id, b.booking_type, b.total_amount, b.court_id, b.schedule_id,
+            b.status AS booking_status, b.cancellation_reason,
                 CASE WHEN b.booking_type = 'walk_in' OR b.user_id IS NULL
                     THEN COALESCE(NULLIF(b.customer_name, ''), 'Walk-in customer')
                     ELSE COALESCE(NULLIF(CONCAT_WS(' ', u.first_name, u.last_name), ''), NULLIF(b.customer_name, ''), 'Customer')
@@ -97,6 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
         $payment["has_receipt"] = $payment["payment_method"] === "Gcash"
             && !empty($payment["receipt_image"])
             && $payment["receipt_image"] !== "N/A";
+        $payment["has_newer_attempt"] = false;
         unset($payment["receipt_image"]);
         if ($payment["payment_status"] === "Pending") {
             $pendingCount++;
@@ -108,6 +116,19 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
         $payments[] = $payment;
     }
     $stmt->close();
+    $latestAttemptByBooking = [];
+    foreach ($payments as $payment) {
+        $bookingKey = (string) $payment["booking_id"];
+        $latestAttemptByBooking[$bookingKey] = max(
+            $latestAttemptByBooking[$bookingKey] ?? 0,
+            (int) $payment["payments_id"]
+        );
+    }
+    foreach ($payments as &$payment) {
+        $payment["has_newer_attempt"] = (int) $payment["payments_id"]
+            < $latestAttemptByBooking[(string) $payment["booking_id"]];
+    }
+    unset($payment);
     echo json_encode([
         "success" => true,
         "payments" => $payments,
@@ -152,7 +173,8 @@ if ($action === "reject") {
         $conn->begin_transaction();
         $currentStmt = $conn->prepare(
             "SELECT p.payment_status, b.booking_id, b.booking_group_id, b.status AS booking_status,
-                    b.schedule_id, cs.schedule_status,
+                    b.schedule_id, b.booking_type, b.user_id, b.hold_expires_at,
+                    cs.schedule_status,
                     TIMESTAMPDIFF(SECOND, NOW(), cs.hold_expires_at) AS hold_seconds
              FROM payments p
              INNER JOIN bookings b ON b.booking_id = p.booking_id
@@ -192,38 +214,55 @@ if ($action === "reject") {
             }
         }
 
+        $deadlineStmt = $conn->prepare("SELECT DATE_ADD(NOW(), INTERVAL 24 HOUR) AS resubmission_deadline");
+        $deadlineStmt->execute();
+        $resubmissionDeadline = (string) $deadlineStmt->get_result()->fetch_assoc()["resubmission_deadline"];
+        $deadlineStmt->close();
         $paymentStmt = $conn->prepare(
             "UPDATE payments
-             SET payment_status = 'Rejected', rejection_reason = ?, paid_at = NULL
+             SET payment_status = 'Rejected', rejection_reason = ?,
+                 rejected_at = NOW(), resubmission_deadline = ?, paid_at = NULL
              WHERE payments_id = ? AND payment_status = 'Pending'"
         );
         $bookingStmt = $conn->prepare(
             "UPDATE bookings
              SET status = ?, payment_status = 'rejected',
-                 hold_expires_at = CASE WHEN ? = 'pending_payment'
-                     THEN DATE_ADD(NOW(), INTERVAL 24 HOUR) ELSE hold_expires_at END
+                 hold_expires_at = CASE WHEN ? = 'pending_payment' AND ? = 'Held' AND ? > 0
+                     THEN ? ELSE hold_expires_at END
              WHERE booking_id = ?"
         );
         $scheduleStmt = $conn->prepare(
             "UPDATE court_schedule
-             SET hold_expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR)
+             SET hold_expires_at = ?
              WHERE schedule_id = ? AND schedule_status = 'Held' AND hold_expires_at > NOW()"
         );
         foreach ($groupRows as $row) {
             $rowPaymentId = (int) $row["payments_id"];
-            $paymentStmt->bind_param("si", $rejectionReason, $rowPaymentId);
+            $paymentStmt->bind_param("ssi", $rejectionReason, $resubmissionDeadline, $rowPaymentId);
             $paymentStmt->execute();
             if ($paymentStmt->affected_rows !== 1) {
                 throw new RuntimeException("A payment in this reservation is no longer pending.");
             }
             $rowBookingStatus = $row["booking_status"] === "pending" ? "pending_payment" : $row["booking_status"];
             $rowBookingId = (int) $row["booking_id"];
-            $bookingStmt->bind_param("ssi", $rowBookingStatus, $rowBookingStatus, $rowBookingId);
+            $bookingStmt->bind_param(
+                "sssisi",
+                $rowBookingStatus,
+                $rowBookingStatus,
+                $row["schedule_status"],
+                $row["hold_seconds"],
+                $resubmissionDeadline,
+                $rowBookingId
+            );
             $bookingStmt->execute();
-            if ($row["booking_status"] === "pending" && $row["schedule_status"] === "Held"
+            if ($rowBookingStatus === "pending_payment" && $row["schedule_status"] === "Held"
                 && (int) $row["hold_seconds"] > 0) {
-                foreach (bookingRangeScheduleIds($conn, $rowBookingId) as $rowScheduleId) {
-                    $scheduleStmt->bind_param("i", $rowScheduleId);
+                $scheduleIds = bookingRangeScheduleIds($conn, $rowBookingId);
+                if (!$scheduleIds) {
+                    $scheduleIds[] = (int) $row["schedule_id"];
+                }
+                foreach ($scheduleIds as $rowScheduleId) {
+                    $scheduleStmt->bind_param("si", $resubmissionDeadline, $rowScheduleId);
                     $scheduleStmt->execute();
                 }
             }
@@ -233,7 +272,39 @@ if ($action === "reject") {
         $scheduleStmt->close();
 
         $conn->commit();
-        echo json_encode(["success" => true, "message" => "Payment rejected."]);
+        $notificationSent = true;
+        $notificationAttempted = false;
+        $notifiedUsers = [];
+        foreach ($groupRows as $row) {
+            $rowUserId = (int) ($row["user_id"] ?? 0);
+            if ($rowUserId < 1 || isset($notifiedUsers[$rowUserId])) {
+                continue;
+            }
+            $notifiedUsers[$rowUserId] = true;
+            $recipientEmail = trim((string) ($row["customer_email"] ?? ""));
+            if ($recipientEmail === "") {
+                $notificationSent = false;
+                continue;
+            }
+            $notificationAttempted = true;
+            $emailResult = sendPaymentRejectionEmail(
+                $recipientEmail,
+                (string) ($row["customer_name"] ?? ""),
+                $rejectionReason,
+                $resubmissionDeadline
+            );
+            $notificationSent = $notificationSent && !empty($emailResult["success"]);
+        }
+        if (!$notificationAttempted && !$notifiedUsers) {
+            $notificationSent = true;
+        }
+        echo json_encode([
+            "success" => true,
+            "notification_sent" => $notificationSent,
+            "message" => $notificationSent
+                ? "Payment rejected. The player has 24 hours to submit a replacement."
+                : "Payment rejected, but the player could not be notified by email. Contact them directly."
+        ]);
     } catch (RuntimeException $error) {
         $conn->rollback();
         if (http_response_code() < 400) {

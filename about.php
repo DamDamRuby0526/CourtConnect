@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="includes/css/styles.css">
+    <link rel="stylesheet" href="includes/css/styles.css?v=20261018-about-cta-2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,15 +28,19 @@ if (session_status() === PHP_SESSION_NONE) {
                     <a class="about-hero-link" href="adminregister.php">For facility owners <span aria-hidden="true">↗</span></a>
                 </div>
             </div>
-            <div class="about-court-graphic" aria-hidden="true">
-                <span class="about-court-caption">A LOCAL COURT NETWORK</span>
-                <svg viewBox="0 0 480 300" fill="none">
-                    <rect x="26" y="25" width="428" height="250" rx="2" />
-                    <path d="M240 25v250M26 150h428M98 25v250M382 25v250M98 86h284M98 214h284" />
-                    <circle cx="240" cy="150" r="37" />
-                    <path class="about-court-net" d="M240 25v250" />
-                </svg>
-                <span class="about-court-coordinate">BADMINTON <i>+</i> PICKLEBALL</span>
+            <div class="about-racket-graphic" role="group" aria-label="Pickleball paddle and badminton racket">
+                <span class="about-racket-caption">READY FOR EVERY RALLY</span>
+                <div class="about-racket-pair">
+                    <figure class="about-racket-item">
+                        <img src="assets/images/about/pickleball-paddle.png" alt="Blue pickleball paddle">
+                        <figcaption>PICKLEBALL</figcaption>
+                    </figure>
+                    <figure class="about-racket-item">
+                        <img src="assets/images/about/badminton-racket.png" alt="Yellow and black badminton racket">
+                        <figcaption>BADMINTON</figcaption>
+                    </figure>
+                </div>
+                <span class="about-racket-coordinate">COURTCONNECT <i>·</i> BATAAN</span>
             </div>
         </section>
 
@@ -116,7 +120,14 @@ if (session_status() === PHP_SESSION_NONE) {
         </section>
 
         <section class="about-coverage" aria-labelledby="coverageTitle">
-            <span class="about-coverage-mark" aria-hidden="true">B</span>
+            <svg class="about-coverage-map" viewBox="0 0 220 190" role="img" aria-label="Illustrated map of Bataan">
+                <path class="about-coverage-map-shape" d="M115 9 145 19 158 39 151 53 169 68 161 83 175 98 160 111 168 128 153 138 157 154 143 169 128 179 111 172 95 179 82 165 67 158 71 142 55 130 66 117 54 102 67 90 60 75 76 65 72 50 90 41 94 26 107 23Z"/>
+                <path class="about-coverage-map-lines" d="m95 42 48 13m-67 17 69 14m-75 18 76 13m-68 17 62 13m-48 17 42 9"/>
+                <circle cx="117" cy="34" r="4"/>
+                <circle cx="147" cy="88" r="4"/>
+                <circle cx="103" cy="138" r="4"/>
+                <circle cx="132" cy="162" r="4"/>
+            </svg>
             <div>
                 <p class="about-eyebrow">OUR COVERAGE</p>
                 <h2 id="coverageTitle">Rooted in Bataan</h2>
@@ -131,8 +142,8 @@ if (session_status() === PHP_SESSION_NONE) {
                 <p>Explore participating badminton and pickleball facilities in Bataan and find a court that fits your schedule.</p>
             </div>
             <div class="about-actions">
-                <a class="home-primary-button" href="facility.php">Explore Courts</a>
-                <a class="about-cta-secondary" href="adminregister.php">Register your facility <span aria-hidden="true">→</span></a>
+                <a class="about-cta-button about-cta-button-primary" href="facility.php">Explore Courts <span aria-hidden="true">→</span></a>
+                <a class="about-cta-button about-cta-button-secondary" href="adminregister.php">Register your facility <span aria-hidden="true">→</span></a>
             </div>
         </section>
     </main>

@@ -49,7 +49,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
     window.showDialog({
       type: "error",
-      title: "Sign-in failed",
+      title: result.account_disabled ? "Account disabled" : "Sign-in failed",
       message: result.message || "Check your details and try again.",
     });
     return;
@@ -61,9 +61,12 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
   if (result.owner_application) {
     destination = "owner_application.php";
     destinationLabel = "your application status.";
-  } else if (result.user.role_name === "courtconnect") {
+  } else if (Number(result.user.role_id) === 4) {
     destination = "Admin dashboard/reviewregistrations.php";
-    destinationLabel = "the developer review dashboard.";
+    destinationLabel = "the facility applications dashboard.";
+  } else if (Number(result.user.role_id) === 5) {
+    destination = "Admin dashboard/superadmin.php";
+    destinationLabel = "the Superadmin dashboard.";
   } else if (result.user.admin_id || result.user.role_name === "facility_owner") {
     destination = "Admin dashboard/admindex.php";
     destinationLabel = "your facility dashboard.";

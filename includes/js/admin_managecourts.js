@@ -59,7 +59,7 @@ async function loadCourts() {
       editButton.textContent = "Edit Court";
       editButton.dataset.courtId = court.court_id;
       const scheduleButton = document.createElement("a");
-      scheduleButton.className = "owner-schedule-link";
+      scheduleButton.className = "owner-secondary-button owner-schedule-link";
       scheduleButton.href = `manageschedules.php?court_id=${encodeURIComponent(court.court_id)}`;
       scheduleButton.textContent = "Manage Schedule";
       actions.append(editButton, scheduleButton);
@@ -76,11 +76,48 @@ async function loadCourts() {
   const courtForm = document.getElementById("courtForm");
   const modalContainer = document.getElementById("modal_container");
   const courtImagePreview = document.getElementById("court_img_preview");
+  const courtImageInput = document.getElementById("court_img");
+  const courtImageDropzone = document.getElementById("courtImageDropzone");
+  const courtImageFileStatus = document.getElementById("courtImageFileStatus");
+  let courtImagePreviewUrl = null;
+  let currentCourtImageUrl = null;
+
+  function resetCourtImageUpload() {
+    courtImageInput.value = "";
+    courtImageFileStatus.textContent = "";
+    courtImageFileStatus.classList.remove("is-error");
+    courtImageDropzone.classList.remove("is-dragging");
+    if (courtImagePreviewUrl) URL.revokeObjectURL(courtImagePreviewUrl);
+    courtImagePreviewUrl = null;
+  }
+
+  function setCourtImageFile(file) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size <= 0 || file.size > 5 * 1024 * 1024) {
+      courtImageInput.value = "";
+      courtImageFileStatus.textContent = "Choose a JPG, PNG, or WEBP image no larger than 5 MB.";
+      courtImageFileStatus.classList.add("is-error");
+      if (courtImagePreviewUrl) URL.revokeObjectURL(courtImagePreviewUrl);
+      courtImagePreviewUrl = null;
+      courtImagePreview.hidden = !currentCourtImageUrl;
+      if (currentCourtImageUrl) courtImagePreview.src = currentCourtImageUrl;
+      else courtImagePreview.removeAttribute("src");
+      return;
+    }
+    courtImageFileStatus.textContent = file.name;
+    courtImageFileStatus.classList.remove("is-error");
+    if (courtImagePreviewUrl) URL.revokeObjectURL(courtImagePreviewUrl);
+    courtImagePreviewUrl = URL.createObjectURL(file);
+    courtImagePreview.src = courtImagePreviewUrl;
+    courtImagePreview.hidden = false;
+  }
 
   function closeCourtModal() {
     modalContainer.classList.remove("show");
     modalContainer.setAttribute("aria-hidden", "true");
     courtForm.reset();
+    resetCourtImageUpload();
+    currentCourtImageUrl = null;
     courtImagePreview.hidden = true;
     courtImagePreview.removeAttribute("src");
     document.getElementById("courtFormStatus").textContent = "";
@@ -89,6 +126,7 @@ async function loadCourts() {
 
   function openCourtModal(court = null) {
     courtForm.reset();
+    resetCourtImageUpload();
     courtForm.dataset.courtId = court?.court_id || "";
     document.getElementById("courtDialogTitle").textContent = court ? `Edit Court ${court.court_no}` : "Add a court";
     document.getElementById("court_no").value = court?.court_no || "";
@@ -96,8 +134,10 @@ async function loadCourts() {
     document.getElementById("description").value = court?.description || "";
     document.getElementById("slot_duration").value = court?.slot_duration || "60";
     document.getElementById("court_status").value = court?.court_status || "Available";
-    courtImagePreview.hidden = !court?.court_img;
-    if (court?.court_img) courtImagePreview.src = `../uploads/court/${encodeURIComponent(court.court_img)}`;
+    currentCourtImageUrl = court?.court_img ? `../uploads/court/${encodeURIComponent(court.court_img)}` : null;
+    courtImagePreview.hidden = !currentCourtImageUrl;
+    if (currentCourtImageUrl) courtImagePreview.src = currentCourtImageUrl;
+    else courtImagePreview.removeAttribute("src");
     document.getElementById("courtFormStatus").textContent = "";
     document.getElementById("courtFormStatus").classList.remove("is-error");
     modalContainer.classList.add("show");
@@ -295,11 +335,29 @@ async function loadCourts() {
       }
     });
 
-    document.getElementById("court_img").addEventListener("change", (event) => {
-      const file = event.currentTarget.files[0];
+    courtImageInput.addEventListener("change", () => setCourtImageFile(courtImageInput.files[0]));
+    courtImageDropzone.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        courtImageInput.click();
+      }
+    });
+    courtImageDropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      courtImageDropzone.classList.add("is-dragging");
+    });
+    courtImageDropzone.addEventListener("dragleave", (event) => {
+      if (!courtImageDropzone.contains(event.relatedTarget)) courtImageDropzone.classList.remove("is-dragging");
+    });
+    courtImageDropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      courtImageDropzone.classList.remove("is-dragging");
+      const file = event.dataTransfer?.files[0];
       if (!file) return;
-      courtImagePreview.src = URL.createObjectURL(file);
-      courtImagePreview.hidden = false;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      courtImageInput.files = transfer.files;
+      setCourtImageFile(file);
     });
 
     document.addEventListener("click", async (event) => {

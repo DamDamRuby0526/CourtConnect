@@ -8,12 +8,12 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="includes/css/styles.css">
+    <link rel="stylesheet" href="includes/css/styles.css?v=20261018-resubmit-buttons-2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <?php if ($isPlayer): ?>
-        <script src="includes/js/mybookings.js" defer></script>
+        <script src="includes/js/mybookings.js?v=20261018-resubmit-buttons-2" defer></script>
     <?php endif; ?>
     <title>My bookings | CourtConnect</title>
 </head>
@@ -56,6 +56,7 @@ $conn->close();
                 <strong>Reason for rejection:</strong>
                 <p id="rejectionReasonText"></p>
             </div>
+            <p id="rejectionResubmissionDeadline" class="player-resubmission-deadline" hidden></p>
             <p id="rejectionResubmissionMessage" class="player-resubmission-message" hidden></p>
             <div class="owner-modal-actions">
                 <button type="button" class="owner-secondary-button" id="closeRejectionReason">Close</button>
@@ -92,6 +93,21 @@ $conn->close();
                 </div>
             </form>
         </div>
+    </div>
+    <div class="modal-container owner-modal player-payment-modal" id="playerPaymentReceiptModal" aria-hidden="true">
+        <section class="modal owner-modal-panel player-receipt-panel" role="dialog" aria-modal="true" aria-labelledby="playerPaymentReceiptTitle">
+            <div class="owner-modal-heading">
+                <div>
+                    <p class="owner-breadcrumb">PAYMENT RECEIPT</p>
+                    <h2 id="playerPaymentReceiptTitle">GCash receipt</h2>
+                </div>
+            </div>
+            <img id="playerPaymentReceiptImage" class="payment-receipt-preview" alt="Uploaded GCash payment receipt">
+            <p id="paymentReceiptLoadMessage" class="owner-form-status" role="status" aria-live="polite"></p>
+            <div class="owner-modal-actions">
+                <button type="button" class="owner-secondary-button" id="closePlayerPaymentReceipt">Close</button>
+            </div>
+        </section>
     </div>
     <?php include 'includes/navigation/footer.php'; ?>
 </body>

@@ -16,7 +16,8 @@ $stmt = $conn->prepare(
             cs.court_date, cs.court_time, cs.schedule_status, cs.hold_expires_at,
             cd.court_no, cd.slot_duration, cd.facility_id, f.facility_name, f.municipality,
             p.payments_id, p.payment_status AS payment_record_status,
-            p.rejection_reason, p.receipt_image,
+            p.rejection_reason, p.resubmission_deadline, p.receipt_image,
+            b.cancellation_reason,
             CASE
                 WHEN LOWER(COALESCE(p.payment_status, '')) = 'paid' OR LOWER(COALESCE(b.payment_status, '')) = 'paid' THEN 'Paid'
                 WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected' OR LOWER(COALESCE(b.payment_status, '')) = 'rejected' THEN 'Rejected'
@@ -39,6 +40,7 @@ $stmt = $conn->prepare(
                 AND cs.hold_expires_at > NOW()) AS active_hold,
             (LOWER(COALESCE(p.payment_status, '')) = 'rejected'
                 AND LOWER(b.status) IN ('pending', 'pending_payment')
+                AND p.resubmission_deadline > NOW()
                 AND cs.schedule_status = 'Held'
                 AND b.hold_expires_at > NOW()
                 AND cs.hold_expires_at > NOW()
@@ -46,7 +48,11 @@ $stmt = $conn->prepare(
             CASE
                 WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected'
                     AND LOWER(b.status) IN ('cancelled', 'completed', 'expired')
-                    THEN 'This booking is no longer active and cannot accept another payment.'
+                    THEN COALESCE(NULLIF(b.cancellation_reason, ''),
+                        'This booking is no longer active and cannot accept another payment.')
+                WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected'
+                    AND (p.resubmission_deadline IS NULL OR p.resubmission_deadline <= NOW())
+                    THEN 'The 24-hour payment resubmission window has expired. This reservation is being canceled.'
                 WHEN LOWER(COALESCE(p.payment_status, '')) = 'rejected'
                     AND (LOWER(b.status) NOT IN ('pending', 'pending_payment')
                         OR cs.schedule_status <> 'Held'
@@ -98,6 +104,11 @@ while ($row = $result->fetch_assoc()) {
         "payment_id" => $row["payments_id"] ? (int) $row["payments_id"] : null,
         "payment_status" => $row["display_payment_status"],
         "rejection_reason" => $row["rejection_reason"],
+        "resubmission_deadline" => $row["resubmission_deadline"],
+        "resubmission_deadline_label" => $row["resubmission_deadline"]
+            ? date("M j, Y g:i A", strtotime($row["resubmission_deadline"])) . " PHT"
+            : null,
+        "cancellation_reason" => $row["cancellation_reason"],
         "has_receipt" => !empty($row["receipt_image"]),
         "is_past" => (bool) $row["is_past"],
         "attendance_status" => $row["attendance_status"],

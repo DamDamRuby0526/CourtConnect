@@ -81,6 +81,7 @@ try {
     $bookingStatus = strtolower((string) ($booking["status"] ?? ""));
     $bookingSlotIds = [];
     $bookingSlotsValid = true;
+    $bookingSlotsLoaded = 0;
     if ($booking) {
         $bookingSlotIds = bookingRangeScheduleIds($conn, (int) $bookingId);
         if (!$bookingSlotIds) $bookingSlotIds[] = (int) $booking["schedule_id"];
@@ -98,12 +99,13 @@ try {
         $bookingSlotsStmt->execute();
         $bookingSlotsResult = $bookingSlotsStmt->get_result();
         while ($bookingSlot = $bookingSlotsResult->fetch_assoc()) {
-            $bookingSlotIds[] = (int) $bookingSlot["schedule_id"];
+            $bookingSlotsLoaded++;
             $bookingSlotsValid = $bookingSlotsValid
                 && $bookingSlot["schedule_status"] === "Held"
                 && (int) $bookingSlot["active_hold"] === 1;
         }
         $bookingSlotsStmt->close();
+        $bookingSlotsValid = $bookingSlotsValid && $bookingSlotsLoaded === count($bookingSlotIds);
     }
     if (in_array($bookingStatus, ["cancelled", "completed", "expired"], true)) {
         http_response_code(409);
@@ -120,7 +122,8 @@ try {
     }
 
     $latestPaymentStmt = $conn->prepare(
-        "SELECT payments_id, payment_status, receipt_image
+        "SELECT payments_id, payment_status, receipt_image, resubmission_deadline,
+                (resubmission_deadline IS NOT NULL AND resubmission_deadline > NOW()) AS resubmission_open
          FROM payments
          WHERE booking_id = ?
          ORDER BY payments_id DESC
@@ -135,6 +138,10 @@ try {
         http_response_code(409);
         throw new RuntimeException("This booking does not have a rejected payment awaiting resubmission.");
     }
+    if ((int) $latestPayment["resubmission_open"] !== 1) {
+        http_response_code(409);
+        throw new RuntimeException("The 24-hour payment resubmission window has expired.");
+    }
 
     $oldReceipt = basename((string) ($latestPayment["receipt_image"] ?? ""));
     if (!move_uploaded_file($receipt["tmp_name"], $filePath)) {
@@ -146,10 +153,18 @@ try {
     $paymentStmt = $conn->prepare(
         "UPDATE payments
          SET payment_method = ?, payment_status = 'Pending', reference_number = ?,
-             receipt_image = ?, rejection_reason = NULL, paid_at = NULL
+             receipt_image = ?, rejection_reason = NULL, rejected_at = NULL,
+             resubmission_deadline = NULL, paid_at = NULL
          WHERE payments_id = ? AND booking_id = ? AND payment_status = 'Rejected'"
     );
-    $paymentStmt->bind_param("sssii", $paymentMethod, $referenceNumber, $fileName, $latestPayment["payments_id"], $bookingId);
+    $paymentStmt->bind_param(
+        "sssii",
+        $paymentMethod,
+        $referenceNumber,
+        $fileName,
+        $latestPayment["payments_id"],
+        $bookingId
+    );
     $paymentStmt->execute();
     if ($paymentStmt->affected_rows !== 1) {
         $paymentStmt->close();
@@ -192,9 +207,14 @@ try {
 
     $conn->commit();
     if ($oldReceipt !== "" && $oldReceipt !== $fileName) {
+        $receiptCheck = $conn->prepare("SELECT COUNT(*) AS receipt_references FROM payments WHERE receipt_image = ?");
+        $receiptCheck->bind_param("s", $oldReceipt);
+        $receiptCheck->execute();
+        $receiptReferences = (int) $receiptCheck->get_result()->fetch_assoc()["receipt_references"];
+        $receiptCheck->close();
         $oldReceiptPath = $uploadDirectory . DIRECTORY_SEPARATOR . $oldReceipt;
-        if (is_file($oldReceiptPath)) {
-            unlink($oldReceiptPath);
+        if ($receiptReferences === 0 && is_file($oldReceiptPath) && !unlink($oldReceiptPath)) {
+            error_log("Unable to remove replaced receipt image for payment " . $paymentId . ".");
         }
     }
     echo json_encode([

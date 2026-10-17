@@ -1,7 +1,7 @@
 <?php
 header("Content-Type: application/json");
 require_once __DIR__ . "/../backend-api/config.php";
-require_once __DIR__ . "/courtconnect_auth_guard.php";
+require_once __DIR__ . "/superadmin_auth_guard.php";
 
 $sql = "SELECT user_id, first_name, last_name, email, phone_number FROM users";
 $result = $conn->query($sql);

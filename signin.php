@@ -10,12 +10,12 @@ $returningForReservation = ($_GET["return_to"] ?? "") === "reservation_resume.ph
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="includes/css/styles.css?v=20261016-auth-3">
+  <link rel="stylesheet" href="includes/css/styles.css?v=20261018-auth-4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>CourtConnect Bataan</title>
-  <script src="includes/js/login.js?v=20261016-2" defer></script>
+  <script src="includes/js/login.js?v=20261017-1" defer></script>
 </head>
 
 <body class="account-auth-page">

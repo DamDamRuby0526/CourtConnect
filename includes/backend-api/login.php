@@ -89,6 +89,15 @@ if (
     exit();
 }
 
+if ((int) $user["role_id"] === 2 && $user["admin_status"] === "Inactive") {
+    echo json_encode([
+        "success" => false,
+        "message" => "This account has been disabled by the owner.",
+        "account_disabled" => true
+    ]);
+    exit();
+}
+
 if ($user["admin_status"] === "Pending") {
     $_SESSION["pending_facility_user_id"] = (int) $user["user_id"];
     echo json_encode([
@@ -148,6 +157,7 @@ echo json_encode([
         "last_name" => $user["last_name"],
         "email" => $user["email"],
         "phone_number" => $user["phone_number"],
+        "role_id" => (int) $user["role_id"],
         "role_name" => $user["role_name"],
         "admin_id" => $user["admin_id"] ? (int) $user["admin_id"] : null,
         "facility_id" => $user["facility_id"] ? (int) $user["facility_id"] : null
