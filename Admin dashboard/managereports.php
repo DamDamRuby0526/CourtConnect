@@ -278,20 +278,20 @@ function isPdfExportRequest()
 }
 
 if (isPdfExportRequest()) {
-    if (!file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    $dompdfAutoloadPath = __DIR__ . '/../pdf_api/vendor/autoload.php';
+    if (is_file($dompdfAutoloadPath) && is_readable($dompdfAutoloadPath)) {
+        require_once $dompdfAutoloadPath;
+    }
+
+    if (!class_exists(\Dompdf\Dompdf::class)) {
         http_response_code(500);
         echo '<!doctype html><html><head><meta charset="UTF-8"><title>PDF export unavailable</title></head><body style="font-family:Arial,sans-serif;padding:32px;line-height:1.6;">';
-        echo '<h1>PDF export library not installed</h1>';
-        echo '<p>This project does not yet have a PDF library available. Install Dompdf with the commands below, then refresh the report.</p>';
-        echo '<pre style="background:#f4f4f4;padding:16px;border-radius:8px;">cd C:\\xampp\\htdocs\\CourtConnect
-C:\\xampp\\php\\php.exe -r "copy(\'https://getcomposer.org/installer\', \'composer-setup.php\');"
-C:\\xampp\\php\\php.exe composer-setup.php
-C:\\xampp\\php\\php.exe -d detect_unicode=0 C:\\xampp\\htdocs\\CourtConnect\\composer.phar require dompdf/dompdf</pre>';
+        echo '<h1>PDF export unavailable</h1>';
+        echo '<p>Dompdf could not be loaded. The report expects the Composer autoloader at <code>pdf_api/vendor/autoload.php</code>.</p>';
+        echo '<p>Restore the complete <code>pdf_api/vendor/</code> directory from the project ZIP, or install the dependencies from <code>composer/composer.json</code> and <code>composer/composer.lock</code> with Composer configured to place the vendor directory at that expected path. In XAMPP, also make sure the PHP DOM and mbstring extensions are enabled.</p>';
         echo '</body></html>';
         exit();
     }
-
-    require_once __DIR__ . '/../vendor/autoload.php';
 
     $pdfHtml = '<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>';
     $pdfHtml .= 'body{font-family:DejaVu Sans, Arial, sans-serif;color:#1f2937;margin:20px;} h1{font-size:22px;margin:0 0 6px;} .header{border-bottom:2px solid #0f3154;padding-bottom:10px;margin-bottom:14px;} .meta{font-size:11px;color:#475569;line-height:1.5;} .card-grid{width:100%;border-collapse:separate;border-spacing:8px 0;margin:12px -8px 10px;} .box{width:33.33%;border:1px solid #dbe2ec;border-radius:6px;padding:10px;background:#f8fafc;} .label{color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:0.04em;} .value{font-size:20px;font-weight:bold;margin-top:4px;} table{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:10px;} thead{display:table-header-group;} tr{page-break-inside:avoid;} th,td{border-bottom:1px solid #dbe2ec;padding:6px 7px;text-align:left;vertical-align:top;} th{background:#e9f0ed;color:#0f3154;} .empty{padding:16px;border:1px dashed #94a3b8;border-radius:6px;color:#475569;} .status{font-weight:bold;}';
