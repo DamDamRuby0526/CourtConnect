@@ -7,20 +7,16 @@ $municipalities = [
 ];
 $homeHeroSlides = [
     [
-        "file" => "02053841fc800bc68074c217c55cf853.png",
-        "alt" => "Indoor pickleball court with blue playing surfaces",
+        "file" => "shaflers-court.png",
+        "alt" => "Indoor Shaflers court with green pickleball playing surfaces",
     ],
     [
-        "file" => "22b8f56d14771659e6128921f6ed9f6d.png",
-        "alt" => "Players on an indoor pickleball court",
+        "file" => "court31-pickleball.png",
+        "alt" => "Blue pickleball courts at Court31",
     ],
     [
-        "file" => "2833aff3367ec88cf87540f346a17ce3.jpg",
-        "alt" => "Indoor badminton court with green playing surfaces",
-    ],
-    [
-        "file" => "5e93fc55432d01ea65b749927bfb6ae0.png",
-        "alt" => "Indoor badminton court with marked playing lines",
+        "file" => "racquet-recreational-hub.png",
+        "alt" => "Pickleball and badminton courts at Racquet Recreational Hub",
     ],
 ];
 $activeFacilityCondition = "EXISTS (
@@ -210,7 +206,7 @@ function homePageIsOpen($openingTime, $closingTime)
                                 <div class="facility-card-title-row">
                                     <h3><?= homePageEscape($facility["facility_name"]) ?></h3>
                                     <div class="facility-card-tags">
-                                        <span class="sport-badge"><?= homePageEscape($facility["sport_type"]) ?></span>
+                                        <span class="sport-badge"><?= homePageEscape($facility["sport_type"] === "Both" ? "Pickleball & Badminton" : $facility["sport_type"]) ?></span>
                                         <span class="facility-open-badge <?= (int) $facility["is_open"] === 1 ? "is-open" : "is-closed" ?>"><?= (int) $facility["is_open"] === 1 ? "Open now" : "Closed" ?></span>
                                     </div>
                                 </div>

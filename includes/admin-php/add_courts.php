@@ -10,9 +10,9 @@ $description = trim($_POST["description"] ?? "");
 $slotDuration = filter_var($_POST["slot_duration"] ?? null, FILTER_VALIDATE_INT);
 $courtStatus = trim($_POST["court_status"] ?? "");
 
-if (!$courtNo || !$courtRate || !$slotDuration || $description === "" || !in_array($courtStatus, ["Available", "Maintenance"], true)) {
+if (!$courtNo || !$courtRate || !$slotDuration || !in_array($courtStatus, ["Available", "Maintenance"], true)) {
     http_response_code(400);
-    echo json_encode(["success" => false, "message" => "Enter a court number, positive rate and duration, description, and valid status."]);
+    echo json_encode(["success" => false, "message" => "Enter a court number, positive rate and duration, and valid status."]);
     exit();
 }
 

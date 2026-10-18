@@ -156,7 +156,7 @@ function facilityPageIsOpen($openingTime, $closingTime)
                             <div class="facility-card-title-row">
                                 <h2><?= facilityPageEscape($facility["facility_name"]) ?></h2>
                                 <div class="facility-card-tags">
-                                    <span class="sport-badge"><?= facilityPageEscape($facility["sport_type"]) ?></span>
+                                    <span class="sport-badge"><?= facilityPageEscape($facility["sport_type"] === "Both" ? "Pickleball & Badminton" : $facility["sport_type"]) ?></span>
                                     <span class="facility-open-badge <?= facilityPageIsOpen($facility["opening_time"], $facility["closing_time"]) ? "is-open" : "is-closed" ?>"><?= facilityPageIsOpen($facility["opening_time"], $facility["closing_time"]) ? "Open now" : "Closed" ?></span>
                                 </div>
                             </div>

@@ -41,7 +41,7 @@ async function loadCourts() {
       const name = document.createElement("h3");
       name.textContent = `Court ${court.court_no}`;
       const description = document.createElement("p");
-      description.textContent = court.description;
+      description.textContent = court.description || "No description provided.";
       const meta = document.createElement("div");
       meta.className = "owner-court-meta";
       meta.textContent = `₱${court.court_rate} / hour  ·  ${court.slot_duration} min slots`;

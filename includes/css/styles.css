@@ -1378,6 +1378,9 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .facility-image-fallback, .court-image-fallback { position: absolute; inset: 0; display: grid; width: 100%; height: 100%; place-items: center; background: var(--court-blue); color: var(--cream); font-family: "Poppins", sans-serif; font-size: 14px; font-weight: 600; }
 .facility-image-fallback[hidden], .court-image-fallback[hidden] { display: none; }
 .facility-card-content, .court-card-content { display: grid; gap: 12px; padding: 20px; }
+.facility-grid .facility-card { display: flex; flex-direction: column; }
+.facility-grid .facility-card-content { display: flex; flex: 1; flex-direction: column; align-items: flex-start; }
+.facility-grid .facility-card-content .player-primary-link { margin-top: auto; }
 .facility-card-title-row, .court-card-title-row { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .facility-card-title-row h2, .court-card-title-row h2 { min-width: 0; margin: 0; color: var(--navy); font-family: "Poppins", sans-serif; font-size: 20px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
 .sport-badge, .court-status-badge, .player-status-badge { display: inline-flex; width: fit-content; max-width: 100%; align-items: center; padding: 5px 9px; border-radius: 4px; background: var(--line); color: var(--navy); font-size: 10px; font-weight: 700; line-height: 1.3; }
@@ -1598,11 +1601,11 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .home-step h3 { grid-column: 1 / -1; margin: 2px 0 0; color: var(--navy); font-size: 18px; font-weight: 600; }
 .home-step p { grid-column: 1 / -1; color: var(--muted); font-size: 14px; line-height: 1.65; }
 .home-featured-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.home-facility-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 4px 14px rgba(13, 49, 87, .06); transition: transform .18s ease, box-shadow .18s ease; }
+.home-facility-card { display: flex; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 4px 14px rgba(13, 49, 87, .06); transition: transform .18s ease, box-shadow .18s ease; }
 .home-facility-card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(13, 49, 87, .12); }
 .home-facility-card .facility-card-media { aspect-ratio: 16 / 10; background: #e8eee8; }
 .home-facility-card .facility-card-image { object-fit: cover; }
-.home-facility-card .facility-card-content { min-height: 200px; align-content: start; gap: 11px; padding: 17px; }
+.home-facility-card .facility-card-content { display: flex; min-height: 200px; flex: 1; flex-direction: column; align-items: flex-start; gap: 11px; padding: 17px; }
 .home-facility-card .facility-card-title-row { display: grid; gap: 8px; }
 .home-facility-card .facility-card-title-row h3 { min-width: 0; margin: 0; color: var(--navy); font-size: 18px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
 .home-facility-card .facility-card-tags { justify-content: flex-start; }
@@ -2349,7 +2352,8 @@ th, td { line-height: 1.5; }
   .courts-page-heading { align-items: flex-end; gap: 24px; margin-bottom: 24px; }
   .courts-page-heading .player-breadcrumb { margin-bottom: 14px; }
   .courts-facility-heading { display: flex; align-items: center; gap: 18px; }
-  .courts-facility-heading .facility-detail-logo { width: 68px; height: 68px; flex: 0 0 68px; object-fit: cover; border: 1px solid var(--line); background: #fff; }
+  .courts-facility-heading > div { min-width: 0; }
+  .courts-facility-heading .facility-detail-logo { width: 68px; height: 68px; flex: 0 0 68px; object-fit: contain; border: 1px solid var(--line); background: #fff; }
   .courts-facility-heading h1 { margin: 4px 0 6px; color: var(--navy); font-size: clamp(23px, 3vw, 32px); line-height: 1.25; }
   .courts-facility-heading p { margin: 0; color: var(--muted); font-size: 13px; }
   .courts-facility-heading .courts-hours { margin-top: 7px; font-size: 12px; }
@@ -2461,9 +2465,9 @@ th, td { line-height: 1.5; }
   }
 
   .courts-page { width: min(1440px, 100%); padding-right: 24px; padding-left: 24px; }
-  .courts-facility-logo { position: relative; display: block; width: 68px; height: 68px; flex: 0 0 68px; overflow: hidden; border: 1px solid var(--line); background: #eef3ed; }
+  .courts-facility-logo { position: relative; display: block; width: 82px; height: 82px; flex: 0 0 82px; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
   .courts-facility-logo-fallback { position: absolute; inset: 0; display: grid; place-items: center; color: var(--navy); font-size: 24px; font-weight: 700; }
-  .courts-facility-logo .facility-detail-logo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .courts-facility-logo .facility-detail-logo { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 5px; border: 0; object-fit: contain; }
   .courts-facility-logo .facility-detail-logo[hidden] { display: none; }
   .court-schedule-grid { grid-template-columns: minmax(250px, 260px) repeat(var(--time-column-count), minmax(58px, 1fr)); min-width: 0; }
   .court-grid-court-header, .court-grid-time-header { min-width: 0; padding: 7px 3px; font-size: 10px; text-align: center; }
@@ -2505,7 +2509,7 @@ th, td { line-height: 1.5; }
   }
   @media (max-width: 680px) {
     .courts-page { padding-right: 16px; padding-left: 16px; }
-    .courts-facility-logo { width: 54px; height: 54px; flex-basis: 54px; }
+    .courts-facility-logo { width: 64px; height: 64px; flex-basis: 64px; }
     .court-grid-row-header { min-height: 74px; }
     .court-grid-thumbnail { width: 58px; height: 48px; flex-basis: 58px; }
     .court-time-slot { min-height: 74px; }

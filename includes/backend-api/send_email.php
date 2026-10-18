@@ -8,10 +8,10 @@ function sendOtpEmail(
     string $otp
 ): array {
     if (!courtConnectEmailConfigured()) {
-        error_log("OTP email delivery is not configured. Set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
+        error_log("OTP email delivery is not configured. Configure email_config.local.php or set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
         return [
             "success" => false,
-            "message" => "Email delivery is not configured. Please contact support."
+            "message" => "Email delivery is not configured. Set up email_config.local.php or the BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL environment variables."
         ];
     }
 
@@ -115,9 +115,7 @@ function sendOtpEmail(
         ];
     }
 
-    error_log(
-        "Brevo API error: HTTP {$httpCode} - {$responseBody}"
-    );
+    error_log("Brevo API error: HTTP {$httpCode}");
 
     return [
         "success" => false,
@@ -133,10 +131,10 @@ function sendFacilityApplicationDecisionEmail(
     array $rejectedDocuments
 ): array {
     if (!courtConnectEmailConfigured()) {
-        error_log("Facility decision email delivery is not configured. Set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
+        error_log("Facility decision email delivery is not configured. Configure email_config.local.php or set BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL.");
         return [
             "success" => false,
-            "message" => "Email delivery is not configured."
+            "message" => "Email delivery is not configured. Set up email_config.local.php or the BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL environment variables."
         ];
     }
 
@@ -220,7 +218,10 @@ function sendPaymentRejectionEmail(
 ): array {
     if (!courtConnectEmailConfigured()) {
         error_log("Payment rejection email delivery is not configured.");
-        return ["success" => false, "message" => "Email delivery is not configured."];
+        return [
+            "success" => false,
+            "message" => "Email delivery is not configured. Set up email_config.local.php or the BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL environment variables."
+        ];
     }
 
     $host = $_SERVER["HTTP_HOST"] ?? "localhost";

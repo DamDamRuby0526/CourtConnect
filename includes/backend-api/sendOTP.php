@@ -110,7 +110,7 @@ if (!courtConnectEmailConfigured()) {
     error_log("OTP request rejected because email delivery is not configured.");
     echo json_encode([
         "success" => false,
-        "message" => "Email delivery is not configured. Please contact support."
+        "message" => "Email delivery is not configured. Set up email_config.local.php or the BREVO_API_KEY and COURTCONNECT_SENDER_EMAIL environment variables."
     ]);
     exit();
 }

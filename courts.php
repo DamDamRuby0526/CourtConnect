@@ -89,7 +89,7 @@ for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                     <div>
                         <p class="player-eyebrow">BOOK A COURT</p>
                         <h1><?= courtsPageEscape($facility["facility_name"]) ?></h1>
-                        <p><?= courtsPageEscape($facility["address"]) ?>, <?= courtsPageEscape($facility["municipality"]) ?> <span class="courts-sport-tag"><?= courtsPageEscape($facility["sport_type"]) ?></span></p>
+                        <p><?= courtsPageEscape($facility["address"]) ?>, <?= courtsPageEscape($facility["municipality"]) ?> <span class="courts-sport-tag"><?= courtsPageEscape($facility["sport_type"] === "Both" ? "Pickleball & Badminton" : $facility["sport_type"]) ?></span></p>
                         <p class="courts-hours"><span aria-hidden="true">◷</span> <?= courtsPageTime($facility["opening_time"]) ?> – <?= courtsPageTime($facility["closing_time"]) ?></p>
                     </div>
                 </div>

@@ -187,8 +187,8 @@ function ownerEscape($value)
                             <option value="Maintenance">Maintenance</option>
                         </select>
                     </label>
-                    <label class="owner-wide-field" for="description">Court description
-                        <textarea id="description" name="description" rows="3" maxlength="255" required></textarea>
+                    <label class="owner-wide-field" for="description">Court description (optional)
+                        <textarea id="description" name="description" rows="3" maxlength="255"></textarea>
                     </label>
                     <div class="owner-wide-field court-photo-field">
                         <span class="court-photo-label">Court photo</span>
