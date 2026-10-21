@@ -7,7 +7,6 @@ const availableCourtsPanel = document.getElementById("availableCourtsPanel");
 const manualBookingModal = document.getElementById("manualBookingModal");
 const manualBookingForm = document.getElementById("manualBookingForm");
 const arrivedConfirmationModal = document.getElementById("arrivedConfirmationModal");
-const cancelBookingModal = document.getElementById("cancelBookingModal");
 const availableSlotsList = document.getElementById("availableSlotsList");
 const availableSlotsStatus = document.getElementById("availableSlotsStatus");
 const availableSlotCount = document.getElementById("availableSlotCount");
@@ -16,10 +15,15 @@ const manualGcashQrField = document.getElementById("manualGcashQrField");
 const manualGcashQr = document.getElementById("manualGcashQr");
 const manualGcashReferenceField = document.getElementById("manualGcashReferenceField");
 const manualGcashReference = document.getElementById("manualGcashReference");
+const walkInSelectionBar = document.getElementById("walkInSelectionBar");
+const walkInSelectionSummary = document.getElementById("walkInSelectionSummary");
+const walkInSelectionDetails = document.getElementById("walkInSelectionDetails");
+const walkInSelectionTotal = document.getElementById("walkInSelectionTotal");
+const manualScheduleIds = document.getElementById("manualScheduleIds");
 let availableSlots = [];
 let todayBookings = window.initialTodayBookings || [];
+let walkInSelection = null;
 let pendingAttendanceBookingId = null;
-let pendingCancelBookingId = null;
 
 function getBookingSlotStart(booking) {
   if (!booking || !booking.court_date || !booking.court_time) return null;
@@ -72,6 +76,104 @@ function formatSlotTime(timeString) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatWalkInRange(slots) {
+  const first = slots[0];
+  const last = slots[slots.length - 1];
+  const end = new Date(2000, 0, 1, ...last.court_time.split(":").map(Number));
+  end.setMinutes(end.getMinutes() + Number(last.slot_duration));
+  return `${formatSlotDate(first.court_date)} · ${formatSlotTime(first.court_time)}–${formatSlotTime(end.toTimeString().slice(0, 5))}`;
+}
+
+function updateWalkInSelection(nextSelection) {
+  walkInSelection = nextSelection;
+  const selectedIds = new Set((walkInSelection?.slots || []).map((slot) => String(slot.schedule_id)));
+  availableSlotsList.querySelectorAll("[data-schedule-id]").forEach((button) => {
+    const selected = selectedIds.has(String(button.dataset.scheduleId));
+    button.classList.toggle("is-selected", selected);
+    button.closest(".dashboard-available-slot")?.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+    button.textContent = selected ? "Selected" : "Select time";
+  });
+
+  if (!walkInSelection?.slots.length) {
+    walkInSelectionBar.hidden = true;
+    walkInSelectionSummary.textContent = "Select an available time";
+    walkInSelectionDetails.textContent = "Choose consecutive hourly slots, up to 8 hours.";
+    walkInSelectionTotal.textContent = "₱0.00";
+    document.getElementById("continueWalkInBooking").disabled = true;
+    return;
+  }
+
+  const { slots } = walkInSelection;
+  const total = slots.reduce((sum, slot) => sum + Number(slot.court_rate), 0);
+  const totalMinutes = slots.reduce((sum, slot) => sum + Number(slot.slot_duration), 0);
+  const hours = totalMinutes / 60;
+  const duration = `${Number.isInteger(hours) ? hours : hours.toFixed(2)} ${hours === 1 ? "hour" : "hours"}`;
+  walkInSelectionBar.hidden = false;
+  walkInSelectionSummary.textContent = `Court ${slots[0].court_no} · ${slots.length} ${slots.length === 1 ? "slot" : "slots"}`;
+  walkInSelectionDetails.textContent = `${formatWalkInRange(slots)} · ${duration}`;
+  walkInSelectionTotal.textContent = `₱${total.toFixed(2)}`;
+  document.getElementById("continueWalkInBooking").disabled = false;
+}
+
+function selectWalkInSlot(scheduleId) {
+  const clickedSlot = availableSlots.find((slot) => String(slot.schedule_id) === String(scheduleId));
+  if (!clickedSlot) return;
+
+  if (walkInSelection
+    && String(walkInSelection.slots[0].court_id) === String(clickedSlot.court_id)
+    && walkInSelection.slots[0].court_date === clickedSlot.court_date) {
+    const courtSlots = availableSlots
+      .filter((slot) => String(slot.court_id) === String(clickedSlot.court_id) && slot.court_date === clickedSlot.court_date)
+      .sort((a, b) => a.court_time.localeCompare(b.court_time));
+    const clickedIndex = courtSlots.findIndex((slot) => String(slot.schedule_id) === String(scheduleId));
+    const firstIndex = courtSlots.findIndex((slot) => String(slot.schedule_id) === String(walkInSelection.slots[0].schedule_id));
+    const lastIndex = courtSlots.findIndex((slot) => String(slot.schedule_id) === String(walkInSelection.slots[walkInSelection.slots.length - 1].schedule_id));
+
+    if (clickedIndex >= firstIndex && clickedIndex <= lastIndex) {
+      if (firstIndex === lastIndex) {
+        updateWalkInSelection(null);
+      } else if (clickedIndex === firstIndex) {
+        updateWalkInSelection({ slots: courtSlots.slice(firstIndex + 1, lastIndex + 1) });
+      } else if (clickedIndex === lastIndex) {
+        updateWalkInSelection({ slots: courtSlots.slice(firstIndex, lastIndex) });
+      } else if (typeof window.showToast === "function") {
+        window.showToast("Keep the reservation continuous", "Remove slots from either end so the selected hours stay together.", "info");
+      }
+      return;
+    }
+
+    if (clickedIndex === firstIndex - 1 || clickedIndex === lastIndex + 1) {
+      const rangeStart = Math.min(firstIndex, clickedIndex);
+      const rangeEnd = Math.max(lastIndex, clickedIndex);
+      const extendedSlots = courtSlots.slice(rangeStart, rangeEnd + 1);
+      const slotMinutes = Number(clickedSlot.slot_duration);
+      const continuous = extendedSlots.every((slot, index) => index === 0
+        || new Date(`${slot.court_date}T${slot.court_time}`).getTime()
+          === new Date(`${extendedSlots[index - 1].court_date}T${extendedSlots[index - 1].court_time}`).getTime()
+            + Number(extendedSlots[index - 1].slot_duration) * 60000);
+      const extendedDuration = extendedSlots.reduce((total, slot) => total + Number(slot.slot_duration), 0);
+      if (continuous && (extendedSlots.length > 8 || extendedDuration > 480)) {
+        if (typeof window.showToast === "function") {
+          window.showToast(
+            "Maximum booking duration reached",
+            "You can book up to 8 consecutive hourly slots per reservation.",
+            "info",
+            { position: "booking", dedupeKey: "maximum-booking-duration" },
+          );
+        }
+        return;
+      }
+      if (continuous && extendedSlots.every((slot) => Number(slot.slot_duration) === slotMinutes)) {
+        updateWalkInSelection({ slots: extendedSlots });
+        return;
+      }
+    }
+  }
+
+  updateWalkInSelection({ slots: [clickedSlot] });
 }
 
 function makeTextElement(tagName, className, text) {
@@ -172,17 +274,6 @@ function renderTodayBookings() {
         }
         actions.append(arrived);
       }
-      if (!booking.arrived_at) {
-        const cancel = makeTextElement("button", "dashboard-cancel-button", "Cancel");
-        cancel.type = "button";
-        cancel.dataset.bookingId = booking.booking_id;
-        const slotStart = getBookingSlotStart(booking);
-        if (slotStart && slotStart > new Date()) {
-          cancel.title = getBookingAvailabilityTooltip(booking);
-        }
-        actions.append(cancel);
-      }
-
       row.append(schedule, customer, badges, amount, actions);
       rows.append(row);
     }
@@ -238,9 +329,10 @@ function renderAvailableSlots() {
           makeTextElement("span", "", `${slot.slot_duration} min`),
           makeTextElement("span", "", `₱${Number(slot.court_rate).toFixed(2)}`),
         );
-        const bookButton = makeTextElement("button", "admin-book-slot-button", "Book slot");
+        const bookButton = makeTextElement("button", "admin-book-slot-button", "Select time");
         bookButton.type = "button";
         bookButton.dataset.scheduleId = slot.schedule_id;
+        bookButton.setAttribute("aria-pressed", "false");
         card.append(time, meta, bookButton);
         list.append(card);
       }
@@ -249,6 +341,7 @@ function renderAvailableSlots() {
     }
     availableSlotsList.append(court);
   }
+  updateWalkInSelection(walkInSelection);
 }
 
 function updateManualPaymentFields() {
@@ -272,6 +365,10 @@ async function loadDashboardData() {
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || "Unable to load reservations.");
     availableSlots = result.slots;
+    if (walkInSelection && !walkInSelection.slots.every((selected) =>
+      availableSlots.some((slot) => String(slot.schedule_id) === String(selected.schedule_id)))) {
+      updateWalkInSelection(null);
+    }
     todayBookings = result.today_bookings;
     document.getElementById("availableCourtCount").textContent = result.available_court_count;
     renderTodayBookings();
@@ -294,14 +391,22 @@ function setModalOpen(modal, open) {
   modal.setAttribute("aria-hidden", String(!open));
 }
 
-function openBookingForSlot(scheduleId) {
-  const slot = availableSlots.find((item) => String(item.schedule_id) === scheduleId);
-  if (!slot) return;
+function openBookingForSelection() {
+  if (!walkInSelection?.slots.length) return;
+  const slots = walkInSelection.slots;
   manualBookingForm.reset();
   updateManualPaymentFields();
-  document.getElementById("manualScheduleId").value = slot.schedule_id;
+  manualScheduleIds.replaceChildren(...slots.map((slot) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "schedule_ids[]";
+    input.value = slot.schedule_id;
+    return input;
+  }));
+  const total = slots.reduce((sum, slot) => sum + Number(slot.court_rate), 0);
+  const duration = slots.reduce((sum, slot) => sum + Number(slot.slot_duration), 0) / 60;
   document.getElementById("manualBookingSlot").textContent =
-    `Court ${slot.court_no} · ${formatSlotDate(slot.court_date)} at ${formatSlotTime(slot.court_time)} · ₱${Number(slot.court_rate).toFixed(2)}`;
+    `Court ${slots[0].court_no} · ${formatWalkInRange(slots)} · ${duration} hour${duration === 1 ? "" : "s"} · ₱${total.toFixed(2)}`;
   setModalOpen(manualBookingModal, true);
   document.getElementById("manualCustomerName").focus();
 }
@@ -309,11 +414,6 @@ function openBookingForSlot(scheduleId) {
 function closeAttendanceModal() {
   setModalOpen(arrivedConfirmationModal, false);
   pendingAttendanceBookingId = null;
-}
-
-function closeCancelModal() {
-  setModalOpen(cancelBookingModal, false);
-  pendingCancelBookingId = null;
 }
 
 dashboardCards.forEach((card) => {
@@ -329,19 +429,17 @@ todayBookingsList.addEventListener("click", (event) => {
     setModalOpen(arrivedConfirmationModal, true);
     return;
   }
-  const cancelButton = target.closest(".dashboard-cancel-button");
-  if (cancelButton) {
-    pendingCancelBookingId = cancelButton.dataset.bookingId;
-    setModalOpen(cancelBookingModal, true);
-  }
 });
 
 availableSlotsList.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
   const button = target.closest("[data-schedule-id]");
-  if (button) openBookingForSlot(button.dataset.scheduleId);
+  if (button) selectWalkInSlot(button.dataset.scheduleId);
 });
+
+document.getElementById("continueWalkInBooking").addEventListener("click", openBookingForSelection);
+document.getElementById("clearWalkInSelection").addEventListener("click", () => updateWalkInSelection(null));
 
 async function postBookingAction(endpoint, data) {
   const response = await fetch(endpoint, {
@@ -421,35 +519,12 @@ document.getElementById("markNoShowConfirmation").addEventListener("click", asyn
   await handleAttendanceSubmission("no_show");
 });
 
-document.getElementById("dismissCancelBooking").addEventListener("click", closeCancelModal);
-cancelBookingModal.addEventListener("click", (event) => {
-  if (event.target === cancelBookingModal) closeCancelModal();
-});
-document.getElementById("confirmCancelBooking").addEventListener("click", async () => {
-  const bookingId = pendingCancelBookingId;
-  if (!bookingId) return;
-  const button = document.getElementById("confirmCancelBooking");
-  button.disabled = true;
-  try {
-    const result = await postBookingAction("../includes/admin-php/cancel_dashboard_booking.php", {
-      booking_id: bookingId,
-    });
-    closeCancelModal();
-    await window.showDialog({ type: "success", title: "Booking cancelled", message: result.message || "Reservation cancelled." });
-    await loadDashboardData();
-  } catch (error) {
-    await window.showDialog({ type: "error", title: "Unable to cancel booking", message: error.message || "Unable to cancel this booking." });
-  } finally {
-    button.disabled = false;
-  }
-});
-
 manualBookingForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!manualBookingForm.reportValidity()) return;
   const submitButton = document.getElementById("submitManualBooking");
   const customerName = document.getElementById("manualCustomerName").value.trim();
-  const slot = availableSlots.find((item) => String(item.schedule_id) === document.getElementById("manualScheduleId").value);
+  if (!walkInSelection?.slots.length || walkInSelection.slots.length > 8) return;
   submitButton.disabled = true;
 
   try {
@@ -460,8 +535,13 @@ manualBookingForm.addEventListener("submit", async (event) => {
     const result = await response.json();
     if (!response.ok || !result.success) throw new Error(result.message || "Unable to create this booking.");
     setModalOpen(manualBookingModal, false);
-    const bookedTime = result.court_time || (slot && slot.court_time);
-    await window.showDialog({ type: "success", title: "Booking confirmed", message: `${customerName} is booked for ${formatSlotTime(bookedTime)}.` });
+    updateWalkInSelection(null);
+    const bookedTime = `${formatSlotTime(result.court_time)}–${formatSlotTime(result.end_time)}`;
+    await window.showDialog({
+      type: "success",
+      title: "Booking confirmed",
+      message: `${customerName} is booked for Court ${result.court_no} on ${formatSlotDate(result.court_date)}, ${bookedTime}. Total: ₱${Number(result.total_amount).toFixed(2)}.`,
+    });
     await loadDashboardData();
   } catch (error) {
     await window.showDialog({ type: "error", title: "Unable to create booking", message: error.message || "Unable to create this booking." });
@@ -480,7 +560,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   if (manualBookingModal.classList.contains("show")) setModalOpen(manualBookingModal, false);
   if (arrivedConfirmationModal.classList.contains("show")) closeAttendanceModal();
-  if (cancelBookingModal.classList.contains("show")) closeCancelModal();
 });
 
 document.getElementById("refreshBookings").addEventListener("click", loadDashboardData);

@@ -67,11 +67,11 @@ for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="includes/css/styles.css">
+    <link rel="stylesheet" href="includes/css/styles.css?v=20261021-booking-toast-5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="includes/js/courts.js" defer></script>
+    <script src="includes/js/courts.js?v=20261021-booking-toast-5" defer></script>
     <title><?= courtsPageEscape($facility["facility_name"]) ?> | CourtConnect</title>
 </head>
 <body class="player-ui">
@@ -140,7 +140,6 @@ for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                 <p class="court-filter-note">Sport: <?= courtsPageEscape($facility["sport_type"]) ?> · Rates shown per hour · No added booking fees</p>
             </section>
 
-            <p class="court-hover-preview" id="courtHoverPreview" role="status" aria-live="polite" hidden></p>
             <section class="court-schedule-view" aria-label="Court availability schedule">
                 <div class="court-schedule-heading">
                     <div><h2>Choose your time</h2><p>Select an available time, then click adjacent slots to add hours. Click an end slot to remove it.</p></div>

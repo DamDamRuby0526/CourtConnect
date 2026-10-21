@@ -13,11 +13,11 @@ $hasPendingReservation = (is_array($pendingScheduleIds) && count($pendingSchedul
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="includes/css/styles.css?v=20261021-consent-validation-2">
+  <link rel="stylesheet" href="includes/css/styles.css?v=20261021-consent-validation-3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="includes/js/register.js?v=20261021-consent-validation-2" defer></script>
+  <script src="includes/js/register.js?v=20261021-consent-validation-3" defer></script>
   <title>CourtConnect Bataan</title>
 </head>
 
@@ -94,7 +94,7 @@ $hasPendingReservation = (is_array($pendingScheduleIds) && count($pendingSchedul
           <p>CourtConnect Bataan processes personal information to provide customer accounts and court reservation services. We handle information according to the principles of transparency, legitimate purpose, and proportionality under the Philippine Data Privacy Act of 2012 (Republic Act No. 10173). We do not use this consent for unrelated marketing.</p>
           <h4>1. Personal information collected</h4>
           <p>When you register, we collect your first and last name, email address, phone number, and password. Passwords are stored as password hashes. To verify your email, the system creates a six-digit code that is temporarily stored and expires after five minutes; it is removed after successful verification or replaced when another code is issued.</p>
-          <p>If you make a reservation, the system processes your account ID, facility, court, selected schedule, booking status, and booking history. For GCash payments, customers may submit a reference number and an image of payment proof for facility staff to review. The platform also stores session information needed to keep you signed in and process requests.</p>
+          <p>If you make a reservation, the system processes details about the facility, court, selected schedule, booking status, and booking history. For GCash payments, customers may submit a reference number and an image of payment proof for facility staff to review. The platform also stores session information needed to keep you signed in and process requests.</p>
           <h4>2. Purposes</h4>
           <p>We use this information to create and manage accounts, verify email addresses, protect account access, display facilities, courts, schedules and rates, submit and manage reservations, review payment submissions where supported, send verification and relevant booking or payment emails, maintain booking records, resolve reservation issues, and protect the service from unauthorized access or abuse.</p>
           <h4>3. Sharing and service providers</h4>

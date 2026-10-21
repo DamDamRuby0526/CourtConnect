@@ -17,7 +17,6 @@
         <nav class="site-footer-section" aria-label="Facility owner links">
             <h2>Facility owners</h2>
             <a href="adminregister.php">List your facility</a>
-            <a href="signin.php">Owner sign in</a>
         </nav>
 
         <section class="site-footer-section site-footer-contact">
@@ -31,7 +30,7 @@
                 <svg aria-hidden="true" viewBox="0 0 20 20" focusable="false"><path d="M6.1 2.8 8.5 6.4 7 8.2c.8 1.8 2.2 3.2 4 4l1.8-1.5 3.6 2.4-.8 3.1c-.2.7-.9 1.1-1.6 1-6.1-.9-10.3-5.1-11.2-11.2-.1-.7.3-1.4 1-1.6z"></path></svg>
                 <span>+639399159178</span>
             </a>
-            <p class="site-footer-facebook"><span aria-hidden="true">f</span><span>Facebook: CourtConnect Bataan</span></p>
+            <p class="site-footer-facebook"><span aria-hidden="true">f</span><span>CourtConnect Bataan</span></p>
         </section>
     </div>
 

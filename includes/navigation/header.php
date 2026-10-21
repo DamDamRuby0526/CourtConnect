@@ -7,7 +7,7 @@ $isLoggedIn = !empty($_SESSION["logged_in"]);
 $displayName = trim($_SESSION["first_name"] ?? "");
 $ownerOnboardingHeader = !empty($ownerOnboardingHeader);
 ?>
-<script src="includes/js/toast.js" defer></script>
+<script src="includes/js/toast.js?v=20261021-booking-toast-5" defer></script>
 <script src="includes/js/admin_dialog.js" defer></script>
 <?php if ($ownerOnboardingHeader): ?>
 <header class="owner-onboarding-header">

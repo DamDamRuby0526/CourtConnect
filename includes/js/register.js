@@ -225,7 +225,6 @@ registrationConsentIndicator.addEventListener("change", () => {
 document.getElementById("closeConsentNotice").addEventListener("click", closeConsentNotice);
 document.getElementById("declineConsent").addEventListener("click", () => {
   closeConsentNotice();
-  window.location.assign("index.php");
 });
 consentNoticeContent.addEventListener("wheel", noteConsentUserScroll, { passive: true });
 consentNoticeContent.addEventListener("touchmove", noteConsentUserScroll, { passive: true });

@@ -18,7 +18,7 @@ $returningForReservation = ($_GET["return_to"] ?? "") === "reservation_resume.ph
   <script src="includes/js/login.js?v=20261017-1" defer></script>
 </head>
 
-<body class="account-auth-page">
+<body class="account-auth-page account-login-page">
 
   <?php include 'includes/navigation/header.php'; ?>
 

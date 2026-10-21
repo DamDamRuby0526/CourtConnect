@@ -91,12 +91,12 @@ function dashboardEscape($value)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../includes/css/styles.css">
+    <link rel="stylesheet" href="../includes/css/styles.css?v=20261021-admin-multislot-walkin">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="../includes/js/toast.js" defer></script>
-    <script src="../includes/js/admin_dashboard.js" defer></script>
+    <script src="../includes/js/admin_dashboard.js?v=20261021-admin-multislot-walkin" defer></script>
     <title>Upcoming reservations | CourtConnect</title>
 </head>
 <body class="admin-ui">
@@ -123,7 +123,7 @@ function dashboardEscape($value)
                 <button type="button" class="dashboard-summary-card dashboard-summary-card-available" data-dashboard-panel="availableCourtsPanel" aria-expanded="false" aria-controls="availableCourtsPanel">
                     <span class="dashboard-card-label">Available courts</span>
                     <strong id="availableCourtCount"><?= $availableCourtCount ?></strong>
-                    <span class="dashboard-card-hint">Courts with open times · Add a booking</span>
+                    <span class="dashboard-card-hint">Courts with open times · Record a walk-in</span>
                 </button>
             </section>
 
@@ -144,11 +144,23 @@ function dashboardEscape($value)
                 <div class="dashboard-detail-heading">
                     <div>
                         <h2 id="availableCourtsHeading">Available court times</h2>
-                        <p>Upcoming open slots for <?= dashboardEscape($facilityName) ?></p>
+                        <p>Upcoming open slots for <?= dashboardEscape($facilityName) ?> · Select up to 8 consecutive hours for a walk-in</p>
                     </div>
                     <span id="availableSlotCount" aria-live="polite">Loading</span>
                 </div>
                 <p class="dashboard-empty" id="availableSlotsStatus" role="status" hidden></p>
+                <aside class="admin-walkin-selection" id="walkInSelectionBar" aria-live="polite" hidden>
+                    <div>
+                        <span class="admin-walkin-eyebrow">WALK-IN SELECTION</span>
+                        <strong id="walkInSelectionSummary">Select an available time</strong>
+                        <small id="walkInSelectionDetails">Choose consecutive hourly slots, up to 8 hours.</small>
+                    </div>
+                    <strong class="admin-walkin-total" id="walkInSelectionTotal">₱0.00</strong>
+                    <div class="admin-walkin-actions">
+                        <button type="button" class="owner-secondary-button" id="clearWalkInSelection">Clear</button>
+                        <button type="button" class="owner-primary-button" id="continueWalkInBooking" disabled>Continue</button>
+                    </div>
+                </aside>
                 <div class="dashboard-available-list" id="availableSlotsList"></div>
             </section>
 
@@ -164,11 +176,12 @@ function dashboardEscape($value)
                 <div class="owner-modal-heading">
                     <div>
                         <p class="owner-breadcrumb">FACILITY RESERVATION</p>
-                        <h2 id="manualBookingTitle">Add a booking</h2>
+                        <h2 id="manualBookingTitle">Record a walk-in booking</h2>
                     </div>
                 </div>
                 <p class="manual-booking-slot" id="manualBookingSlot"></p>
-                <input type="hidden" name="schedule_id" id="manualScheduleId">
+                <p class="manual-booking-limit">Walk-in bookings can include up to 8 consecutive hourly slots per reservation.</p>
+                <div id="manualScheduleIds"></div>
                 <div class="owner-form-grid manual-booking-fields">
                     <label for="manualCustomerName">Customer name
                         <input type="text" id="manualCustomerName" name="customer_name" maxlength="200" autocomplete="name" required>
@@ -194,19 +207,9 @@ function dashboardEscape($value)
                 </div>
                 <div class="owner-modal-actions">
                     <button type="button" class="owner-secondary-button" id="cancelManualBooking">Cancel</button>
-                    <button type="submit" class="owner-primary-button" id="submitManualBooking">Confirm booking</button>
+                    <button type="submit" class="owner-primary-button" id="submitManualBooking">Confirm walk-in booking</button>
                 </div>
             </form>
-        </div>
-    </div>
-    <div class="modal-container owner-modal" id="cancelBookingModal" aria-hidden="true">
-        <div class="modal owner-modal-panel owner-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="cancelBookingTitle">
-            <div class="owner-modal-heading"><h2 id="cancelBookingTitle">Cancel reservation?</h2></div>
-            <p class="owner-confirm-message">This will release the court time for other customers.</p>
-            <div class="owner-modal-actions">
-                <button type="button" class="owner-secondary-button" id="dismissCancelBooking">Keep booking</button>
-                <button type="button" class="owner-danger-button" id="confirmCancelBooking">Cancel reservation</button>
-            </div>
         </div>
     </div>
     <div class="modal-container owner-modal" id="arrivedConfirmationModal" aria-hidden="true">

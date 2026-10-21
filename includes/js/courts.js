@@ -45,7 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkoutBreakdown = document.getElementById("courtCheckoutBreakdown");
   const checkoutTotal = document.getElementById("courtCheckoutTotal");
   const checkoutButton = document.getElementById("courtProceedButton");
-  const hoverPreview = document.getElementById("courtHoverPreview");
   const imageLightbox = document.getElementById("courtImageLightbox");
   const imageLightboxImage = document.getElementById("courtImageLightboxImage");
   const imageLightboxClose = document.getElementById("courtImageLightboxClose");
@@ -82,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     hideCheckoutBar();
     checkoutButton.disabled = true;
-    hoverPreview.hidden = true;
   };
 
   const updateSummary = () => {
@@ -202,7 +200,12 @@ document.addEventListener("DOMContentLoaded", () => {
               + Number(court.dataset.slotDuration) * 60);
         if (continuous && extendedSlots.length > 8) {
           if (typeof window.showToast === "function") {
-            window.showToast("Maximum duration reached", "A reservation can include up to 8 consecutive slots.", "info", { position: "center" });
+            window.showToast(
+              "Maximum booking duration reached",
+              "You can book up to 8 consecutive hourly slots per reservation.",
+              "info",
+              { position: "booking", dedupeKey: "maximum-booking-duration" },
+            );
           }
           return;
         }
@@ -223,18 +226,6 @@ document.addEventListener("DOMContentLoaded", () => {
     clearSelection();
     selection = { court, schedules: chosenSlots };
     paintSelection();
-  };
-
-  const previewCost = (court, schedules, startIndex) => {
-    hoverPreview.hidden = true;
-    const previewSlots = getConsecutiveSlots(court, schedules, startIndex);
-    if (!previewSlots) return;
-    hoverPreview.textContent = `Preview · ${courtFormatHours(Number(court.dataset.slotDuration) * previewSlots.length)} · ${courtCurrency(Number(court.dataset.courtRate) * previewSlots.length)}`;
-    hoverPreview.hidden = false;
-  };
-
-  const hideHoverPreview = () => {
-    hoverPreview.hidden = true;
   };
 
   const openImageLightbox = (src, alt) => {
@@ -341,10 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
         slot.textContent = isAvailable ? courtFormatTime(schedule.court_time) : isBooked ? "Booked" : "Unavailable";
         if (isAvailable) {
           slot.addEventListener("click", () => chooseStartTime(court, schedules, index));
-          slot.addEventListener("mouseenter", () => previewCost(court, schedules, index));
-          slot.addEventListener("focus", () => previewCost(court, schedules, index));
-          slot.addEventListener("mouseleave", hideHoverPreview);
-          slot.addEventListener("blur", hideHoverPreview);
         }
         timeline.append(slot);
       });
