@@ -2722,6 +2722,8 @@ th, td { line-height: 1.5; }
 }
 .account-auth-helper a { color: var(--court-blue); font-weight: 700; text-decoration: none; }
 .account-auth-helper a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.password-reset-login-link { justify-self: end; color: var(--court-blue); font-size: 12px; font-weight: 700; text-decoration: none; }
+.password-reset-login-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 560px) {
   .account-auth-form { gap: 14px; padding: 24px 20px; }
   .account-auth-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -2780,6 +2782,51 @@ th, td { line-height: 1.5; }
 .account-auth-form > button[type="submit"]:hover { background: var(--green-dark); }
 .account-auth-form > button[type="submit"]:disabled { background: #dce3de; color: #748078; cursor: not-allowed; opacity: 1; }
 .account-auth-form > button[type="submit"]:disabled:hover { background: #dce3de; }
+.password-reset-form,
+.password-reset-success {
+  display: grid;
+  width: min(460px, calc(100% - 32px));
+  gap: 16px;
+  margin: 40px auto;
+  padding: 32px;
+  border: 1px solid rgba(216, 226, 220, .9);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(13, 49, 87, .07);
+}
+.password-reset-form h2,
+.password-reset-success h2 {
+  margin: 0;
+  color: var(--navy);
+  font-family: "Poppins", var(--font-body);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.password-reset-form[hidden] { display: none; }
+.password-reset-intro { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.password-reset-feedback { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.password-reset-feedback:empty { display: none; }
+.password-reset-feedback.is-success { padding: 11px 12px; border: 1px solid #cfe2c2; border-radius: 8px; background: #f2f8ec; color: #315d26; }
+.password-reset-feedback.is-error,
+.password-reset-field-error { color: #9a454b; }
+.password-reset-field-error { font-size: 11px; line-height: 1.4; }
+.password-reset-field-error[hidden],
+.password-reset-success[hidden] { display: none; }
+.password-reset-input-wrap { position: relative; display: flex; align-items: center; }
+.password-reset-input-wrap input { padding-right: 48px !important; }
+.password-reset-visibility { position: absolute; top: 0; right: 6px; bottom: 0; display: grid; width: 36px; height: 34px; margin: auto 0; padding: 0; place-items: center; transform: none; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.password-reset-visibility:hover { background: var(--cream); color: var(--navy); }
+.password-reset-visibility:focus-visible { outline: 2px solid rgba(66, 181, 194, .45); outline-offset: 1px; }
+.password-reset-visibility svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.password-reset-login-button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 11px 16px; border-radius: 8px; background: var(--green); color: #fff; font-size: 14px; font-weight: 700; text-align: center; text-decoration: none; transition: background-color .18s ease; }
+.password-reset-login-button:hover { background: var(--green-dark); }
+.password-reset-login-button:focus-visible { outline: 3px solid rgba(66, 181, 194, .4); outline-offset: 2px; }
+.password-reset-main { justify-content: center; }
+@media (max-width: 560px) {
+  .password-reset-form,
+  .password-reset-success { gap: 14px; padding: 24px 20px; }
+}
 .registration-consent-summary { display: grid; min-width: 0; gap: 8px; margin-top: 2px; padding: 14px 0 2px; border-top: 1px solid var(--line); }
 .registration-consent-summary h3 { margin: 0; color: var(--navy); font: 700 14px/1.4 "Poppins", sans-serif; }
 .registration-consent-summary .registration-consent-description { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }

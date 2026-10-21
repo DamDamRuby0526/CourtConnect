@@ -164,7 +164,7 @@ function facilityPageIsOpen($openingTime, $closingTime)
                             <p class="facility-hours"><?= facilityPageTime($facility["opening_time"]) ?> - <?= facilityPageTime($facility["closing_time"]) ?></p>
                             <p class="facility-rate">
                                 <?php if ($facility["lowest_rate"] !== null): ?>
-                                    <span>From</span> P<?= number_format((float) $facility["lowest_rate"], 0) ?> <span>/ hour</span>
+                                    <span>From</span> ₱<?= number_format((float) $facility["lowest_rate"], 0) ?> <span>/ hour</span>
                                 <?php else: ?>
                                     <span>Rates unavailable</span>
                                 <?php endif; ?>

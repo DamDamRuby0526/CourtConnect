@@ -10,7 +10,7 @@ $returningForReservation = ($_GET["return_to"] ?? "") === "reservation_resume.ph
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="includes/css/styles.css?v=20261018-auth-4">
+  <link rel="stylesheet" href="includes/css/styles.css?v=20261021-password-reset-2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -37,6 +37,7 @@ $returningForReservation = ($_GET["return_to"] ?? "") === "reservation_resume.ph
       <div class="account-auth-field">
         <label for="password">Password</label>
         <input type="password" name="password" required autocomplete="current-password">
+        <a class="password-reset-login-link" href="forgot_password.php">Forgot Password?</a>
       </div>
 
       <button type="submit" class="btn">Login</button>

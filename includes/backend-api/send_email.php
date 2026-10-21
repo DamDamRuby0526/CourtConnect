@@ -123,6 +123,58 @@ function sendOtpEmail(
     ];
 }
 
+function sendPasswordResetEmail(string $recipientEmail, string $recipientName, string $resetUrl): array
+{
+    if (!courtConnectEmailConfigured()) {
+        error_log("Password reset email delivery is not configured.");
+        return ["success" => false, "message" => "Email delivery is not configured."];
+    }
+
+    $name = $recipientName !== "" ? $recipientName : "CourtConnect user";
+    $safeName = htmlspecialchars($name, ENT_QUOTES, "UTF-8");
+    $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES, "UTF-8");
+    $payload = [
+        "sender" => ["name" => COURTCONNECT_SENDER_NAME, "email" => COURTCONNECT_SENDER_EMAIL],
+        "to" => [["email" => $recipientEmail, "name" => $name]],
+        "subject" => "Reset your CourtConnect password",
+        "htmlContent" => "<!doctype html><html lang=\"en\"><body style=\"margin:0;padding:24px;background:#f7f4ea;font-family:Arial,sans-serif;color:#0b345c;\"><div style=\"max-width:560px;margin:0 auto;padding:32px;background:#ffffff;border:1px solid #d8e2dc;border-radius:14px;\"><div style=\"margin-bottom:24px;font-size:22px;font-weight:700;\">Court<span style=\"color:#78b936;\">Connect</span></div><h1 style=\"margin:0 0 16px;font-size:24px;color:#0b345c;\">Reset your password</h1><p>Hello {$safeName},</p><p>We received a request to reset your CourtConnect password. Use the button below to choose a new password. This link expires in 30 minutes.</p><p style=\"margin:28px 0;text-align:center;\"><a href=\"{$safeUrl}\" style=\"display:inline-block;padding:14px 24px;border-radius:7px;background:#78b936;color:#0b345c;font-weight:700;text-decoration:none;\">Reset My Password</a></p><p style=\"font-size:13px;color:#62727a;\">If the button does not work, copy and paste this address into your browser:<br><a href=\"{$safeUrl}\" style=\"color:#28668a;word-break:break-all;\">{$safeUrl}</a></p><p style=\"font-size:13px;color:#62727a;\">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p></div></body></html>",
+        "textContent" => "Hello {$name},\n\nWe received a request to reset your CourtConnect password. Open this link to choose a new password. It expires in 30 minutes:\n{$resetUrl}\n\nIf you did not request a reset, ignore this email. Your password will not change."
+    ];
+
+    $curl = curl_init(BREVO_API_URL);
+    if ($curl === false) {
+        error_log("Unable to initialize password reset email delivery.");
+        return ["success" => false, "message" => "Unable to initialize email delivery."];
+    }
+    curl_setopt_array($curl, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => [
+            "accept: application/json",
+            "api-key: " . BREVO_API_KEY,
+            "content-type: application/json"
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload)
+    ]);
+    $responseBody = curl_exec($curl);
+    $curlError = curl_error($curl);
+    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    if ($responseBody === false || $curlError !== "") {
+        error_log("Password reset email connection failed: " . $curlError);
+        return ["success" => false, "message" => "Unable to connect to the email service."];
+    }
+    $responseData = json_decode($responseBody, true);
+    if ($httpCode >= 200 && $httpCode < 300 && isset($responseData["messageId"])) {
+        return ["success" => true, "message" => "Password reset email sent."];
+    }
+    error_log("Password reset email service returned HTTP {$httpCode}.");
+    return ["success" => false, "message" => "Email service rejected the password reset email."];
+}
+
 function sendFacilityApplicationDecisionEmail(
     string $recipientEmail,
     string $recipientName,
