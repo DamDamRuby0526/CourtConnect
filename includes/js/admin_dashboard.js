@@ -172,14 +172,16 @@ function renderTodayBookings() {
         }
         actions.append(arrived);
       }
-      const cancel = makeTextElement("button", "dashboard-cancel-button", "Cancel");
-      cancel.type = "button";
-      cancel.dataset.bookingId = booking.booking_id;
-      const slotStart = getBookingSlotStart(booking);
-      if (slotStart && slotStart > new Date()) {
-        cancel.title = getBookingAvailabilityTooltip(booking);
+      if (!booking.arrived_at) {
+        const cancel = makeTextElement("button", "dashboard-cancel-button", "Cancel");
+        cancel.type = "button";
+        cancel.dataset.bookingId = booking.booking_id;
+        const slotStart = getBookingSlotStart(booking);
+        if (slotStart && slotStart > new Date()) {
+          cancel.title = getBookingAvailabilityTooltip(booking);
+        }
+        actions.append(cancel);
       }
-      actions.append(cancel);
 
       row.append(schedule, customer, badges, amount, actions);
       rows.append(row);

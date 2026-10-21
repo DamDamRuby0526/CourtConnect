@@ -416,13 +416,26 @@ function bookingsDurationLabel($minutes)
         document.getElementById("refreshBookings").addEventListener("click", () => location.reload());
         document.querySelectorAll("[data-booking-id][data-attendance]").forEach((button) => {
             button.addEventListener("click", async () => {
+                const attendance = button.dataset.attendance;
+                const isArrival = attendance === "arrived";
+                const confirmed = await window.showDialog({
+                    type: "confirm",
+                    title: isArrival ? "Mark customer as arrived?" : "Mark customer as did not arrive?",
+                    message: isArrival
+                        ? "Confirm that this customer has arrived for their booking."
+                        : "Confirm that this customer did not arrive for their booking.",
+                    confirmText: isArrival ? "Mark arrived" : "Mark did not arrive",
+                    cancelText: "Go back",
+                });
+                if (!confirmed) return;
+
                 const rowButtons = button.closest("tr").querySelectorAll("button[data-booking-id]");
                 rowButtons.forEach((rowButton) => { rowButton.disabled = true; });
                 try {
                     const response = await fetch("../includes/admin-php/mark_booking_arrived.php", {
                         method: "POST",
                         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: new URLSearchParams({ booking_id: button.dataset.bookingId, attendance: button.dataset.attendance }),
+                        body: new URLSearchParams({ booking_id: button.dataset.bookingId, attendance }),
                     });
                     const result = await response.json();
                     if (!response.ok || !result.success) {
@@ -451,7 +464,7 @@ function bookingsDurationLabel($minutes)
 
                     await window.showDialog({
                         type: "success",
-                        title: button.dataset.attendance === "arrived" ? "Attendance recorded" : "No-show recorded",
+                        title: isArrival ? "Attendance recorded" : "No-show recorded",
                         message: result.message || "The booking attendance has been updated.",
                     });
                     location.reload();
