@@ -1509,7 +1509,10 @@ tr, td, th { border: 2px solid var(--main-color-2); padding: 10px; }
 .checkout-form .checkout-receipt-error { color: #a53636; }
 .checkout-form small, .checkout-summary-location { color: var(--muted); font-size: 12px; }
 .checkout-form-message:empty { display: none; }
-.checkout-cancel-button { justify-self: start; cursor: pointer; font-family: inherit; }
+.checkout-form > .player-primary-button:hover:not(:disabled) { color: #fff; }
+.checkout-cancel-button { width: max-content; max-width: 100%; justify-self: start; white-space: nowrap; cursor: pointer; font-family: inherit; transition: background-color .18s ease, border-color .18s ease, color .18s ease; }
+.checkout-cancel-button:hover:not(:disabled) { border-color: #c86f73; background: #fff5f4; color: #9f3f45; }
+.checkout-cancel-button:focus-visible { outline: 2px solid rgba(159, 63, 69, .35); outline-offset: 2px; }
 .checkout-cancel-button:disabled { cursor: wait; opacity: .6; }
 .checkout-hold-timer { padding: 12px; border-radius: 4px; background: rgba(61, 128, 168, .12); color: var(--court-blue); font-size: 13px; font-weight: 700; text-align: center; }
 .checkout-hold-timer.is-expired { background: #fff2d2; color: #94701f; }
