@@ -2,7 +2,300 @@ const resumeVerification = new URLSearchParams(window.location.search).get("resu
 const resumeUserId = new URLSearchParams(window.location.search).get("user_id");
 const resendOtpLink = document.getElementById("resendOtpLink");
 const resendOtpCountdown = document.getElementById("resendOtpCountdown");
+const registerForm = document.getElementById("registerForm");
+const registerSubmit = document.getElementById("registerSubmit");
+const registrationSubmitHint = document.getElementById("registrationSubmitHint");
+const consentModal = document.getElementById("consentModal");
+const consentDialog = consentModal.querySelector('[role="dialog"]');
+const consentNoticeContent = document.getElementById("consentNoticeContent");
+const consentCheckbox = document.getElementById("consentAgreement");
+const acceptConsentButton = document.getElementById("acceptConsent");
+const registrationConsent = document.getElementById("registrationConsent");
+const registrationConsentIndicator = document.getElementById("registrationConsentIndicator");
+const consentScrollHint = document.getElementById("consentScrollHint");
+const consentSectionEnds = {
+  privacy: document.getElementById("privacyNoticeEnd"),
+  terms: document.getElementById("termsEnd"),
+};
+const registrationFields = Array.from(registerForm.querySelectorAll(".account-auth-field input"));
+const reviewedDocuments = { privacy: false, terms: false };
 let resendOtpTimer = null;
+let consentAccepted = false;
+let consentTrigger = null;
+let submittingRegistration = false;
+let previousBodyOverflow = "";
+let consentUserScrollTimer = null;
+let consentUserInitiatedScroll = false;
+let registrationValidationAttempted = false;
+let emailConflict = false;
+
+registrationConsentIndicator.checked = false;
+registrationConsent.value = "";
+
+registrationFields.forEach((field) => {
+  const error = document.createElement("div");
+  error.id = `${field.id}Error`;
+  error.className = "account-auth-field-error";
+  error.hidden = true;
+  error.setAttribute("aria-live", "polite");
+  if (field.id === "email") {
+    const title = document.createElement("span");
+    title.className = "account-auth-field-error-title";
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("viewBox", "0 0 16 16");
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = '<path d="M8 1.75 14.25 13H1.75L8 1.75Z"></path><path d="M8 5.25v3.5M8 11.25v.1"></path>';
+    const heading = document.createElement("strong");
+    heading.textContent = "Email already registered";
+    title.append(icon, heading);
+    const description = document.createElement("span");
+    description.className = "account-auth-field-error-description";
+    description.textContent = "This email address is associated with an existing account.";
+    const validationMessage = document.createElement("span");
+    validationMessage.className = "account-auth-field-error-validation";
+    validationMessage.hidden = true;
+    error.append(title, description, validationMessage);
+  }
+  field.insertAdjacentElement("afterend", error);
+  field.setAttribute("aria-describedby", error.id);
+  field.setAttribute("aria-invalid", "false");
+});
+
+function noteConsentUserScroll() {
+  consentUserInitiatedScroll = true;
+  window.clearTimeout(consentUserScrollTimer);
+  consentUserScrollTimer = window.setTimeout(() => {
+    consentUserInitiatedScroll = false;
+  }, 200);
+}
+
+function updateConsentScrollState() {
+  if (!consentUserInitiatedScroll) return;
+  const contentTop = consentNoticeContent.getBoundingClientRect().top;
+  const reviewBoundary = contentTop + consentNoticeContent.clientHeight - 8;
+  for (const [documentName, endMarker] of Object.entries(consentSectionEnds)) {
+    if (endMarker.getBoundingClientRect().top <= reviewBoundary) {
+      reviewedDocuments[documentName] = true;
+    }
+  }
+
+  const bothReviewed = reviewedDocuments.privacy && reviewedDocuments.terms;
+  consentCheckbox.disabled = !bothReviewed;
+  acceptConsentButton.disabled = !bothReviewed || !consentCheckbox.checked;
+  if (bothReviewed) {
+    consentScrollHint.textContent = "Both sections reviewed. You may now confirm your agreement.";
+  } else {
+    consentScrollHint.textContent = "Scroll through both sections to continue.";
+  }
+  updateRegistrationState();
+}
+
+function getRegistrationFieldErrors() {
+  const fields = {
+    email: document.getElementById("email"),
+    confirmEmail: document.getElementById("confirm_email"),
+    password: document.getElementById("password"),
+    confirmPassword: document.getElementById("confirm_password"),
+  };
+  fields.confirmEmail.setCustomValidity(
+    fields.confirmEmail.value && fields.confirmEmail.value !== fields.email.value
+      ? "Email addresses do not match."
+      : ""
+  );
+  fields.confirmPassword.setCustomValidity(
+    fields.confirmPassword.value && fields.confirmPassword.value !== fields.password.value
+      ? "Passwords do not match."
+      : ""
+  );
+  return registrationFields
+    .filter((field) => !field.validity.valid)
+    .map((field) => {
+      const label = registerForm.querySelector(`label[for="${field.id}"]`).textContent.trim();
+      let message = "This field is required.";
+      if (field.id === "confirm_email" && fields.email.value && field.value
+        && field.value !== fields.email.value) {
+        message = "Email addresses do not match.";
+      } else if (field.id === "confirm_password" && fields.password.value && field.value
+        && field.value !== fields.password.value) {
+        message = "Passwords do not match.";
+      } else if (field.validity.valueMissing) {
+        message = "This field is required.";
+      } else if (field.id === "phone_number" && field.validity.patternMismatch) {
+        message = "Enter an 11-digit mobile number starting with 09.";
+      } else if (field.type === "email" && field.validity.typeMismatch) {
+        message = "Enter a valid email address.";
+      } else if (field.type === "password" && field.validity.tooShort) {
+        message = `Use at least ${field.minLength} characters.`;
+      }
+      return { field, label, message };
+    });
+}
+
+function updateRegistrationState() {
+  const fieldErrors = getRegistrationFieldErrors();
+  registrationFields.forEach((field) => {
+    const error = document.getElementById(`${field.id}Error`);
+    const fieldError = fieldErrors.find(({ field: invalidField }) => invalidField === field);
+    const showEmailConflict = field.id === "email" && emailConflict;
+    const showError = showEmailConflict
+      || ((registrationValidationAttempted || field.dataset.touched === "true") && Boolean(fieldError));
+    if (showEmailConflict) {
+      error.classList.add("is-email-conflict");
+      error.querySelector(".account-auth-field-error-title").hidden = false;
+      error.querySelector(".account-auth-field-error-description").hidden = false;
+      error.querySelector(".account-auth-field-error-validation").hidden = true;
+    } else {
+      error.classList.remove("is-email-conflict");
+      if (field.id === "email") {
+        error.querySelector(".account-auth-field-error-title").hidden = true;
+        error.querySelector(".account-auth-field-error-description").hidden = true;
+        const validationMessage = error.querySelector(".account-auth-field-error-validation");
+        validationMessage.textContent = showError ? fieldError.message : "";
+        validationMessage.hidden = !showError;
+      } else {
+        error.textContent = showError ? fieldError.message : "";
+      }
+    }
+    error.hidden = !showError;
+    field.setAttribute("aria-invalid", String(showError));
+  });
+  const consentReady = consentAccepted
+    && registrationConsent.value === "accepted"
+    && reviewedDocuments.privacy
+    && reviewedDocuments.terms;
+  registerSubmit.disabled = submittingRegistration || !consentReady;
+  if (submittingRegistration) {
+    registrationSubmitHint.textContent = "Submitting your registration...";
+    return;
+  }
+
+  const nextRequirements = [];
+  if (fieldErrors.length) nextRequirements.push("Complete the required fields before continuing.");
+  if (!reviewedDocuments.privacy || !reviewedDocuments.terms) {
+    nextRequirements.push("Review both documents.");
+  } else if (!consentReady) {
+    nextRequirements.push("Check the agreement box in the privacy dialog to enable Next.");
+  }
+  registrationSubmitHint.textContent = nextRequirements.join(" ");
+}
+
+function clearEmailConflict() {
+  if (!emailConflict) return;
+  emailConflict = false;
+  updateRegistrationState();
+}
+
+function closeConsentNotice() {
+  consentModal.classList.remove("show");
+  consentModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("consent-modal-open");
+  document.body.style.overflow = previousBodyOverflow;
+  window.clearTimeout(consentUserScrollTimer);
+  consentUserInitiatedScroll = false;
+  consentCheckbox.checked = false;
+  consentCheckbox.disabled = true;
+  acceptConsentButton.disabled = true;
+  if (consentTrigger) consentTrigger.focus();
+}
+
+function openConsentNotice(trigger) {
+  window.clearTimeout(consentUserScrollTimer);
+  consentUserInitiatedScroll = false;
+  consentAccepted = false;
+  registrationConsent.value = "";
+  registrationConsentIndicator.checked = false;
+  updateRegistrationState();
+  consentTrigger = trigger;
+  consentCheckbox.checked = false;
+  previousBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  document.body.classList.add("consent-modal-open");
+  consentModal.classList.add("show");
+  consentModal.setAttribute("aria-hidden", "false");
+  consentNoticeContent.scrollTop = 0;
+  consentCheckbox.disabled = !(reviewedDocuments.privacy && reviewedDocuments.terms);
+  acceptConsentButton.disabled = true;
+  consentNoticeContent.focus();
+}
+
+registrationConsentIndicator.addEventListener("change", () => {
+  registrationConsentIndicator.checked = false;
+  openConsentNotice(registrationConsentIndicator);
+});
+document.getElementById("closeConsentNotice").addEventListener("click", closeConsentNotice);
+document.getElementById("declineConsent").addEventListener("click", () => {
+  closeConsentNotice();
+  window.location.assign("index.php");
+});
+consentNoticeContent.addEventListener("wheel", noteConsentUserScroll, { passive: true });
+consentNoticeContent.addEventListener("touchmove", noteConsentUserScroll, { passive: true });
+consentNoticeContent.addEventListener("pointerdown", (event) => {
+  const contentRect = consentNoticeContent.getBoundingClientRect();
+  const scrollbarWidth = consentNoticeContent.offsetWidth - consentNoticeContent.clientWidth;
+  if (scrollbarWidth > 0 && event.clientX >= contentRect.right - scrollbarWidth) {
+    noteConsentUserScroll();
+  }
+});
+consentNoticeContent.addEventListener("keydown", (event) => {
+  if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) {
+    noteConsentUserScroll();
+  }
+});
+consentNoticeContent.addEventListener("scroll", updateConsentScrollState);
+consentCheckbox.addEventListener("change", () => {
+  acceptConsentButton.disabled = !(reviewedDocuments.privacy && reviewedDocuments.terms && consentCheckbox.checked);
+});
+acceptConsentButton.addEventListener("click", () => {
+  if (!reviewedDocuments.privacy || !reviewedDocuments.terms || !consentCheckbox.checked) return;
+  consentAccepted = true;
+  registrationConsent.value = "accepted";
+  registrationConsentIndicator.checked = true;
+  updateRegistrationState();
+  closeConsentNotice();
+});
+registerForm.querySelectorAll(".account-auth-field input").forEach((input) => {
+  input.addEventListener("blur", () => {
+    input.dataset.touched = "true";
+    updateRegistrationState();
+  });
+  input.addEventListener("input", () => {
+    if (input.id === "email") clearEmailConflict();
+    updateRegistrationState();
+  });
+  input.addEventListener("change", () => {
+    if (input.id === "email") clearEmailConflict();
+    updateRegistrationState();
+  });
+});
+registerForm.addEventListener("submit", () => {
+  registrationValidationAttempted = true;
+  updateRegistrationState();
+});
+updateRegistrationState();
+consentModal.addEventListener("click", (event) => {
+  if (event.target === consentModal) closeConsentNotice();
+});
+document.addEventListener("keydown", (event) => {
+  if (!consentModal.classList.contains("show")) return;
+  if (event.key === "Escape") {
+    closeConsentNotice();
+    return;
+  }
+  if (event.key !== "Tab") return;
+
+  const focusableElements = Array.from(
+    consentDialog.querySelectorAll('button:not([disabled]), input:not([disabled]), a[href], [tabindex="0"]')
+  ).filter((element) => element.offsetParent !== null);
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  if (event.shiftKey && document.activeElement === firstElement) {
+    event.preventDefault();
+    lastElement.focus();
+  } else if (!event.shiftKey && document.activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+});
 
 function startOtpResendCountdown(seconds) {
   window.clearInterval(resendOtpTimer);
@@ -67,18 +360,22 @@ document
   .getElementById("registerForm")
   .addEventListener("submit", async (e) => {
     e.preventDefault();
+    const fieldErrors = getRegistrationFieldErrors();
+    registrationValidationAttempted = true;
+    updateRegistrationState();
+    if (fieldErrors.length) {
+      registrationSubmitHint.textContent = `Please correct the following: ${fieldErrors.map(({ label, message }) => `${label}: ${message}`).join(" ")}`;
+      fieldErrors[0].field.focus();
+      return;
+    }
+
+    if (!consentAccepted || registrationConsent.value !== "accepted"
+      || !reviewedDocuments.privacy || !reviewedDocuments.terms) {
+      registrationSubmitHint.textContent = "Review both documents and confirm your agreement before continuing.";
+      return;
+    }
 
     const form = new FormData(e.target);
-
-    if (form.get("email") !== form.get("confirm_email")) {
-      alert("Emails do not match.");
-      return;
-    }
-
-    if (form.get("password") !== form.get("confirm_password")) {
-      alert("Passwords do not match.");
-      return;
-    }
 
     //get data from form
     const data = {
@@ -87,20 +384,54 @@ document
       email: form.get("email"),
       phone_number: form.get("phone_number"),
       password: form.get("password"),
+      consent: registrationConsent.value,
+      privacy_notice_version: document.getElementById("privacyNoticeVersion").value,
+      terms_version: document.getElementById("termsVersion").value,
     };
 
-    const response = await fetch("includes/backend-api/register.php", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    emailConflict = false;
+    submittingRegistration = true;
+    updateRegistrationState();
+    let response;
+    let result;
+    let requestError = "";
+    try {
+      response = await fetch("includes/backend-api/register.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      result = await response.json();
+      if (!result || typeof result !== "object") {
+        throw new Error("The registration service returned an invalid response. Please try again.");
+      }
+    } catch (error) {
+      requestError = error instanceof Error
+        ? error.name === "TypeError"
+          ? "Unable to reach the registration service. Please try again."
+          : error.message
+        : "Unable to complete registration. Please try again.";
+    } finally {
+      submittingRegistration = false;
+      updateRegistrationState();
+    }
 
-    const result = await response.json();
+    if (requestError) {
+      registrationSubmitHint.textContent = requestError;
+      return;
+    }
 
-    if (!result.success) {
-      alert(result.message);
+    if (response.status === 409 && result.code === "email_exists" && result.field === "email") {
+      emailConflict = true;
+      updateRegistrationState();
+      document.getElementById("email").focus();
+      return;
+    }
+
+    if (!response.ok || !result.success) {
+      registrationSubmitHint.textContent = result.message || "Unable to complete registration. Please try again.";
       return;
     }
 

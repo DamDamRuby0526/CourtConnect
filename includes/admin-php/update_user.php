@@ -102,7 +102,23 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-$sql = "UPDATE users SET first_name = ?, last_name = ?, email = ?, phone_number = ? WHERE user_id = ?";
+$stmt = $conn->prepare("SELECT user_id FROM users WHERE user_id = ? AND role_id = 1");
+$stmt->bind_param("i", $userId);
+$stmt->execute();
+$stmt->store_result();
+if ($stmt->num_rows === 0) {
+    echo json_encode([
+        "success" => false,
+        "message" => "User not found."
+    ]);
+    $stmt->close();
+    exit();
+}
+$stmt->close();
+
+$sql = "UPDATE users
+        SET first_name = ?, last_name = ?, email = ?, phone_number = ?
+        WHERE user_id = ? AND role_id = 1";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ssssi", $firstName, $lastName, $email, $phoneNumber, $userId);
 

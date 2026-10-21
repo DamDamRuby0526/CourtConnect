@@ -28,15 +28,14 @@ $courtconnectNavPage = "facilities";
                     <h1>Manage facilities</h1>
                     <p>Review and manage facility listings across CourtConnect.</p>
                 </div>
-                <button type="button" id="add-btn" class="owner-primary-button">Add new facility</button>
             </header>
             <div id="grid-container" class="superadmin-facility-grid" aria-live="polite"></div>
         </main>
     </div>
 
     <div class="modal-container compact-modal-overlay" id="modal_container" aria-hidden="true">
-        <div class="modal modal--compact" role="dialog" aria-modal="true" aria-labelledby="facilityDialogTitle">
-            <form id="facilityForm" enctype="multipart/form-data">
+        <div class="modal modal--compact superadmin-facility-modal" role="dialog" aria-modal="true" aria-labelledby="facilityDialogTitle">
+            <form id="facilityForm">
                 <div class="compact-modal-header">
                     <h2 id="facilityDialogTitle">Facility details</h2>
                     <button type="button" class="owner-close-button cancel-btn" aria-label="Close">&times;</button>
@@ -69,24 +68,6 @@ $courtconnectNavPage = "facilities";
                     <option value="Pickleball">Pickleball</option>
                     <option value="Both">Both</option>
                     </select>
-                </label>
-                <div class="compact-field-row">
-                    <label for="opening_time">Opening time
-                        <input type="time" id="opening_time" name="opening_time" required>
-                    </label>
-                    <label for="closing_time">Closing time
-                        <input type="time" id="closing_time" name="closing_time" required>
-                    </label>
-                </div>
-                <label for="facility_img">Facility image
-                    <img id="facility_img_preview" src="" alt="" style="max-width:150px; display:none;">
-                    <input type="file" id="facility_img" name="facility_img" accept="image/png, image/jpeg, image/webp">
-                    <small id="facility_img_hint"></small>
-                </label>
-                <label for="qr_img">QR code image
-                    <img id="qr_img_preview" src="" alt="" style="max-width:150px; display:none;">
-                    <input type="file" id="qr_img" name="qr_img" accept="image/png, image/jpeg, image/webp">
-                    <small id="qr_img_hint"></small>
                 </label>
                 <div class="owner-modal-actions compact-modal-actions">
                     <button type="button" class="owner-secondary-button cancel-btn">Cancel</button>

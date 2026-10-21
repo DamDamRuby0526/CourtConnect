@@ -68,24 +68,6 @@ document.addEventListener("click", (e) => {
 });
 
 
-function resetImagePreviews() {
-  for (const key of ["facility_img", "qr_img"]) {
-    document.getElementById(`${key}_preview`).style.display = "none";
-    document.getElementById(`${key}_preview`).src = "";
-    document.getElementById(`${key}_hint`).textContent = "";
-  }
-}
-
-// open modal for ADD
-document.getElementById("add-btn").addEventListener("click", () => {
-  document.getElementById("facilityForm").reset();
-  document.getElementById("facilityForm").dataset.facilityId = "";
-  resetImagePreviews();
-  modal_container.classList.add("show");
-  modal_container.setAttribute("aria-hidden", "false");
-  document.getElementById("facility_name").focus();
-});
-
 // open modal for EDIT (Manage Facility)
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("edit-btn")) {
@@ -110,26 +92,6 @@ document.addEventListener("click", async (e) => {
     document.getElementById("address").value = f.address;
     document.getElementById("municipality").value = f.municipality;
     document.getElementById("sport_type").value = f.sport_type;
-    document.getElementById("opening_time").value = f.opening_time;
-    document.getElementById("closing_time").value = f.closing_time;
-
-    resetImagePreviews();
-
-    if (f.facility_img) {
-      const preview = document.getElementById("facility_img_preview");
-      preview.src = "../uploads/facility/" + f.facility_img;
-      preview.style.display = "block";
-      document.getElementById("facility_img_hint").textContent =
-        "Current image shown above. Choose a file only to replace it.";
-    }
-
-    if (f.qr_img) {
-      const preview = document.getElementById("qr_img_preview");
-      preview.src = "../uploads/qr/" + f.qr_img;
-      preview.style.display = "block";
-      document.getElementById("qr_img_hint").textContent =
-        "Current QR shown above. Choose a file only to replace it.";
-    }
 
     document.getElementById("facilityForm").dataset.facilityId = f.facility_id;
 
@@ -139,7 +101,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// save (add or edit) — FormData because of file uploads
+// Save editable facility details.
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("save-btn")) {
     const form = document.getElementById("facilityForm");
