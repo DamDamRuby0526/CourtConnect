@@ -333,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     addDetail("Applicant", `${application.first_name} ${application.last_name}`);
     addDetail("Email", application.email);
     addDetail("Phone", application.phone_number);
-    addDetail("ID type", "Not specified");
     addDetail("Facility", application.facility_name);
     addDetail("Address", application.address);
     addDetail("Municipality", application.municipality);

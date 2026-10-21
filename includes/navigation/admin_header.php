@@ -1,7 +1,12 @@
 <?php if (!empty($courtconnectDashboardLayout)): ?>
     <?php
     if ((int) ($_SESSION["role_id"] ?? 0) === 5 && !isset($courtconnectPendingCount)) {
-        $pendingApplicationsResult = $conn->query("SELECT COUNT(*) AS total FROM admins WHERE status = 'Pending'");
+        $pendingApplicationsResult = $conn->query(
+            "SELECT COUNT(*) AS total
+             FROM admins a
+             INNER JOIN users u ON u.user_id = a.user_id
+             WHERE a.status = 'Pending' AND u.role_id = 3"
+        );
         if ($pendingApplicationsResult) {
             $courtconnectPendingCount = (int) $pendingApplicationsResult->fetch_assoc()["total"];
         } else {

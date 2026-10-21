@@ -15,6 +15,7 @@ $sql = "SELECT a.admin_id, a.user_id, a.government_id_img, a.business_reg_img,
         JOIN users u ON u.user_id = a.user_id
         LEFT JOIN facilities f ON f.facility_id = a.facility_id
         LEFT JOIN users reviewer ON reviewer.user_id = a.reviewed_by
+        WHERE u.role_id = 3
         ORDER BY CASE WHEN a.status = 'Pending' THEN 0 ELSE 1 END,
                  CASE WHEN a.status = 'Pending' THEN a.created_at END ASC,
                  a.created_at DESC";

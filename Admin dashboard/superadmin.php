@@ -5,7 +5,12 @@ require_once __DIR__ . "/../includes/admin-php/superadmin_auth_guard.php";
 
 $courtconnectDashboardLayout = true;
 $courtconnectNavPage = "dashboard";
-$pendingResult = $conn->query("SELECT COUNT(*) AS total FROM admins WHERE status = 'Pending'");
+$pendingResult = $conn->query(
+    "SELECT COUNT(*) AS total
+     FROM admins a
+     INNER JOIN users u ON u.user_id = a.user_id
+     WHERE a.status = 'Pending' AND u.role_id = 3"
+);
 $courtconnectPendingCount = (int) ($pendingResult ? $pendingResult->fetch_assoc()["total"] : 0);
 $conn->close();
 ?>

@@ -72,7 +72,7 @@ try {
          FROM admins a
          INNER JOIN users u ON u.user_id = a.user_id
          LEFT JOIN users reviewer ON reviewer.user_id = a.reviewed_by
-         WHERE a.admin_id = ?
+         WHERE a.admin_id = ? AND u.role_id = 3
          FOR UPDATE"
     );
     $stmt->bind_param("i", $adminId);
