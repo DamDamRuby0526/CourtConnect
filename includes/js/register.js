@@ -27,7 +27,7 @@ let previousBodyOverflow = "";
 let consentUserScrollTimer = null;
 let consentUserInitiatedScroll = false;
 let registrationValidationAttempted = false;
-let emailConflict = false;
+let emailConflict = null;
 
 registrationConsentIndicator.checked = false;
 registrationConsent.value = "";
@@ -136,7 +136,9 @@ function updateRegistrationState() {
   registrationFields.forEach((field) => {
     const error = document.getElementById(`${field.id}Error`);
     const fieldError = fieldErrors.find(({ field: invalidField }) => invalidField === field);
-    const showEmailConflict = field.id === "email" && emailConflict;
+    const showEmailConflict = field.id === "email"
+      && emailConflict !== null
+      && field.value.trim() === emailConflict;
     const showError = showEmailConflict
       || ((registrationValidationAttempted || field.dataset.touched === "true") && Boolean(fieldError));
     if (showEmailConflict) {
@@ -180,8 +182,8 @@ function updateRegistrationState() {
 }
 
 function clearEmailConflict() {
-  if (!emailConflict) return;
-  emailConflict = false;
+  if (emailConflict === null) return;
+  emailConflict = null;
   updateRegistrationState();
 }
 
@@ -253,6 +255,9 @@ acceptConsentButton.addEventListener("click", () => {
   closeConsentNotice();
 });
 registerForm.querySelectorAll(".account-auth-field input").forEach((input) => {
+  input.addEventListener("focus", () => {
+    if (input.id === "email") clearEmailConflict();
+  });
   input.addEventListener("blur", () => {
     input.dataset.touched = "true";
     updateRegistrationState();
@@ -388,7 +393,7 @@ document
       terms_version: document.getElementById("termsVersion").value,
     };
 
-    emailConflict = false;
+    emailConflict = null;
     submittingRegistration = true;
     updateRegistrationState();
     let response;
@@ -423,9 +428,9 @@ document
     }
 
     if (response.status === 409 && result.code === "email_exists" && result.field === "email") {
-      emailConflict = true;
-      updateRegistrationState();
       document.getElementById("email").focus();
+      emailConflict = String(data.email).trim();
+      updateRegistrationState();
       return;
     }
 

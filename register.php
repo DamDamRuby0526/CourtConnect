@@ -13,11 +13,11 @@ $hasPendingReservation = (is_array($pendingScheduleIds) && count($pendingSchedul
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="includes/css/styles.css?v=20261021-consent-validation-3">
+  <link rel="stylesheet" href="includes/css/styles.css?v=20261021-consent-validation-4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="includes/js/register.js?v=20261021-consent-validation-3" defer></script>
+  <script src="includes/js/register.js?v=20261021-consent-validation-6" defer></script>
   <title>CourtConnect Bataan</title>
 </head>
 
@@ -72,7 +72,7 @@ $hasPendingReservation = (is_array($pendingScheduleIds) && count($pendingSchedul
           <label for="registrationConsentIndicator">Read the Data Privacy Notice and Terms and Conditions</label>
         </div>
       </div>
-      <button type="submit" class="btn" id="registerSubmit" disabled>Next</button>
+      <button type="submit" class="btn" id="registerSubmit" disabled>Sign Up</button>
       <p id="registrationSubmitHint" class="registration-submit-hint" role="status" aria-live="polite"></p>
       <p class="account-auth-helper">Already have an account? <a href="signin.php">Login</a></p>
     </form>

@@ -2694,6 +2694,7 @@ th, td { line-height: 1.5; }
 .account-auth-field-error a:focus-visible { border-radius: 2px; outline: 2px solid rgba(61, 128, 168, .65); outline-offset: 2px; }
 .account-auth-field-error-validation { color: #9a454b; font-size: 11px; }
 .account-auth-field-error[hidden] { display: none; }
+.account-auth-field-error [hidden] { display: none; }
 .account-auth-form > .reservation-auth-notice { margin: 0; }
 .account-auth-form > button[type="submit"] {
   width: 100%;
